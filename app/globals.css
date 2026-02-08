@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =========================
+   CSS VARIABLES
+========================= */
+
+:root {
+  --radius: 0.625rem;
+
+  --background: 255 255 255;
+  --foreground: 23 23 23;
+
+  --primary: 33 33 33;
+  --primary-foreground: 250 250 250;
+
+  --secondary: 245 245 245;
+  --secondary-foreground: 33 33 33;
+
+  --muted: 245 245 245;
+  --muted-foreground: 120 120 120;
+
+  --accent: 245 245 245;
+  --accent-foreground: 33 33 33;
+
+  --destructive: 220 38 38;
+  --border: 229 231 235;
+  --input: 229 231 235;
+  --ring: 156 163 175;
+}
+
+/* =========================
+   DARK MODE (class-based)
+========================= */
+
+.dark {
+  --background: 23 23 23;
+  --foreground: 250 250 250;
+
+  --primary: 229 231 235;
+  --primary-foreground: 23 23 23;
+
+  --secondary: 39 39 42;
+  --secondary-foreground: 250 250 250;
+
+  --muted: 39 39 42;
+  --muted-foreground: 163 163 163;
+
+  --accent: 39 39 42;
+  --accent-foreground: 250 250 250;
+
+  --destructive: 239 68 68;
+  --border: 255 255 255 / 0.1;
+  --input: 255 255 255 / 0.15;
+  --ring: 120 120 120;
+}
+
+/* (optional) base styles */
+/*
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+*/

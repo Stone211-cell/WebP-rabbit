@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // ใช้ DATABASE_URL ใน environment สำหรับ Prisma v6 (ตาม package.json)
+  url = env("DATABASE_URL")
+}
+
+// ฐานข้อมูลร้านค้า
+model Store {
+  id            String      @id @default(uuid())
+  code          String      @unique
+  name          String
+  owner         String?
+  type          String?     // ประเภทร้าน: ร้านอาหารอีสาน, ครัวกลาง DC ฯลฯ
+  grade         String?     // ประเภทลูกค้า: A, B, N, T, D
+  phone         String?
+  location      String?     // ที่อยู่/พิกัด
+  products      String?     // สินค้าที่ใช้
+  quantity      String?     // ปริมาณ
+  freq          String?     // ระยะเวลาสั่ง
+  supplier      String?     // รับของเดิมจาก
+  payment       String?     // เงื่อนไขชำระ
+  paymentScore  String?     // คะแนนการชำระเงิน
+  status        String      @default("เปิดการขาย") // เปิดการขาย / ปิดการขาย
+  closeReason   String?
+  visitHistory  Visit[]
+  plans         Plan[]
+  forecasts     Forecast[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// บันทึกการเข้าพบ
+model Visit {
+  id            String      @id @default(uuid())
+  date          DateTime
+  sales         String      // ชื่อเซลล์: ตรี, กร, ป๋อง, เป้
+  storeRef      String?     // reference สำหรับ autocomplete
+  masterId      String?     // FK ไปยัง Store
+  store         Store?      @relation(fields: [masterId], references: [id], onDelete: SetNull)
+  visitCat      String?     // หัวข้อเข้าพบ
+  visitType     String      // ประเภทเข้าพบ: ร้านใหม่, ร้านเดิม ฯลฯ
+  dealStatus    String      @default("เปิดการขาย")
+  closeReason   String?
+  notes         Json?       // เก็บเป็น JSON: {1: "ครั้งที่1...", 2: "ครั้งที่2...", ...}
+  order         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// แผนสัปดาห์
+model Plan {
+  id            String      @id @default(uuid())
+  date          DateTime
+  sales         String      // ชื่อเซลล์
+  storeRef      String?
+  masterId      String?
+  store         Store?      @relation(fields: [masterId], references: [id], onDelete: SetNull)
+  visitCat      String?     // หัวข้อเข้าพบ
+  notes         String?
+  order         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// คาดการณ์รายสัปดาห์
+model Forecast {
+  id            String      @id @default(uuid())
+  masterId      String
+  store         Store       @relation(fields: [masterId], references: [id], onDelete: Cascade)
+  product       String      // ชื่อสินค้า
+  targetWeek    Float       // เป้ารายสัปดาห์ (กก.)
+  targetMonth   Float       // เป้ารายเดือน (กก.)
+  forecast      Float?      // คาดการณ์ (กก./สัปดาห์)
+  actual        Float?      // ยอดซื้อจริง (กก.)
+  notes         String?
+  weekStart     DateTime    // วันเริ่มต้นของสัปดาห์
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([masterId])
+  @@index([weekStart])
+}
