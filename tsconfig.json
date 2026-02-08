@@ -1,13 +1,17 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
-
-    "baseUrl": ".",              // ✅ เพิ่ม
-    "paths": {                   // ✅ เพิ่ม
-      "@/*": ["./*"]
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "baseUrl": ".", // ✅ เพิ่ม
+    "paths": { // ✅ เพิ่ม
+      "@/*": [
+        "./*"
+      ]
     },
-
     "allowJs": true,
     "skipLibCheck": true,
     "strict": false,
@@ -18,14 +22,21 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
-    "plugins": [{ "name": "next" }]
+    "jsx": "react-jsx",
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
   "include": [
     "next-env.d.ts",
     ".next/types/**/*.ts",
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

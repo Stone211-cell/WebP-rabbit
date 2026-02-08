@@ -1,9 +1,7 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  eslint: {
-  ignoreDuringBuilds: true,
-},
+  // ไม่มี eslint แล้ว
 };
 
 export default nextConfig;
