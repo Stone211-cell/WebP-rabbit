@@ -2,12 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useCRM } from '@/components/hooks/useCRM';
-import styles from './crm.module.css';
 import './crm.css';
-import MasterDB from '@/components/pagecomponents/MasterDB';
+
+import Dashboard from '@/components/pagecomponents/Dashboard/Dashboard';
+import VisitForm from '@/components/pagecomponents/VisitForm/VisitForm';
+
+import Storeinformation from '@/components/pagecomponents/StoreInformation/Storeinformation';
 
 export default function CRMPage() {
-  const { stores, visits, plans, forecasts } = useCRM();
+  const { stores, visits, plans, forecasts, } = useCRM();
   const [activePage, setActivePage] = useState('dashboard');
   const [darkMode, setDarkMode] = useState(false);
 
@@ -99,6 +102,27 @@ export default function CRMPage() {
             >
               🔔 แจ้งเตือนนัดหมาย
             </button>
+
+            <button
+              className={`nav-tab ${activePage === 'ordertracking' ? 'active' : ''}`}
+              onClick={() => setActivePage('ordertracking')}
+            >
+              📦 ติดตามคำสั่งซื้อ
+            </button>
+            <button
+              className={`nav-tab ${activePage === 'faq' ? 'active' : ''}`}
+              onClick={() => setActivePage('faq')}
+            >
+              ❓ คำถามที่พบบ่อย
+            </button>
+            <button
+              className={`nav-tab ${activePage === 'fine' ? 'active' : ''}`}
+              onClick={() => setActivePage('fine')}
+            >
+              🔔 แจ้งเตือนนัดหมาย
+            </button>
+
+
           </div>
           <div className="sidebar-footer">
             <div className="storage-status" id="storageStatus">
@@ -118,7 +142,16 @@ export default function CRMPage() {
         <div className="main-content">
           <div className="header">
             <div className="page-title" id="pageTitle">
-              แดชบอร์ด
+              {activePage === 'dashboard' && 'แดชบอร์ด'}
+              {activePage === 'masterdb' && 'ข้อมูลร้านค้า'}
+              {activePage === 'visit' && 'บันทึกเข้าพบ'}
+              {activePage === 'plan' && 'แผนสัปดาห์'}
+              {activePage === 'forecast' && 'คาดการณ์รายสัปดาห์'}
+              {activePage === 'jobcard' && 'Job Card'}
+              {activePage === 'alerts' && 'แจ้งเตือนนัดหมาย'}  
+              {activePage === 'ordertracking' && 'ติดตามคำสั่งซื้อ'}
+              {activePage === 'faq' && 'คำถามที่พบบ่อย'}
+              {activePage === 'fine' && 'ค่าปรับการเข้าพบ'}   
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '.75rem', color: 'var(--t3)' }}>
               <span style={{ color: 'var(--green)' }}>●</span> Auto-save เปิดอยู่
@@ -126,12 +159,14 @@ export default function CRMPage() {
           </div>
           <div className="toast" id="toast"></div>
 
+        <section className=''>
+
           {/* Pages will be rendered here */}
-          <div id="dashboard" className="page active" style={{ display: activePage === 'dashboard' ? 'block' : 'none' }}>
+          <div id="dashboard" className="page active w-full"  style={{ display: activePage === 'dashboard' ? 'block' : 'none' }}>
             <Dashboard stores={stores} visits={visits} plans={plans} />
           </div>
           <div id="masterdb" className="page" style={{ display: activePage === 'masterdb' ? 'block' : 'none' }}>
-            <MasterDB stores={stores} />
+            <Storeinformation stores={stores} />
           </div>
           <div id="visit" className="page" style={{ display: activePage === 'visit' ? 'block' : 'none' }}>
             <VisitForm stores={stores} visits={visits} />
@@ -148,6 +183,19 @@ export default function CRMPage() {
           <div id="alerts" className="page" style={{ display: activePage === 'alerts' ? 'block' : 'none' }}>
             <Alerts stores={stores} visits={visits} />
           </div>
+
+{/* ส่วนเสริมใหม่จ้า api ยังไม่ต่อ */}
+          <div id="OrderTracking" className="page" style={{ display: activePage === 'ordertracking' ? 'block' : 'none' }}>
+            <OrderTracking stores={stores} visits={visits} />
+          </div>
+          <div id="FAQ" className="page" style={{ display: activePage === 'faq' ? 'block' : 'none' }}>
+            <FAQ stores={stores} visits={visits} />
+          </div>
+
+          <div id="Fine" className="page" style={{ display: activePage === 'fine' ? 'block' : 'none' }}>
+            <Fine stores={stores} visits={visits} />
+          </div>
+        </section>
         </div>
       </main>
     </>
@@ -155,15 +203,8 @@ export default function CRMPage() {
 }
 
 // Component placeholders - ฉันจะสร้างอันต่อไป
-function Dashboard({ stores, visits, plans }: any) {
-  return <div>Dashboard Component</div>;
-}
 
 
-
-function VisitForm({ stores, visits }: any) {
-  return <div>VisitForm Component</div>;
-}
 
 function PlanForm({ stores, plans }: any) {
   return <div>PlanForm Component</div>;
@@ -179,4 +220,14 @@ function JobCard({ plans, visits }: any) {
 
 function Alerts({ stores, visits }: any) {
   return <div>Alerts Component</div>;
+}
+
+function OrderTracking({ stores, visits }: any) {
+  return <div>OrderTracking Component</div>;
+}
+function FAQ({ stores, visits }: any) {
+  return <div>FAQ Component</div>;
+}
+function Fine({ stores, visits }: any) {
+  return <div>Fine Component</div>;
 }
