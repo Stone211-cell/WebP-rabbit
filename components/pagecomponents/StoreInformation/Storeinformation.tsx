@@ -1,72 +1,118 @@
-'use client';
+'use client'
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table"
 
 export default function Storeinformation({ stores }: any) {
   return (
-    <div className="w-full min-h-screen bg-gradient-to-b from-[#0b1220] to-[#0a1020] text-white p-6">
+    <div className="w-full min-h-screen text-black bg-[#0f172a] p-6">
 
-      {/* TOP BAR */}
-      {/* <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg font-semibold">ข้อมูลร้านค้า</h1>
-        <div className="flex items-center gap-2 text-sm text-green-400">
-          <span className="w-2 h-2 rounded-full bg-green-400" />
-          Auto-save เปิดอยู่
-        </div>
-      </div> */}
-
-      {/* CARD */}
-      <div className="bg-[#1b2433] border border-white/10 rounded-xl p-5">
+      <Card className=" border border-gray-200  rounded-xl">
 
         {/* HEADER */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold">ฐานข้อมูล ร้านค้า</h2>
-          <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="font-semibold">
+            ฐานข้อมูล ร้านค้า
+          </CardTitle>
+
+          <Button className="bg-blue-500 hover:bg-blue-600 text-white">
             ＋ เพิ่มร้านค้า
-          </button>
-        </div>
+          </Button>
+        </CardHeader>
 
-        {/* FILTER */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <input
-            placeholder="รหัส / ชื่อร้าน / เจ้าของ"
-            className="bg-[#2a3444] border border-white/10 rounded-md px-3 py-2 text-sm outline-none"
-          />
+        <CardContent>
 
-          <select className="bg-[#2a3444] border border-white/10 rounded-md px-3 py-2 text-sm">
-            <option>ทั้งหมด</option>
-          </select>
+          {/* FILTER */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
 
-          <select className="bg-[#2a3444] border border-white/10 rounded-md px-3 py-2 text-sm">
-            <option>ทั้งหมด</option>
-          </select>
-        </div>
+            <Input
+              placeholder="รหัส / ชื่อร้าน / เจ้าของ"
+              className=" text-white border-white/10"
+            />
 
-        {/* TABLE */}
-        <div className="overflow-hidden rounded-lg border border-white/10">
-          <table className="w-full text-sm">
-            <thead className="bg-[#2a3444]">
-              <tr>
-                <th className="px-3 py-2 text-left">ลำดับ</th>
-                <th className="px-3 py-2 text-left">รหัส</th>
-                <th className="px-3 py-2 text-left">ชื่อร้าน</th>
-                <th className="px-3 py-2 text-left">เจ้าของ</th>
-                <th className="px-3 py-2 text-left">ประเภท</th>
-                <th className="px-3 py-2 text-left">เบอร์โทร</th>
-                <th className="px-3 py-2 text-left">ประเภทลูกค้า</th>
-                <th className="px-3 py-2 text-left">สถานะ</th>
-              </tr>
-            </thead>
+            <Select>
+              <SelectTrigger className="border-white/10">
+                <SelectValue placeholder="ทั้งหมด" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">ทั้งหมด</SelectItem>
+              </SelectContent>
+            </Select>
 
-            <tbody>
-              <tr className="bg-[#202a3a]">
-                <td colSpan={8} className="text-center py-6 text-white/60">
-                  ไม่มีข้อมูล
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+            <Select>
+              <SelectTrigger className="border-white/10 text-white">
+                <SelectValue placeholder="ทั้งหมด" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">ทั้งหมด</SelectItem>
+              </SelectContent>
+            </Select>
 
-      </div>
+          </div>
+
+          {/* TABLE */}
+          <div className="overflow-hidden rounded-lg border border-white/10">
+
+            <Table>
+              <TableHeader className="bg-[#475569] ">
+                <TableRow>
+                  <TableHead>ลำดับ</TableHead>
+                  <TableHead>รหัส</TableHead>
+                  <TableHead>ชื่อร้าน</TableHead>
+                  <TableHead>เจ้าของ</TableHead>
+                  <TableHead>ประเภท</TableHead>
+                  <TableHead>เบอร์โทร</TableHead>
+                  <TableHead>ประเภทลูกค้า</TableHead>
+                  <TableHead>สถานะ</TableHead>
+                </TableRow>
+              </TableHeader>
+
+              <TableBody className="bg-[#0f172a]">
+                {!stores || stores.length === 0 ? (
+                  <TableRow className="bg-[#475569]">
+                    <TableCell colSpan={8} className="text-center py-6 text-white/60">
+                      ไม่มีข้อมูล
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  stores.map((store: any, index: number) => (
+                    <TableRow key={store.id || index}>
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>{store.code}</TableCell>
+                      <TableCell>{store.name}</TableCell>
+                      <TableCell>{store.owner}</TableCell>
+                      <TableCell>{store.type}</TableCell>
+                      <TableCell>{store.phone}</TableCell>
+                      <TableCell>{store.customerType}</TableCell>
+                      <TableCell>{store.status}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+
+            </Table>
+
+          </div>
+
+        </CardContent>
+      </Card>
+
     </div>
-  );
+  )
 }

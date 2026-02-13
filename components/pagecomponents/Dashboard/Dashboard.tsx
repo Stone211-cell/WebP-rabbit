@@ -1,165 +1,200 @@
-'use client';
+'use client'
 
-import './dashboard.css';
-import DemoPage from './Table/gettable';
+import { useEffect, useState } from "react"
+// import axios from "axios"
+
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table"
 
 
 
+import ChartCard from "@/components/charts/ChartCard"
 
-export default function Dashboard({ stores, visits }: any) {
+
+
+export default function Dashboard({ stores,visits,summary}: any) {
+
+  const [storesState, setStoresState] = useState<any[]>(stores || [])
+  const [summaryState, setSummaryState] = useState<any[]>(summary || [])
+
+  useEffect(() => {
+
+    // 🔵 ต่อ API เมื่อพร้อมใช้งาน
+    /*
+    const fetchData = async () => {
+      try {
+        const storeRes = await axios.get("/api/stores")
+        const summaryRes = await axios.get("/api/summary")
+
+        setStores(storeRes.data)
+        setSummary(summaryRes.data)
+
+      } catch (err) {
+        console.error(err)
+      }
+    }
+
+    fetchData()
+    */
+
+  }, [])
+
+
+
   return (
-    <div id="dashboard" className="page active w-full">
+    <div className="p-6 space-y-6 dark:bg-[#0f172a]">
 
-      {/* TIME FILTER BUTTONS */}
-      <div className="time-filter-bar">
-        <button className="time-filter-btn">📅 วันนี้</button>
-        <button className="time-filter-btn active">📊 สัปดาห์นี้</button>
-        <button className="time-filter-btn">📆 เดือนนี้</button>
-        <button className="time-filter-btn">📈 ไตรมาสนี้</button>
-        <button className="time-filter-btn">🗓️ ปีนี้</button>
-      </div>
+      {/* ================== FILTER BUTTONS ================== */}
+      <div className="flex   gap-2 bg-white p-6 rounded-xl shadow-sm dark:bg-[#1b2433]">
+        <Button variant="default" className="bg-gray-95 border  border-gray-200 shadow-xl font-medium text-md px-15 py-8 text-black text-center  flex-1 ">📅 วันนี้</Button>
+        <Button variant="default" className="bg-blue-500 dark:bg-blue-500 border-2  border-blue text-white px-15 py-8 flex-1 shadow-lg shadow-blue-500/50">📊 สัปดาห์นี้</Button>
+        <Button variant="default" className="bg-gray-95 border  border-gray-200 shadow-xl font-medium text-md px-15 py-8 text-black text-center flex-1 ">📆 เดือนนี้</Button>
+        <Button variant="default" className="bg-gray-95 border  border-gray-200 shadow-xl font-medium text-md px-15 py-8 text-black text-center flex-1 ">📈 ไตรมาสนี้</Button>
+        <Button variant="default" className="bg-gray-95 border  border-gray-200 shadow-xl font-medium text-md px-15 py-8 text-black text-center flex-1 ">🗓 ปีนี้</Button>
+      </div> 
 
-      {/* EXPORT BAR */}
-      <div className="ebar">
-        <button className="btn btn-o">⬇ Export เข้าพบ</button>
-        <button className="btn btn-o">⬇ Export แผน</button>
-        <button className="btn btn-o">⬇ Export ทั้งหมด</button>
-        <label className="btn btn-o">⬆ Import Excel</label>
-        <button className="btn btn-o" style={{ marginLeft: 'auto' }}>💾 สำรองข้อมูล</button>
-        <button className="btn btn-o" style={{ background: 'var(--red)', color: '#fff' }}>
-          🗑 ล้างข้อมูลทั้งหมด
-        </button>
-      </div>
+      {/* ================== EXPORT BAR ================== */}
+      <div className="flex gap-2 items-center">
+        <Button variant="default">Export เข้าพบ</Button>
+        <Button variant="default">Export แผน</Button>
+        <Button variant="default">Export ทั้งหมด</Button>
+        <Button variant="default">Import Excel</Button>
 
-      {/* WEEK NAV */}
-      <div className="wnav">
-        <button>← สัปดาห์ก่อน</button>
-        <span id="weekLabel">สัปดาห์นี้: 8 ก.พ. 2569 – 14 ก.พ. 2569</span>
-        <button>สัปดาห์ถัดไป →</button>
-      </div>
-
-      {/* CALENDAR */}
-      <div className="cal" id="calendar">
-        <div className="cal-head">
-          <h3>กุมภาพันธ์ 2569</h3>
-          <div className="cal-nav">
-            <button>←</button>
-            <button>วันนี้</button>
-            <button>→</button>
-          </div>
-        </div>
-
-        <div className="cal-grid">
-          {['อา','จ','อ','พ','พฤ','ศ','ส'].map(d => (
-            <div key={d} className="cal-day-label">{d}</div>
-          ))}
-
-          {Array.from({ length: 28 }).map((_, i) => (
-            <div
-              key={i}
-              className={`cal-day ${i === 8 ? 'today' : ''}`}
-              style={{ position: 'relative' }}
-            >
-              <span className="cal-day-num">{i + 1}</span>
-              <div className="cal-events"></div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* CARDS */}
-      <div className="cards-row">
-        <StatCard label="เป้าหมายทีม" value="160" sub="ร้าน / สัปดาห์นี้" />
-        <StatCard label="เข้าพบแล้ว" value="0" sub="สัปดาห์นี้" />
-        <StatCard label="ความสำเร็จ" value="0%" sub="ของเป้าหมาย" color="green" />
-        <StatCard label="ร้านใหม่" value="0" sub="รวม ปิดการขาย" />
-        <StatCard label="ฐานข้อมูลร้านค้า" value="0" sub="ร้านทั้งหมด" />
-        <StatCard label="ปิดการขาย" value="0" sub="ตลอดเวลา" color="red" />
-      </div>
-
-      {/* CHART PLACEHOLDERS */}
-      <div className="charts-grid">
-        <ChartBox title="ผลงานรายเซลล์ – จำแนกตามภารกิจ" />
-        <ChartBox title="แผนเข้าพบสัปดาห์ถัดไป" />
-        <ChartBox title="ยอดปิดการขาย – รายเซลล์" />
-      </div>
-
-      {/* TABLE PLACEHOLDER */}
-
-      {/* <DemoPage data={stores} /> */}
-      <div style={{ marginTop: 32 }}>
-        <h3 style={{ fontWeight: 700 }}>📊 ตารางสรุปผลงาน</h3>
-        <div className="twrap">
-          <table>
-            <thead>
-              <tr>
-                <th>เซลล์</th>
-                <th>เข้าพบทั้งหมด</th>
-                <th>% สำเร็จ</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>ตรี</td>
-                <td>0</td>
-                <td>0%</td>
-              </tr>
-            </tbody>
-          </table>
+        <div className="ml-auto flex gap-2">
+          <Button variant="default">สำรองข้อมูล</Button>
+          <Button variant="destructive">ล้างข้อมูลทั้งหมด</Button>
         </div>
       </div>
 
-
-{/* SUMMARY BY STORE TYPE */}
-<div className="summary-box">
-  <div className="summary-head">
-    <span className="summary-icon">🧾</span>
-    <span className="summary-title">สรุปตามประเภทร้าน</span>
-  </div>
-
-  <div className="twrap">
-    <table className="summary-table">
-      <thead>
-        <tr>
-          <th>ประเภทร้าน</th>
-          <th>จำนวนเข้าพบ</th>
-          <th>ร้านใหม่</th>
-          <th>ปิดการขาย</th>
-          <th>% ปิดการขาย</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td colSpan={5} className="no-data">
-            ไม่มีข้อมูล
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-    </div>
-  );
-}
-
-function StatCard({ label, value, sub, color }: any) {
-  return (
-    <div className={`card ${color || ''}`}>
-      <div className="card-accent" />
-      <div className="c-label">{label}</div>
-      <div className="c-val">{value}</div>
-      <div className="c-sub">{sub}</div>
-    </div>
-  );
-}
-
-function ChartBox({ title }: { title: string }) {
-  return (
-    <div className="chart-wrap compact">
-      <div className="chart-head">
-        <div className="chart-title">{title}</div>
+      {/* ================== STAT CARDS ================== */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 ">
+        <StatCard title="เป้าหมายทีม" value="160" sub="ร้าน / สัปดาห์นี้" sty="dark:border-t-4 dark:border-indigo-500 "/>
+        <StatCard title="เข้าพบแล้ว" value="0" sub="สัปดาห์นี้" sty="dark:border-t-4 dark:border-blue-500"/>
+        <StatCard title="ความสำเร็จ" value="0%" sub="ของเป้าหมาย" sty="dark:border-t-4 dark:border-green-500"/>
+        <StatCard title="ร้านใหม่" value="0" sub="รวม ปิดการขาย" sty="dark:border-t-4 dark:border-sky-300"/>
+        <StatCard title="ฐานข้อมูลร้านค้า" value="0" sub="ร้านทั้งหมด" sty="dark:border-t-4 dark:border-indigo-500"/>
+        <StatCard title="ปิดการขาย" value="0" sub="ตลอดเวลา" sty="dark:border-t-4 dark:border-red-500"/>
       </div>
-      <div className="chart-canvas-wrap" style={{ height: 240 }} />
+
+      {/* ================== CHART SECTION ================== */}
+      <div className="grid md:grid-cols-3 gap-4">
+
+        <ChartCard title="ผลงานรายเซลล์ – จำแนกตามภารกิจ" detail="รายละเอียด" ran="ร้าน1"  />
+        <ChartCard title="แผนเข้าพบสัปดาห์ถัดไป" detail="รายละเอียด" ran="ร้าน1"  />
+        <ChartCard title="ยอดปิดการขาย – รายเซลล์" detail="รายละเอียด"ran="ร้าน1"  />
+
+      </div>
+
+
+      {/* ================== SUMMARY TABLE ================== */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="dark:text-white">📊 ตารางสรุปผลงาน</CardTitle>
+        </CardHeader>
+        <CardContent>
+
+          <Table className="border-none dark:text-white dark:bg-[#1b2433]">
+            <TableHeader className="dark:bg-[#475569] ">
+              <TableRow >
+                <TableHead>เซลล์</TableHead>
+                <TableHead>เข้าพบทั้งหมด</TableHead>
+                <TableHead>งานใหม่</TableHead>
+                <TableHead>ปิดการขาย</TableHead>
+                <TableHead>% สำเร็จ</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody className="hover:bg-[#1b2433]">
+              {summary.length === 0 ? (
+                <TableRow >
+                  <TableCell colSpan={5} className=" text-center hover:bg-[#1b2433] dark:text-white">
+                    ไม่มีข้อมูล
+                  </TableCell>
+                </TableRow>
+              ) : (
+                summary.map((row: any, i: number) => (
+                  <TableRow key={i}>
+                    <TableCell>{row.name}</TableCell>
+                    <TableCell>{row.total}</TableCell>
+                    <TableCell>{row.new}</TableCell>
+                    <TableCell>{row.closed}</TableCell>
+                    <TableCell>{row.percent}%</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+
+        </CardContent>
+      </Card>
+
+
+      {/* ================== SUMMARY TABLE ================== */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="dark:text-white">📈 สรุปตามประเภทร้าน</CardTitle>
+        </CardHeader>
+        <CardContent>
+
+          <Table className="dark:text-white dark:bg-[#0f172a]">
+            <TableHeader className="rounded-lg dark:bg-[#475569] ">
+              <TableRow className="rounded-lg">
+                <TableHead>เซลล์</TableHead>
+                <TableHead>เข้าพบทั้งหมด</TableHead>
+                <TableHead>งานใหม่</TableHead>
+                <TableHead>ปิดการขาย</TableHead>
+                <TableHead>% สำเร็จ</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody className="hover:bg-[#1b2433]">
+              {summary.length === 0 ? (
+                <TableRow >
+                  <TableCell colSpan={5} className=" text-center hover:bg-[#1b2433] dark:text-white">
+                    ไม่มีข้อมูล
+                  </TableCell>
+                </TableRow>
+              ) : (
+                summary.map((row: any, i: number) => (
+                  <TableRow key={i}>
+                    <TableCell>{row.name}</TableCell>
+                    <TableCell>{row.total}</TableCell>
+                    <TableCell>{row.new}</TableCell>
+                    <TableCell>{row.closed}</TableCell>
+                    <TableCell>{row.percent}%</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+
+        </CardContent>
+      </Card>
+
     </div>
-  );
+  )
 }
+
+/* ================== COMPONENTS ================== */
+
+function StatCard({ title, value, sub,sty}: any) {
+  return (
+    <Card className={`dark:bg-[#1b2433] dark:text-white dark:border-gray-700 ${sty}`}>
+      <CardContent className="p-4">
+        <div className="text-sm text-muted-foreground">{title}</div>
+        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-xs text-muted-foreground">{sub}</div>
+      </CardContent>
+    </Card>
+  )
+}
+

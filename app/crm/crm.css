@@ -88,7 +88,7 @@ body.dark{
 /* main content is pushed by sidebar width */
 .main-content{
   margin-left:240px;
-  min-height:100vh;
+  min-height:10vh;
   display:block;
   transition:margin-left .18s ease;
 }
