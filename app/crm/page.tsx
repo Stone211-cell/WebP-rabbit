@@ -7,9 +7,17 @@ import './crm.css';
 import Dashboard from '@/components/pagecomponents/Dashboard/Dashboard';
 import VisitForm from '@/components/pagecomponents/VisitForm/VisitForm';
 
-import Storeinformation from '@/components/pagecomponents/StoreInformation/Storeinformation';
+
 import PlanForm from '@/components/pagecomponents/PlanForm/PlanForm';
 import ForecastForm from '@/components/pagecomponents/ForecastForm/ForecastForm';
+import JobCard from '@/components/pagecomponents/JobCard/JobCard';
+import Alerts from '@/components/pagecomponents/Alerts/Alerts';
+import OrderTracking from '@/components/pagecomponents/OrderTracking/OrderTracking';
+import FAQ from '@/components/pagecomponents/FAQ/FAQ';
+import Fine from '@/components/pagecomponents/Fine/Fine';
+import StoreInformation from '@/components/pagecomponents/StoreInformation/StoreInformation';
+import ProductManagement from '@/components/pagecomponents/ProductManagement/ProductManagement';
+
 
 export default function CRMPage() {
   const { stores, visits, plans, forecasts, } = useCRM();
@@ -106,7 +114,13 @@ export default function CRMPage() {
               className={`nav-tab ${activePage === 'fine' ? 'active' : ''}`}
               onClick={() => setActivePage('fine')}
             >
-              🔔 แจ้งเตือนนัดหมาย
+              🔍 ค้นหา
+            </button>
+            <button
+              className={`nav-tab ${activePage === 'products' ? 'active' : ''}`}
+              onClick={() => setActivePage('products')}
+            >
+              🛍️ จัดการสินค้า
             </button>
 
 
@@ -139,7 +153,9 @@ export default function CRMPage() {
               {activePage === 'alerts' && 'แจ้งเตือนนัดหมาย'}
               {activePage === 'ordertracking' && 'ติดตามคำสั่งซื้อ'}
               {activePage === 'faq' && 'คำถามที่พบบ่อย'}
+              {activePage === 'faq' && 'คำถามที่พบบ่อย'}
               {activePage === 'fine' && 'ค่าปรับการเข้าพบ'}
+              {activePage === 'products' && 'จัดการสินค้า'}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '.75rem', color: 'var(--t3)' }}>
               <span style={{ color: 'var(--green)' }}>●</span> Auto-save เปิดอยู่
@@ -156,7 +172,7 @@ export default function CRMPage() {
 
             {/* ข้อมูลร้านค้า */}
             <div id="masterdb" className="page" style={{ display: activePage === 'masterdb' ? 'block' : 'none' }}>
-              <Storeinformation stores={stores} />
+              <StoreInformation stores={stores} />
             </div>
 
             {/* บันทึกเข้าพบ */}
@@ -198,6 +214,16 @@ export default function CRMPage() {
             <div id="Fine" className="page" style={{ display: activePage === 'fine' ? 'block' : 'none' }}>
               <Fine stores={stores} visits={visits} />
             </div>
+            {/* ค่าปรับการเข้าพบ */}
+            <div id="Fine" className="page" style={{ display: activePage === 'fine' ? 'block' : 'none' }}>
+              <Fine stores={stores} visits={visits} />
+            </div>
+
+            {/* จัดการสินค้า (NEW) */}
+            <div id="products" className="page" style={{ display: activePage === 'products' ? 'block' : 'none' }}>
+              <ProductManagement />
+            </div>
+
           </section>
         </div>
       </main>
@@ -207,23 +233,3 @@ export default function CRMPage() {
 
 // Component placeholders - ฉันจะสร้างอันต่อไป
 
-
-
-
-function JobCard({ plans, visits }: any) {
-  return <div>JobCard Component</div>;
-}
-
-function Alerts({ stores, visits }: any) {
-  return <div>Alerts Component</div>;
-}
-
-function OrderTracking({ stores, visits }: any) {
-  return <div>OrderTracking Component</div>;
-}
-function FAQ({ stores, visits }: any) {
-  return <div>FAQ Component</div>;
-}
-function Fine({ stores, visits }: any) {
-  return <div>Fine Component</div>;
-}

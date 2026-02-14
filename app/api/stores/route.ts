@@ -47,40 +47,60 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // สร้างรหัสอัตโนมัติ
-    let code = body.code;
-    if (!code) {
-      const lastStore = await prisma.store.findFirst({
-        where: { code: { startsWith: 'KHN-C' } },
-        orderBy: { code: 'desc' },
-      });
+    // ลองสร้างรหัสและบันทึก (Retry 3 ครั้งหากชน)
+    let store = null;
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        // สร้างรหัสอัตโนมัติ
+        let code = body.code;
+        if (!code) {
+          const lastStore = await prisma.store.findFirst({
+            where: { code: { startsWith: 'KHN-C' } },
+            orderBy: { code: 'desc' },
+          });
 
-      const nextNum = lastStore
-        ? parseInt(lastStore.code.replace('KHN-C', '')) + 1
-        : 1;
+          const nextNum = lastStore
+            ? parseInt(lastStore.code.replace('KHN-C', '')) + 1
+            : 1;
 
-      code = `KHN-C${String(nextNum).padStart(4, '0')}`;
+          code = `KHN-C${String(nextNum).padStart(4, '0')}`;
+        }
+
+        store = await prisma.store.create({
+          data: {
+            code,
+            name: body.name,
+            owner: body.owner || null,
+            type: body.type || null,
+            grade: body.grade || null,
+            phone: body.phone || null,
+            location: body.location || null,
+            products: body.products || null,
+            quantity: body.quantity || null,
+            freq: body.freq || null,
+            supplier: body.supplier || null,
+            payment: body.payment || 'เงินสด',
+            paymentScore: body.paymentScore || null,
+            status: body.status || 'เปิดการขาย',
+            closeReason: body.closeReason || null,
+          },
+        });
+        break; // สำเร็จ ออกจาก loop
+      } catch (error: any) {
+        // หากเป็น error Unique Constraint (code ซ้ำ) ให้ลองใหม่
+        if (error.code === 'P2002' && error.meta?.target?.includes('code')) {
+          retries--;
+          if (retries === 0) throw error;
+          continue;
+        }
+        throw error; // Error อื่นโยนทิ้ง
+      }
     }
 
-    const store = await prisma.store.create({
-      data: {
-        code,
-        name: body.name,
-        owner: body.owner || null,
-        type: body.type || null,
-        grade: body.grade || null,
-        phone: body.phone || null,
-        location: body.location || null,
-        products: body.products || null,
-        quantity: body.quantity || null,
-        freq: body.freq || null,
-        supplier: body.supplier || null,
-        payment: body.payment || 'เงินสด',
-        paymentScore: body.paymentScore || null,
-        status: body.status || 'เปิดการขาย',
-        closeReason: body.closeReason || null,
-      },
-    });
+    if (!store) {
+      throw new Error("Failed to create store after retries");
+    }
 
     return NextResponse.json(store, { status: 201 });
   } catch (error) {

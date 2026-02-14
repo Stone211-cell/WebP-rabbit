@@ -81,6 +81,20 @@ model Forecast {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
-  @@index([masterId])
   @@index([weekStart])
+}
+
+// สินค้า (NEW)
+model Product {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  category    String?  // หมวดหมู่
+  price       Float    @default(0)
+  unit        String?  // หน่วยนับ
+  description String?
+  image       String?  // URL รูปภาพ
+  status      String   @default("active") // active, inactive
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

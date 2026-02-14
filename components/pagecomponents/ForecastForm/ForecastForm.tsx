@@ -47,7 +47,7 @@ export default
             {/* HEADER */}
             <div className="flex justify-between items-center mb-8">
                 <h2 className="text-lg font-semibold">
-                    คาดการณ์ <span className="text-blue-400">ลูกค้ารายสัปดาห์</span>
+                    📈คาดการณ์ <span className="text-blue-400">ลูกค้ารายสัปดาห์</span>
                 </h2>
 
                 <Button onClick={handleCreate} className="bg-blue-600 hover:bg-blue-700">
@@ -89,10 +89,11 @@ export default
 
             {/* EMPTY STATE */}
             <Card className="bg-transparent border-none shadow-none">
+                
                 <div className="flex flex-col items-center justify-center py-20 text-center">
 
                     <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 opacity-30 mb-4" />
-
+                        
                     <h3 className="text-lg font-semibold text-gray-300">
                         ยังไม่มีข้อมูลคาดการณ์
                     </h3>

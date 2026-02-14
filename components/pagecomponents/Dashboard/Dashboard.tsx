@@ -2,10 +2,26 @@
 
 import { useEffect, useState } from "react"
 // import axios from "axios"
+import { format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths, addQuarters, subQuarters, addYears, subYears, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from "date-fns"
+import { th } from "date-fns/locale"
+import {
+  ChevronLeft,
+  ChevronRight,
+  Calendar as CalendarIcon,
+  Download,
+  Upload,
+  Save,
+  Database,
+  Trash2,
+  LayoutGrid,
+  BarChart2,
+  PieChart,
+  LineChart
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-
+import { Calendar } from "@/components/ui/calendar"
 import {
   Table,
   TableHeader,
@@ -14,169 +30,311 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table"
+import ChartCard from "@/components/crmhelper/charts/ChartCard"
 
+type Period = 'day' | 'week' | 'month' | 'quarter' | 'year'
 
+export default function Dashboard({ stores, visits, summary }: any) {
+  // State
+  const [currentDate, setCurrentDate] = useState<Date>(new Date())
+  const [period, setPeriod] = useState<Period>('day')
 
-import ChartCard from "@/components/charts/ChartCard"
-
-
-
-export default function Dashboard({ stores,visits,summary}: any) {
-
+  // Data State
   const [storesState, setStoresState] = useState<any[]>(stores || [])
   const [summaryState, setSummaryState] = useState<any[]>(summary || [])
 
+  // Mock Fetch Data
   useEffect(() => {
+    // 🔵 Mock API Call
+    // console.log("Fetching data for:", period, format(currentDate, 'yyyy-MM-dd'))
 
-    // 🔵 ต่อ API เมื่อพร้อมใช้งาน
     /*
     const fetchData = async () => {
       try {
-        const storeRes = await axios.get("/api/stores")
-        const summaryRes = await axios.get("/api/summary")
+        // Prepare query params based on period and currentDate
+        const params = {
+          period,
+          date: currentDate.toISOString()
+        }
+        
+        const storeRes = await axios.get("/api/stores", { params })
+        const summaryRes = await axios.get("/api/summary", { params })
 
-        setStores(storeRes.data)
-        setSummary(summaryRes.data)
+        setStoresState(storeRes.data)
+        setSummaryState(summaryRes.data)
 
       } catch (err) {
         console.error(err)
       }
     }
-
     fetchData()
     */
+  }, [period, currentDate])
 
-  }, [])
+  // Navigation Handlers
+  const handlePrevious = () => {
+    switch (period) {
+      case 'day': setCurrentDate(prev => subDays(prev, 1)); break;
+      case 'week': setCurrentDate(prev => subWeeks(prev, 1)); break;
+      case 'month': setCurrentDate(prev => subMonths(prev, 1)); break;
+      case 'quarter': setCurrentDate(prev => subQuarters(prev, 1)); break;
+      case 'year': setCurrentDate(prev => subYears(prev, 1)); break;
+    }
+  }
 
+  const handleNext = () => {
+    switch (period) {
+      case 'day': setCurrentDate(prev => addDays(prev, 1)); break;
+      case 'week': setCurrentDate(prev => addWeeks(prev, 1)); break;
+      case 'month': setCurrentDate(prev => addMonths(prev, 1)); break;
+      case 'quarter': setCurrentDate(prev => addQuarters(prev, 1)); break;
+      case 'year': setCurrentDate(prev => addYears(prev, 1)); break;
+    }
+  }
 
+  // Label Generators
+  const getPeriodLabel = () => {
+    const options = { locale: th }
+    switch (period) {
+      case 'day':
+        return `วันที่: ${format(currentDate, 'd MMM yyyy', options)}`
+      case 'week': {
+        const start = startOfWeek(currentDate, { weekStartsOn: 1 }) // Monday start
+        const end = endOfWeek(currentDate, { weekStartsOn: 1 })
+        // Format like: "14 ก.พ. 2569 - 14 ก.พ. 2569" as in the image
+        return `วันที่: ${format(start, 'd MMM yyyy', options)} - ${format(end, 'd MMM yyyy', options)}`
+      }
+      case 'month':
+        return `เดือน: ${format(currentDate, 'MMMM yyyy', options)}`
+      case 'quarter': {
+        const start = startOfQuarter(currentDate)
+        const end = endOfQuarter(currentDate)
+        return `ไตรมาส: ${format(start, 'd MMM yyyy', options)} - ${format(end, 'd MMM yyyy', options)}`
+      }
+      case 'year':
+        return `ปี: ${format(currentDate, 'yyyy', options)}`
+      default:
+        return ''
+    }
+  }
+
+  const getPreviousLabel = () => {
+    switch (period) {
+      case 'day': return 'วันก่อนหน้า'
+      case 'week': return 'สัปดาห์ก่อน'
+      case 'month': return 'เดือนก่อน'
+      case 'quarter': return 'ไตรมาสก่อน'
+      case 'year': return 'ปีก่อน'
+    }
+  }
+
+  const getNextLabel = () => {
+    switch (period) {
+      case 'day': return 'วันถัดไป'
+      case 'week': return 'สัปดาห์ถัดไป'
+      case 'month': return 'เดือนถัดไป'
+      case 'quarter': return 'ไตรมาสถัดไป'
+      case 'year': return 'ปีถัดไป'
+    }
+  }
 
   return (
-    <div className="p-6 space-y-6 dark:bg-[#0f172a]">
+    <div className="min-h-screen space-y-6 p-6 dark:bg-[#0f172a] bg-slate-50 text-slate-900 dark:text-slate-100">
 
-      {/* ================== FILTER BUTTONS ================== */}
-      <div className="flex   gap-2 bg-white p-6 rounded-xl shadow-sm dark:bg-[#1b2433]">
-        <Button variant="default" className="bg-gray-95 border  border-gray-200 shadow-xl font-medium text-md px-15 py-8 text-black text-center  flex-1 ">📅 วันนี้</Button>
-        <Button variant="default" className="bg-blue-500 dark:bg-blue-500 border-2  border-blue text-white px-15 py-8 flex-1 shadow-lg shadow-blue-500/50">📊 สัปดาห์นี้</Button>
-        <Button variant="default" className="bg-gray-95 border  border-gray-200 shadow-xl font-medium text-md px-15 py-8 text-black text-center flex-1 ">📆 เดือนนี้</Button>
-        <Button variant="default" className="bg-gray-95 border  border-gray-200 shadow-xl font-medium text-md px-15 py-8 text-black text-center flex-1 ">📈 ไตรมาสนี้</Button>
-        <Button variant="default" className="bg-gray-95 border  border-gray-200 shadow-xl font-medium text-md px-15 py-8 text-black text-center flex-1 ">🗓 ปีนี้</Button>
-      </div> 
+      {/* ================== TOP FILTERS ================== */}
+      <div className="grid grid-cols-5 gap-2 bg-white dark:bg-[#1e293b] p-2 rounded-xl border dark:border-slate-800 shadow-sm">
+        <FilterButton
+          active={period === 'day'}
+          onClick={() => setPeriod('day')}
+          icon={<CalendarIcon className="w-4 h-4 mr-2" />}
+          label="วันนี้"
+        />
+        <FilterButton
+          active={period === 'week'}
+          onClick={() => setPeriod('week')}
+          icon={<LayoutGrid className="w-4 h-4 mr-2" />}
+          label="สัปดาห์นี้"
+        />
+        <FilterButton
+          active={period === 'month'}
+          onClick={() => setPeriod('month')}
+          icon={<CalendarIcon className="w-4 h-4 mr-2" />}
+          label="เดือนนี้"
+        />
+        <FilterButton
+          active={period === 'quarter'}
+          onClick={() => setPeriod('quarter')}
+          icon={<PieChart className="w-4 h-4 mr-2" />}
+          label="ไตรมาสนี้"
+        />
+        <FilterButton
+          active={period === 'year'}
+          onClick={() => setPeriod('year')}
+          icon={<BarChart2 className="w-4 h-4 mr-2" />}
+          label="ปีนี้"
+        />
+      </div>
 
-      {/* ================== EXPORT BAR ================== */}
-      <div className="flex gap-2 items-center">
-        <Button variant="default">Export เข้าพบ</Button>
-        <Button variant="default">Export แผน</Button>
-        <Button variant="default">Export ทั้งหมด</Button>
-        <Button variant="default">Import Excel</Button>
+      {/* ================== ACTION BAR ================== */}
+      <div className="flex flex-wrap gap-2 items-center justify-between">
+        <div className="flex gap-2">
+          <ActionButton label="Export เข้าพบ" icon={<Download className="w-4 h-4 mr-2" />} />
+          <ActionButton label="Export แผน" icon={<Download className="w-4 h-4 mr-2" />} />
+          <ActionButton label="Export ทั้งหมด" icon={<Download className="w-4 h-4 mr-2" />} />
+          <ActionButton label="Import Excel" icon={<Upload className="w-4 h-4 mr-2" />} />
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-lg shadow-blue-500/30">
+            <Save className="w-4 h-4" /> ทดสอบการบันทึก
+          </Button>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" className="dark:bg-[#1e293b] dark:text-slate-200 border-slate-700 hover:bg-slate-800 gap-2">
+            <Database className="w-4 h-4" /> สำรองข้อมูล
+          </Button>
+          <Button variant="destructive" className="gap-2 bg-red-600 hover:bg-red-700 shadow-lg shadow-red-500/30">
+            <Trash2 className="w-4 h-4" /> ล้างข้อมูลทั้งหมด
+          </Button>
+        </div>
+      </div>
 
-        <div className="ml-auto flex gap-2">
-          <Button variant="default">สำรองข้อมูล</Button>
-          <Button variant="destructive">ล้างข้อมูลทั้งหมด</Button>
+      {/* ================== DATE NAVIGATION ================== */}
+      <div className="flex items-center justify-center gap-4 py-2">
+        <Button variant="outline" size="sm" onClick={handlePrevious} className="dark:bg-[#1e293b] dark:border-slate-700 dark:text-slate-300">
+          <ChevronLeft className="w-4 h-4 mr-1" /> {getPreviousLabel()}
+        </Button>
+
+        <div className="text-lg font-medium dark:text-slate-200 min-w-[300px] text-center">
+          {getPeriodLabel()}
+        </div>
+
+        <Button variant="outline" size="sm" onClick={handleNext} className="dark:bg-[#1e293b] dark:border-slate-700 dark:text-slate-300">
+          {getNextLabel()} <ChevronRight className="w-4 h-4 ml-1" />
+        </Button>
+      </div>
+
+      {/* ================== MAIN CONTENT (Calendar) ================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="dark:bg-[#1e293b] dark:border-slate-800 border-slate-200 shadow-sm">
+          <CardHeader>
+            <CardTitle className="dark:text-white flex items-center justify-between">
+              <span>{format(currentDate, 'MMMM yyyy', { locale: th })}</span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setCurrentDate(new Date())}>วันนี้</Button>
+                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex justify-center p-6">
+            <Calendar
+              mode="single"
+              selected={currentDate}
+              onSelect={(val) => val && setCurrentDate(val)}
+              className="rounded-md border dark:border-slate-700 dark:bg-[#0f172a] w-full max-w-none flex justify-center"
+              classNames={{
+                month: "w-full space-y-4",
+                table: "w-full border-collapse space-y-1",
+                head_row: "flex",
+                row: "flex w-full mt-2",
+                cell: "h-14 w-full text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                day: "h-14 w-full p-0 font-normal aria-selected:opacity-100 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md",
+                day_selected: "bg-blue-600 text-white hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white",
+                day_today: "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold border border-slate-200 dark:border-slate-600",
+              }}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Right side placeholder or additional charts can go here */}
+        <div className="hidden lg:block relative">
+          {/* Space for future charts or detailed list */}
+          {/* If we want to move the charts here in the future, we can. For now, it's empty as per design or potentially for the chart list below */}
         </div>
       </div>
 
       {/* ================== STAT CARDS ================== */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 ">
-        <StatCard title="เป้าหมายทีม" value="160" sub="ร้าน / สัปดาห์นี้" sty="dark:border-t-4 dark:border-indigo-500 "/>
-        <StatCard title="เข้าพบแล้ว" value="0" sub="สัปดาห์นี้" sty="dark:border-t-4 dark:border-blue-500"/>
-        <StatCard title="ความสำเร็จ" value="0%" sub="ของเป้าหมาย" sty="dark:border-t-4 dark:border-green-500"/>
-        <StatCard title="ร้านใหม่" value="0" sub="รวม ปิดการขาย" sty="dark:border-t-4 dark:border-sky-300"/>
-        <StatCard title="ฐานข้อมูลร้านค้า" value="0" sub="ร้านทั้งหมด" sty="dark:border-t-4 dark:border-indigo-500"/>
-        <StatCard title="ปิดการขาย" value="0" sub="ตลอดเวลา" sty="dark:border-t-4 dark:border-red-500"/>
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+        <StatCard
+          title="เป้าหมายทีม"
+          value="23"
+          sub="ร้าน / วันนี้"
+          colorClass="border-indigo-500"
+        />
+        <StatCard
+          title="เข้าพบแล้ว"
+          value="0"
+          sub="วันนี้"
+          colorClass="border-blue-500"
+        />
+        <StatCard
+          title="ความสำเร็จ"
+          value="0%"
+          sub="ของเป้าหมาย"
+          colorClass="border-green-500"
+        />
+        <StatCard
+          title="ร้านใหม่"
+          value="0"
+          sub="รวม ปิดการขาย (นับผลงาน)"
+          colorClass="border-sky-400"
+        />
+        <StatCard
+          title="ฐานข้อมูลร้านค้า"
+          value="0"
+          sub="ร้านทั้งหมด"
+          colorClass="border-indigo-400"
+        />
+        <StatCard
+          title="ปิดการขาย"
+          value="0"
+          sub="ตลอดเวลา"
+          colorClass="border-red-500"
+        />
       </div>
 
-      {/* ================== CHART SECTION ================== */}
+      {/* ================== EXISTING CHARTS & SUMMARY (Preserved) ================== */}
       <div className="grid md:grid-cols-3 gap-4">
-
-        <ChartCard title="ผลงานรายเซลล์ – จำแนกตามภารกิจ" detail="รายละเอียด" ran="ร้าน1"  />
-        <ChartCard title="แผนเข้าพบสัปดาห์ถัดไป" detail="รายละเอียด" ran="ร้าน1"  />
-        <ChartCard title="ยอดปิดการขาย – รายเซลล์" detail="รายละเอียด"ran="ร้าน1"  />
-
+        <ChartCard title="ผลงานรายเซลล์ – จำแนกตามภารกิจ" detail="รายละเอียด" ran="ร้าน1" />
+        <ChartCard title="แผนเข้าพบสัปดาห์ถัดไป" detail="รายละเอียด" ran="ร้าน1" />
+        <ChartCard title="ยอดปิดการขาย – รายเซลล์" detail="รายละเอียด" ran="ร้าน1" />
       </div>
 
-
-      {/* ================== SUMMARY TABLE ================== */}
-      <Card>
+      <Card className="dark:bg-[#1e293b] dark:border-slate-800">
         <CardHeader>
           <CardTitle className="dark:text-white">📊 ตารางสรุปผลงาน</CardTitle>
         </CardHeader>
         <CardContent>
-
-          <Table className="border-none dark:text-white dark:bg-[#1b2433]">
-            <TableHeader className="dark:bg-[#475569] ">
-              <TableRow >
-                <TableHead>เซลล์</TableHead>
-                <TableHead>เข้าพบทั้งหมด</TableHead>
-                <TableHead>งานใหม่</TableHead>
-                <TableHead>ปิดการขาย</TableHead>
-                <TableHead>% สำเร็จ</TableHead>
+          <Table className="dark:text-slate-200">
+            <TableHeader className="dark:bg-slate-800">
+              <TableRow className="dark:border-slate-700">
+                <TableHead className="dark:text-slate-300">เซลล์</TableHead>
+                <TableHead className="dark:text-slate-300">เข้าพบทั้งหมด</TableHead>
+                <TableHead className="dark:text-slate-300">งานใหม่</TableHead>
+                <TableHead className="dark:text-slate-300">ปิดการขาย</TableHead>
+                <TableHead className="dark:text-slate-300">% สำเร็จ</TableHead>
               </TableRow>
             </TableHeader>
-
-            <TableBody className="hover:bg-[#1b2433]">
-              {summary.length === 0 ? (
-                <TableRow >
-                  <TableCell colSpan={5} className=" text-center hover:bg-[#1b2433] dark:text-white">
+            <TableBody>
+              {summaryState && summaryState.length > 0 ? summaryState.map((row: any, i: number) => (
+                <TableRow key={i} className="dark:border-slate-700 hover:dark:bg-slate-800">
+                  <TableCell>{row.name}</TableCell>
+                  <TableCell>{row.total}</TableCell>
+                  <TableCell>{row.new}</TableCell>
+                  <TableCell>{row.closed}</TableCell>
+                  <TableCell>{row.percent}%</TableCell>
+                </TableRow>
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center h-24 text-slate-500">
                     ไม่มีข้อมูล
                   </TableCell>
                 </TableRow>
-              ) : (
-                summary.map((row: any, i: number) => (
-                  <TableRow key={i}>
-                    <TableCell>{row.name}</TableCell>
-                    <TableCell>{row.total}</TableCell>
-                    <TableCell>{row.new}</TableCell>
-                    <TableCell>{row.closed}</TableCell>
-                    <TableCell>{row.percent}%</TableCell>
-                  </TableRow>
-                ))
               )}
             </TableBody>
           </Table>
-
-        </CardContent>
-      </Card>
-
-
-      {/* ================== SUMMARY TABLE ================== */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="dark:text-white">📈 สรุปตามประเภทร้าน</CardTitle>
-        </CardHeader>
-        <CardContent>
-
-          <Table className="dark:text-white dark:bg-[#0f172a]">
-            <TableHeader className="rounded-lg dark:bg-[#475569] ">
-              <TableRow className="rounded-lg">
-                <TableHead>เซลล์</TableHead>
-                <TableHead>เข้าพบทั้งหมด</TableHead>
-                <TableHead>งานใหม่</TableHead>
-                <TableHead>ปิดการขาย</TableHead>
-                <TableHead>% สำเร็จ</TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody className="hover:bg-[#1b2433]">
-              {summary.length === 0 ? (
-                <TableRow >
-                  <TableCell colSpan={5} className=" text-center hover:bg-[#1b2433] dark:text-white">
-                    ไม่มีข้อมูล
-                  </TableCell>
-                </TableRow>
-              ) : (
-                summary.map((row: any, i: number) => (
-                  <TableRow key={i}>
-                    <TableCell>{row.name}</TableCell>
-                    <TableCell>{row.total}</TableCell>
-                    <TableCell>{row.new}</TableCell>
-                    <TableCell>{row.closed}</TableCell>
-                    <TableCell>{row.percent}%</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-
         </CardContent>
       </Card>
 
@@ -184,17 +342,42 @@ export default function Dashboard({ stores,visits,summary}: any) {
   )
 }
 
-/* ================== COMPONENTS ================== */
+// ---------------- Helper Components ----------------
 
-function StatCard({ title, value, sub,sty}: any) {
+function FilterButton({ active, onClick, label, icon }: { active: boolean, onClick: () => void, label: string, icon: React.ReactNode }) {
   return (
-    <Card className={`dark:bg-[#1b2433] dark:text-white dark:border-gray-700 ${sty}`}>
+    <button
+      onClick={onClick}
+      className={`
+        flex items-center justify-center py-4 px-4 rounded-lg text-sm font-medium transition-all duration-200 border
+        ${active
+          ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/30'
+          : 'bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+        }
+      `}
+    >
+      {icon}
+      {label}
+    </button>
+  )
+}
+
+function ActionButton({ label, icon }: { label: string, icon: React.ReactNode }) {
+  return (
+    <Button variant="outline" className="bg-white dark:bg-[#1e293b] text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+      {icon} {label}
+    </Button>
+  )
+}
+
+function StatCard({ title, value, sub, colorClass }: any) {
+  return (
+    <Card className={`dark:bg-[#1e293b] dark:text-white border-t-4 shadow-md dark:border-slate-800 ${colorClass}`}>
       <CardContent className="p-4">
-        <div className="text-sm text-muted-foreground">{title}</div>
-        <div className="text-2xl font-bold">{value}</div>
-        <div className="text-xs text-muted-foreground">{sub}</div>
+        <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">{title}</div>
+        <div className="text-3xl font-bold mb-1">{value}</div>
+        <div className="text-xs text-slate-400 dark:text-slate-500">{sub}</div>
       </CardContent>
     </Card>
   )
 }
-
