@@ -1,8 +1,23 @@
 'use client'
 
 import { useEffect, useState } from "react"
-// import axios from "axios"
-import { format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths, addQuarters, subQuarters, addYears, subYears, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from "date-fns"
+import {
+  format,
+  addDays,
+  subDays,
+  addWeeks,
+  subWeeks,
+  addMonths,
+  subMonths,
+  addQuarters,
+  subQuarters,
+  addYears,
+  subYears,
+  startOfWeek,
+  endOfWeek,
+  startOfQuarter,
+  endOfQuarter
+} from "date-fns"
 import { th } from "date-fns/locale"
 import {
   ChevronLeft,
@@ -15,8 +30,7 @@ import {
   Trash2,
   LayoutGrid,
   BarChart2,
-  PieChart,
-  LineChart
+  PieChart
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -45,30 +59,7 @@ export default function Dashboard({ stores, visits, summary }: any) {
 
   // Mock Fetch Data
   useEffect(() => {
-    // 🔵 Mock API Call
-    // console.log("Fetching data for:", period, format(currentDate, 'yyyy-MM-dd'))
-
-    /*
-    const fetchData = async () => {
-      try {
-        // Prepare query params based on period and currentDate
-        const params = {
-          period,
-          date: currentDate.toISOString()
-        }
-        
-        const storeRes = await axios.get("/api/stores", { params })
-        const summaryRes = await axios.get("/api/summary", { params })
-
-        setStoresState(storeRes.data)
-        setSummaryState(summaryRes.data)
-
-      } catch (err) {
-        console.error(err)
-      }
-    }
-    fetchData()
-    */
+    // placeholder for fetching when period/currentDate change
   }, [period, currentDate])
 
   // Navigation Handlers
@@ -92,6 +83,9 @@ export default function Dashboard({ stores, visits, summary }: any) {
     }
   }
 
+  // helper nav for the small calendar (Today)
+  const goToday = () => setCurrentDate(new Date())
+
   // Label Generators
   const getPeriodLabel = () => {
     const options = { locale: th }
@@ -101,7 +95,6 @@ export default function Dashboard({ stores, visits, summary }: any) {
       case 'week': {
         const start = startOfWeek(currentDate, { weekStartsOn: 1 }) // Monday start
         const end = endOfWeek(currentDate, { weekStartsOn: 1 })
-        // Format like: "14 ก.พ. 2569 - 14 ก.พ. 2569" as in the image
         return `วันที่: ${format(start, 'd MMM yyyy', options)} - ${format(end, 'd MMM yyyy', options)}`
       }
       case 'month':
@@ -215,43 +208,94 @@ export default function Dashboard({ stores, visits, summary }: any) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="dark:bg-[#1e293b] dark:border-slate-800 border-slate-200 shadow-sm">
           <CardHeader>
-            <CardTitle className="dark:text-white flex items-center justify-between">
+            <CardTitle className=" flex items-center justify-between">
               <span>{format(currentDate, 'MMMM yyyy', { locale: th })}</span>
               <div className="flex gap-2">
-                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
+                <Button variant="outline" size="icon" className="h-7 w-7 dark:bg-[#1e293b] dark:border-slate-700 dark:text-slate-300" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setCurrentDate(new Date())}>วันนี้</Button>
-                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
+                <Button variant="ghost" size="sm" className="dark:bg-[#1e293b] dark:border-slate-700 dark:text-slate-300" onClick={() => setCurrentDate(new Date())}>วันนี้</Button>
+                <Button variant="outline" size="icon" className="h-7 w-7 dark:bg-[#1e293b] dark:border-slate-700 dark:text-slate-300" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex justify-center p-6">
-            <Calendar
-              mode="single"
-              selected={currentDate}
-              onSelect={(val) => val && setCurrentDate(val)}
-              className="rounded-md border dark:border-slate-700 dark:bg-[#0f172a] w-full max-w-none flex justify-center"
-              classNames={{
-                month: "w-full space-y-4",
-                table: "w-full border-collapse space-y-1",
-                head_row: "flex",
-                row: "flex w-full mt-2",
-                cell: "h-14 w-full text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                day: "h-14 w-full p-0 font-normal aria-selected:opacity-100 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md",
-                day_selected: "bg-blue-600 text-white hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white",
-                day_today: "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold border border-slate-200 dark:border-slate-600",
-              }}
-            />
+
+          <CardContent className="flex justify-center p-6 bg-white dark:bg-[#1e293b] rounded-md border dark:border-slate-700">
+            {/* Replaced calendar with styled version (supports light/dark) */}
+            <div className="w-full max-w-[720px]">
+              <Calendar
+                mode="single"
+                selected={currentDate}
+                onSelect={(val) => val && setCurrentDate(val)}
+                locale={th}
+                weekStartsOn={1}
+                className="w-full"
+                classNames={{
+                  months: "w-full",
+                  month: "w-full space-y-6",
+
+                  caption: "flex justify-between items-center text-slate-900 dark:text-white",
+                  caption_label: "text-lg font-semibold",
+
+                  nav: "flex gap-2",
+                  nav_button:
+                    "h-8 w-8 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-md transition",
+                  nav_button_previous: "",
+                  nav_button_next: "",
+
+                  table: "w-full border-collapse bg-transparent",
+                  head_row: "border-b border-slate-200 dark:border-slate-700",
+
+                  head_cell: `
+  h-12
+  bg-slate-100 dark:bg-[#2B3A4F]
+  text-slate-800 dark:text-white
+  font-medium
+  text-center
+`,
+
+                  row: "grid grid-cols-7 gap-3 mt-3",
+
+                  cell: "relative h-20",
+
+                  day: `
+                    h-20 w-full 
+                    bg-slate-100 dark:bg-[#2B3A4F]
+                    text-slate-800 dark:text-white
+                    flex items-start justify-start
+                     text-sm
+                    hover:bg-slate-200 
+                    transition
+                  `,
+
+                  day_today:
+                    "border border-blue-500 text-blue-600 dark:text-blue-400 font-semibold",
+
+                  day_selected: `
+                    bg-blue-600
+                    text-white
+                    hover:bg-blue-600
+                  `,
+
+                  day_outside: "opacity-30",
+                }}
+              />
+
+              {/* Today Button */}
+              <div className="mt-4 flex justify-end">
+                <Button onClick={goToday} className="bg-blue-600 hover:bg-blue-700 text-white">
+                  วันนี้
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         {/* Right side placeholder or additional charts can go here */}
         <div className="hidden lg:block relative">
           {/* Space for future charts or detailed list */}
-          {/* If we want to move the charts here in the future, we can. For now, it's empty as per design or potentially for the chart list below */}
         </div>
       </div>
 
