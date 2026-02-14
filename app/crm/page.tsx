@@ -51,7 +51,7 @@ export default function CRMPage() {
                 </svg>
               </div>
               <div className="logo-text-container dark:text-white dark:border-gray-700">
-                <div className="logo-text dark:text-white ">COWPHET CRM</div>
+                <div className="logo-text dark:text-white ">COWPHET CRM aaa</div>
                 <div className="logo-sub dark:text-gray-300">Sales Force Management</div>
               </div>
             </div>
