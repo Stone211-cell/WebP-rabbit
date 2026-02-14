@@ -19,7 +19,7 @@ import {
   TableCell,
 } from "@/components/ui/table"
 
-export default function StoreInformation({ stores }: any) {
+export default function Storeinformation({ stores }: any) {
   return (
     <div className="w-full min-h-screen text-black bg-[#0f172a] p-6">
 

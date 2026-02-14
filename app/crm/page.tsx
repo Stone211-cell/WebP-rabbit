@@ -17,7 +17,8 @@ import FAQ from '@/components/pagecomponents/FAQ/FAQ';
 import Fine from '@/components/pagecomponents/Fine/Fine';
 
 import ProductManagement from '@/components/pagecomponents/ProductManagement';
-import StoreInformation from '@/components/pagecomponents/StoreInformation/StoreInformation';
+import Storeinformation from '@/components/pagecomponents/StoreInformation/StoreInformation';
+
 
 
 export default function CRMPage() {
@@ -173,7 +174,7 @@ export default function CRMPage() {
 
             {/* ข้อมูลร้านค้า */}
             <div id="masterdb" className="page" style={{ display: activePage === 'masterdb' ? 'block' : 'none' }}>
-              <StoreInformation stores={stores} />
+              <Storeinformation stores={stores} />
             </div>
 
             {/* บันทึกเข้าพบ */}
