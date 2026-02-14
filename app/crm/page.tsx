@@ -15,8 +15,9 @@ import Alerts from '@/components/pagecomponents/Alerts/Alerts';
 import OrderTracking from '@/components/pagecomponents/OrderTracking/OrderTracking';
 import FAQ from '@/components/pagecomponents/FAQ/FAQ';
 import Fine from '@/components/pagecomponents/Fine/Fine';
-import StoreInformation from '@/components/pagecomponents/StoreInformation';
+
 import ProductManagement from '@/components/pagecomponents/ProductManagement';
+import StoreInformation from '@/components/pagecomponents/StoreInformation/StoreInformation';
 
 
 export default function CRMPage() {
