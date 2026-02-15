@@ -25,7 +25,7 @@ import StoreInformation from '@/components/pagecomponents/StoreInformation/Store
 
 
 export default function CRMPage() {
-  const { stores, visits, plans, forecasts, fetchStores, fetchVisits } = useCRM();
+  const { stores, visits, plans, forecasts, fetchStores, fetchVisits, fetchPlans } = useCRM();
   const [profiles, setProfiles] = useState<any[]>([]);
 
   useEffect(() => {
@@ -223,7 +223,12 @@ export default function CRMPage() {
 
             {/* แผนสัปดาห์ */}
             <div id="plan" className="page" style={{ display: activePage === 'plan' ? 'block' : 'none' }}>
-              <PlanForm stores={stores} plans={plans} />
+              <PlanForm
+                stores={stores}
+                plans={plans}
+                profiles={profiles}
+                onRefresh={fetchPlans}
+              />
             </div>
 
             {/* คาดการณ์รายสัปดาห์ */}

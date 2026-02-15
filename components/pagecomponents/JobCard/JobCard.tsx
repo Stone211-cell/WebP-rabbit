@@ -1,132 +1,274 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { format, addDays, startOfWeek } from "date-fns"
+import { format, addDays, startOfWeek, isSameDay } from "date-fns"
 import { th } from "date-fns/locale"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
 
+// Helpers
 function getNextFriday22() {
   const now = new Date()
-  const day = now.getDay()
+  const day = now.getDay() // 0-6 (Sun-Sat)
 
-  const diff = (5 - day + 7) % 7
-  const friday = new Date(now)
-  friday.setDate(now.getDate() + diff)
-  friday.setHours(22, 0, 0, 0)
-
-  if (friday < now) {
-    friday.setDate(friday.getDate() + 7)
+  // Calculate days until next Friday (5)
+  let diff = 5 - day
+  if (diff < 0 || (diff === 0 && now.getHours() >= 22)) {
+    diff += 7
   }
 
-  return friday
+  const target = new Date()
+  target.setHours(22, 0, 0, 0)
+  target.setDate(now.getDate() + diff)
+
+  // Safety check if we already passed 22:00 today (if today is Friday)
+  if (target.getTime() <= now.getTime()) {
+    target.setDate(target.getDate() + 7)
+  }
+
+  return target
 }
 
+const DAYS_TH = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"]
+
 export default function JobCard({ plans, visits }: any) {
-  const [timeLeft, setTimeLeft] = useState("")
-  const [today, setToday] = useState(new Date())
+  const [timeLeft, setTimeLeft] = useState<{ d: number, h: number }>({ d: 0, h: 0 })
+  const [selectedDate, setSelectedDate] = useState(new Date())
+  const [today] = useState(new Date())
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const updateTimer = () => {
       const target = getNextFriday22()
       const now = new Date()
       const diff = target.getTime() - now.getTime()
 
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24)
+      if (diff <= 0) {
+        setTimeLeft({ d: 0, h: 0 })
+      } else {
+        const d = Math.floor(diff / (1000 * 60 * 60 * 24))
+        const h = Math.floor((diff / (1000 * 60 * 60)) % 24)
+        setTimeLeft({ d, h })
+      }
+    }
 
-      setTimeLeft(`${days} วัน ${hours} ชั่วโมง`)
-      setToday(new Date())
-    }, 1000)
-
-    return () => clearInterval(interval)
+    updateTimer()
+    const timer = setInterval(updateTimer, 60000) // Update every minute is enough for h/d
+    return () => clearInterval(timer)
   }, [])
 
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 })
-  const days = Array.from({ length: 7 }).map((_, i) =>
-    addDays(weekStart, i)
-  )
+  // Get current week (Sun-Sat as per image)
+  const weekStart = startOfWeek(today, { weekStartsOn: 0 })
+  const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i))
+
+  // Filter plans for the selected day
+  const dayPlans = (plans || []).filter((p: any) => isSameDay(new Date(p.date), selectedDate))
+
+  // Group plans by salesperson name
+  const groupedPlans = dayPlans.reduce((acc: any, p: any) => {
+    const salesName = p.sales || "Unknown"
+    if (!acc[salesName]) acc[salesName] = []
+    acc[salesName].push(p)
+    return acc
+  }, {})
+
+  // Calculate progress for a salesperson
+  const getProgress = (plansList: any[]) => {
+    const completed = plansList.filter(p => {
+      return (visits || []).some((v: any) =>
+        v.masterId === p.masterId &&
+        isSameDay(new Date(v.date), new Date(p.date))
+      )
+    }).length
+    return `${completed}/${plansList.length}`
+  }
 
   return (
-    <div className="min-h-screen p-6 bg-gray-100 dark:bg-[#0f172a]">
+    <div className="p-4 md:p-8 space-y-6 animate-in fade-in duration-700 bg-slate-50/30 dark:bg-[#0f172a]/20 min-h-screen">
 
-      {/* GRADIENT HEADER */}
-      <Card className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-6 mb-6 border-none">
-        <div className="text-center">
-          <p className="text-sm opacity-80">📌 Job Card หมดอายุใน</p>
-          <h1 className="text-3xl font-bold mt-2">{timeLeft}</h1>
-          <p className="text-sm opacity-80 mt-1">
-            ทุกศุกร์ เวลา 22:00 น.
-          </p>
+      {/* GRADIENT BANNER: COUNTDOWN */}
+      <div className="bg-gradient-to-br from-[#7c3aed] to-[#8b5cf6] p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group border border-white/20">
+        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-1000">
+          <span className="text-9xl">📋</span>
         </div>
-      </Card>
-
-      {/* WEEK */}
-      <Card className="p-6 bg-white dark:bg-[#1e293b] border">
-        <h2 className="text-center font-semibold mb-4 text-gray-700 dark:text-white">
-          📅 สัปดาห์นี้
-        </h2>
-
-        <div className="grid grid-cols-7 gap-3">
-          {days.map((day) => {
-            const isToday =
-              format(day, "yyyy-MM-dd") ===
-              format(today, "yyyy-MM-dd")
-
-            const isFriday = day.getDay() === 5
-            const isSaturday = day.getDay() === 6
-
-            return (
-              <div
-                key={day.toString()}
-                className={`
-                  rounded-lg p-4 text-center text-sm font-medium
-                  ${
-                    isFriday
-                      ? "bg-red-500 text-white"
-                      : isSaturday
-                      ? "bg-blue-500 text-white"
-                      : isToday
-                      ? "bg-blue-400 text-white"
-                      : "bg-gray-200 dark:bg-slate-700 dark:text-white"
-                  }
-                `}
-              >
-                <p>
-                  {format(day, "EEE", { locale: th })}
-                </p>
-                <p className="text-lg font-bold">
-                  {format(day, "d")}
-                </p>
-              </div>
-            )
-          })}
+        <div className="relative z-10 text-center space-y-3">
+          <div className="flex items-center justify-center gap-2 text-indigo-100 font-black uppercase tracking-[0.2em] text-[10px]">
+            <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse shadow-[0_0_8px_rgba(251,113,113,0.8)]" />
+            Job Card หมดอายุใน
+          </div>
+          <div className="flex items-baseline justify-center gap-2">
+            <span className="text-4xl md:text-6xl font-black tracking-tighter">{timeLeft.d} วัน {timeLeft.h} ชั่วโมง</span>
+          </div>
+          <p className="text-indigo-100/60 text-xs font-bold italic tracking-tight uppercase">ทุกศุกร์ เวลา 22:00 น.</p>
         </div>
-
-        <div className="flex justify-center gap-4 mt-4 text-xs">
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-blue-400 rounded-sm" />
-            วันนี้
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-green-500 rounded-sm" />
-            มีแผน
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-red-500 rounded-sm" />
-            ศุกร์
-          </div>
-        </div>
-      </Card>
-
-      {/* EMPTY STATE */}
-      <div className="flex flex-col items-center justify-center py-20 text-center text-gray-500 dark:text-gray-400">
-        <div className="text-4xl mb-4">📋</div>
-        <h3 className="font-semibold">ยังไม่มีแผนสัปดาห์นี้</h3>
-        <p className="text-sm mt-1">
-          ไปที่ "แผนสัปดาห์" เพื่อสร้างแผน
-        </p>
       </div>
 
+      {/* WEEK SELECTOR */}
+      <Card className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl border-white/20 dark:border-slate-800/50 rounded-[2.5rem] shadow-xl overflow-hidden">
+        <CardContent className="p-6 md:p-8 space-y-6">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <span className="text-lg">🗓️</span>
+            <h2 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">สัปดาห์นี้</h2>
+          </div>
+
+          <div className="grid grid-cols-7 gap-2 md:gap-4">
+            {weekDays.map((date) => {
+              const isSelected = isSameDay(date, selectedDate)
+              const isToday = isSameDay(date, today)
+              const isFriday = date.getDay() === 5
+              const hasPlans = (plans || []).some((p: any) => isSameDay(new Date(p.date), date))
+
+              // Color Logic based on image
+              let boxClass = "bg-slate-200/50 dark:bg-slate-800/40 text-slate-500 dark:text-slate-500"
+              if (isToday) boxClass = "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
+              else if (isFriday) boxClass = "bg-rose-500 text-white shadow-lg shadow-rose-500/30"
+              else if (hasPlans) boxClass = "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30"
+
+              return (
+                <button
+                  key={date.toString()}
+                  onClick={() => setSelectedDate(date)}
+                  className={cn(
+                    "flex flex-col items-center justify-center py-4 rounded-2xl transition-all relative border-t-2 border-transparent",
+                    boxClass,
+                    isSelected && !isToday && !isFriday && !hasPlans ? "ring-2 ring-slate-400 dark:ring-slate-600" : "",
+                    isSelected ? "scale-105" : "hover:brightness-110 active:scale-95"
+                  )}
+                >
+                  <span className="text-[10px] font-black uppercase mb-1 opacity-80">
+                    {DAYS_TH[date.getDay()]}
+                  </span>
+                  <span className="text-xl font-black tracking-tighter">
+                    {date.getDate()}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* LEGEND Indicators */}
+          <div className="flex justify-center flex-wrap gap-6 pt-6 border-t border-slate-200 dark:border-white/5">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded bg-blue-600 shadow-sm" />
+              <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">วันนี้</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded bg-emerald-500 shadow-sm" />
+              <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">มีแผน</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded bg-rose-500 shadow-sm" />
+              <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">ศุกร์</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* SALESPERSON GROUPS & PLANS */}
+      <div className="space-y-10 pb-20">
+        {Object.keys(groupedPlans).length > 0 ? (
+          Object.keys(groupedPlans).map((sales, index) => {
+            const salesPlans = groupedPlans[sales]
+            const colors = ['bg-[#10b981]', 'bg-[#3b82f6]', 'bg-[#8b5cf6]', 'bg-[#f59e0b]']
+            const headerColor = colors[index % colors.length]
+
+            return (
+              <div key={sales} className="space-y-4 animate-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: `${index * 150}ms` }}>
+                {/* SALESPERSON GROUP HEADER */}
+                <div className={cn(
+                  "flex justify-between items-center px-6 py-4 rounded-2xl text-white shadow-xl border border-white/20",
+                  headerColor
+                )}>
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-xl ring-2 ring-white/30">
+                      👤
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-lg font-black tracking-tight">{sales}</span>
+                      <span className="text-[10px] font-medium opacity-70 uppercase tracking-widest">พนักงานขาย</span>
+                    </div>
+                  </div>
+                  <div className="bg-black/20 backdrop-blur-md px-4 py-1.5 rounded-xl border border-white/10">
+                    <span className="text-sm font-black italic">{getProgress(salesPlans)}</span>
+                  </div>
+                </div>
+
+                {/* PLAN CARDS GRID */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
+                  {salesPlans.map((p: any, pIdx: number) => {
+                    const isCompleted = (visits || []).some((v: any) =>
+                      v.masterId === p.masterId && isSameDay(new Date(v.date), new Date(p.date))
+                    )
+
+                    return (
+                      <Card key={p.id} className="bg-white/90 dark:bg-slate-900/40 backdrop-blur-xl border-white/20 dark:border-slate-800/50 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all group relative">
+                        {/* Left Accent Bar */}
+                        <div className={cn(
+                          "absolute left-0 top-0 bottom-0 w-1.5",
+                          pIdx % 2 === 0 ? "bg-orange-500" : "bg-blue-500"
+                        )} />
+
+                        <CardContent className="p-6 space-y-4">
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-0.5">
+                              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">ลำดับที่ {pIdx + 1}</span>
+                              <h3 className="text-lg font-black text-slate-800 dark:text-white truncate max-w-[180px] group-hover:text-blue-500 transition-colors">
+                                {p.store?.name || p.storeName || "Unknown Store"}
+                              </h3>
+                            </div>
+                            <div className={cn(
+                              "w-2.5 h-2.5 rounded-full shadow-[0_0_10px]",
+                              isCompleted ? "bg-emerald-500 shadow-emerald-500/50" : "bg-rose-500 shadow-rose-500/50 animate-pulse"
+                            )} />
+                          </div>
+
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg px-3 py-1 text-[10px] font-black border-none">
+                                📅 {DAYS_TH[new Date(p.date).getDay()]} {format(new Date(p.date), "dd/MM")}
+                              </Badge>
+                            </div>
+                            <p className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tighter">รหัส: {p.storeRef || "N/A"}</p>
+                          </div>
+
+                          <div className="bg-slate-100/50 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-200 dark:border-slate-700/50 group-hover:bg-blue-500/5 transition-colors">
+                            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                              <span className="text-base">🏢</span>
+                              <span className="text-[10px] font-black uppercase truncate">{p.visitCat || "ทั่วไป"}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 pt-3 border-t border-slate-100 dark:border-white/5 mt-2">
+                            {isCompleted ? (
+                              <>
+                                <span className="text-lg">✅</span>
+                                <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase italic">เข้าพบเรียบร้อย</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-lg">⚠️</span>
+                                <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase italic">ยังไม่เข้าพบ</span>
+                              </>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })
+        ) : (
+          <div className="flex flex-col items-center justify-center pt-24 pb-32 text-center animate-in zoom-in duration-1000">
+            <div className="w-32 h-32 rounded-full bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 flex items-center justify-center text-5xl shadow-inner mb-6 grayscale opacity-40">
+              🗂️
+            </div>
+            <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">ไม่มีแผนงานสำหรับวันนี้</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-bold italic mt-2">เลือกวันอื่นในตารางสัปดาห์ หรือวางแผนใหม่ที่เมนู "แผนสัปดาห์"</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

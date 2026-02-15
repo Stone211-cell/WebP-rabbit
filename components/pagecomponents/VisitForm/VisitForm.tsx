@@ -33,7 +33,7 @@ import { Separator } from "@/components/ui/separator"
 export default function VisitForm({ stores, visits, profiles, onRefresh }: any) {
   const [form, setForm] = useState<any>({
     sales: "",
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'), // Get local date in YYYY-MM-DD format
     visitType: "new",
     dealStatus: "เปิดการขาย",
     notes: {} // Store 8-tab details as JSON
@@ -44,6 +44,7 @@ export default function VisitForm({ stores, visits, profiles, onRefresh }: any) 
   const [historySearch, setHistorySearch] = useState("")
   const [isSearching, setIsSearching] = useState(false)
   const [suggestions, setSuggestions] = useState<any[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
 
   const handleChange = (name: string, value: any) => {
     setForm((prev: any) => ({ ...prev, [name]: value }))
@@ -52,20 +53,22 @@ export default function VisitForm({ stores, visits, profiles, onRefresh }: any) 
   // Debounced API Search for Stores
   useEffect(() => {
     const timer = setTimeout(async () => {
-      // Skip search if value is too short OR if it matches the current selected store code
-      if (form.storeSearch?.length > 1 && form.storeSearch !== form.storeRef) {
+      // Changed threshold to > 0 (1 character or more)
+      if (form.storeSearch?.length > 0 && form.storeSearch !== form.storeRef) {
         setIsSearching(true)
+        setShowSuggestions(true)
         try {
-          // axiosInstance already has /api base
           const res = await axiosInstance.get(`/stores?search=${form.storeSearch}`)
-          setSuggestions(res.data.slice(0, 5))
+          setSuggestions(res.data.slice(0, 10)) // Increased to 10 for better visibility
         } catch (err) {
           console.error("Search failed", err)
+          setSuggestions([])
         } finally {
           setIsSearching(false)
         }
       } else {
         setSuggestions([])
+        setShowSuggestions(false)
       }
     }, 500)
     return () => clearTimeout(timer)
@@ -92,6 +95,46 @@ export default function VisitForm({ stores, visits, profiles, onRefresh }: any) 
       closeReason: store.closeReason || ""
     }))
     setSuggestions([])
+    setShowSuggestions(false)
+  }
+
+  const clearStore = () => {
+    setForm((prev: any) => ({
+      ...prev,
+      masterId: "",
+      storeRef: "",
+      storeName: "",
+      owner: "",
+      phone: "",
+      type: "",
+      customerType: "",
+      address: "",
+      productUsed: "",
+      quantity: "",
+      orderPeriod: "",
+      supplier: "",
+      payment: "",
+      storeSearch: "",
+      dealStatus: "เปิดการขาย",
+      closeReason: ""
+    }))
+    setSuggestions([])
+    setShowSuggestions(false)
+  }
+
+  const handleManualSearch = async () => {
+    if (!form.storeSearch || form.storeSearch === form.storeRef) return
+    setIsSearching(true)
+    setShowSuggestions(true)
+    try {
+      const res = await axiosInstance.get(`/stores?search=${form.storeSearch}`)
+      setSuggestions(res.data.slice(0, 10))
+    } catch (err) {
+      console.error("Manual search failed", err)
+      setSuggestions([])
+    } finally {
+      setIsSearching(false)
+    }
   }
 
   const handleSubmit = async () => {
@@ -193,6 +236,7 @@ export default function VisitForm({ stores, visits, profiles, onRefresh }: any) 
               <Label>วันที่เข้าพบ *</Label>
               <Input
                 type="date"
+                value={form.date || ""}
                 onChange={(e) => handleChange("date", e.target.value)}
                 className="dark:bg-[#1e293b] border-gray-600"
               />
@@ -204,35 +248,74 @@ export default function VisitForm({ stores, visits, profiles, onRefresh }: any) 
             </div>
 
             <div className="relative">
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">รหัสลูกค้า / ชื่อร้าน * <span className="text-blue-500 font-normal italic">(พิมพ์เพื่อหา)</span></Label>
-              <Input
-                placeholder="KHN-C0001"
-                value={form.storeSearch || ""}
-                onChange={(e) => handleChange("storeSearch", e.target.value)}
-                className="bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl h-10 font-bold"
-              />
+              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">รหัสลูกค้า / ชื่อร้าน * <span className="text-blue-500 font-normal italic">(พิมพ์หรือกดแว่นขยายเพื่อหา)</span></Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    placeholder="ค้นคารหัสร้าน หรือ ชื่อร้าน..."
+                    value={form.storeSearch || ""}
+                    onChange={(e) => handleChange("storeSearch", e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleManualSearch()
+                      }
+                    }}
+                    className="bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl h-10 font-bold pr-10"
+                  />
 
-              {isSearching && (
-                <div className="absolute right-3 top-9 flex items-center gap-2">
-                  <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                  <span className="text-[10px] text-blue-500 font-bold animate-pulse">Searching...</span>
+                  {form.storeSearch && !isSearching && (
+                    <button
+                      type="button"
+                      onClick={clearStore}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                    >
+                      ✕
+                    </button>
+                  )}
+
+                  {isSearching && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
                 </div>
-              )}
+
+                <Button
+                  type="button"
+                  onClick={handleManualSearch}
+                  disabled={isSearching}
+                  className="rounded-xl h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center"
+                >
+                  <span className="text-lg">🔍</span>
+                </Button>
+              </div>
 
               {/* Autocomplete Suggestions */}
-              {suggestions.length > 0 && (
-                <div className="absolute z-50 w-full mt-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                  {suggestions.map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => selectStore(s)}
-                      className="w-full px-4 py-2.5 text-left hover:bg-blue-500/10 dark:hover:bg-blue-500/20 transition-colors flex flex-col border-b border-slate-100 dark:border-slate-800/50 last:border-0 group"
-                    >
-                      <span className="font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 text-sm">{s.name}</span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono italic">{s.code}</span>
-                    </button>
-                  ))}
+              {showSuggestions && (
+                <div className="absolute z-50 w-full md:w-[calc(100%-3rem)] mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[300px] overflow-y-auto">
+                  {suggestions.length > 0 ? (
+                    suggestions.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => selectStore(s)}
+                        className="w-full px-4 py-3 text-left hover:bg-blue-500/10 dark:hover:bg-blue-500/20 transition-colors flex flex-col border-b border-slate-100 dark:border-slate-800/50 last:border-0 group"
+                      >
+                        <span className="font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 text-sm whitespace-nowrap overflow-hidden text-ellipsis">{s.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono italic">{s.code}</span>
+                          <span className="text-[10px] text-slate-400">|</span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 italic">{s.owner || "No Owner"}</span>
+                        </div>
+                      </button>
+                    ))
+                  ) : !isSearching && (
+                    <div className="p-8 text-center space-y-2">
+                      <div className="text-3xl opacity-20 italic">Empty</div>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">ไม่พบร้านค้าที่ตรงกับการค้นหา</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
