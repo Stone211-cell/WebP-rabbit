@@ -29,7 +29,9 @@ import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogT
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Textarea } from "@/components/ui/textarea"
 
-export default function StoreInformation({ stores }: any) {
+export default function StoreInformation({ stores, onRefresh }: { stores: any, onRefresh?: () => void }) {
+  const [open, setOpen] = useState(false);
+  const router = useRouter();
 
   const initialForm = {
     name: "",
@@ -71,9 +73,29 @@ export default function StoreInformation({ stores }: any) {
   }, [form]);
 
 
-  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  ;
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const handleEdit = (store: any) => {
+    setEditingId(store.id);
+    setForm({
+      ...initialForm,
+      ...store
+    });
+    setOpen(true);
+  };
+
+  const handleDelete = async (store: any) => {
+    if (!window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบร้านค้า "${store.name}"?`)) return;
+
+    try {
+      await axiosInstance.delete(`/stores/${store.id}`);
+      toast.success("ลบร้านค้าเรียบร้อยแล้ว!");
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      handleApiError(error);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -89,26 +111,21 @@ export default function StoreInformation({ stores }: any) {
     setIsSubmitting(true);
 
     try {
-      const { data } = await axiosInstance.post("/stores", form);
-
-      if (data.id) {
-        toast.success("เพิ่มร้านค้าเรียบร้อยแล้ว!", {
-          style: {
-            background: '#22c55e',
-            color: '#fff',
-            border: 'none',
-          }
-        });
-
-        // ล้างฟอร์ม
-        setForm({ ...initialForm });
-        // localStorage.removeItem("store_draft");
-
-        // รีเฟรชข้อมูลเพื่อให้เห็นร้านค้าใหม่ในตาราง
-        // เนื่องจาก parent จำหน้า activePage ไว้ใน localStorage แล้ว
-        // การ reload จะทำให้เรากลับมาที่หน้าเดิมพร้อมข้อมูลใหม่ครับ
-        window.location.reload();
+      if (editingId) {
+        // Mode: UPDATE
+        await axiosInstance.put(`/stores/${editingId}`, form);
+        toast.success("แก้ไขข้อมูลร้านค้าสำเร็จ!");
+      } else {
+        // Mode: CREATE
+        await axiosInstance.post("/stores", form);
+        toast.success("เพิ่มร้านค้าเรียบร้อยแล้ว!");
       }
+
+      // ล้างฟอร์มและรีเฟรช
+      setForm({ ...initialForm });
+      setEditingId(null);
+      if (onRefresh) onRefresh();
+      setOpen(false);
     } catch (error) {
       handleApiError(error);
     } finally {
@@ -117,27 +134,41 @@ export default function StoreInformation({ stores }: any) {
   };
 
   return (
-    <div className="w-full min-h-screen text-black bg-[#0f172a] p-6">
+    <div className="w-full min-h-screen text-black dark:text-white bg-transparent p-6 transition-colors duration-300">
 
-      <Card className=" border border-gray-200  rounded-xl">
+      <Card className="border-none bg-white/70 dark:bg-slate-900/40 backdrop-blur-md shadow-xl rounded-2xl overflow-hidden transition-all duration-300">
 
         {/* HEADER */}
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="font-semibold">
+          <CardTitle className="font-semibold text-slate-800 dark:text-white">
             ฐานข้อมูล ร้านค้า
           </CardTitle>
 
 
-          <Dialog>
+          <Dialog open={open} onOpenChange={(val) => {
+            setOpen(val);
+            if (!val) {
+              setEditingId(null);
+              setForm({ ...initialForm });
+            }
+          }}>
             <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+              <Button
+                onClick={() => {
+                  setEditingId(null);
+                  setForm({ ...initialForm });
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white gap-2 px-6 py-2 rounded-xl shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95"
+              >
                 <span className="text-lg">＋</span> เพิ่มร้านค้า
               </Button>
             </DialogTrigger>
-            <DialogContent className="min-w-[90vh] max-h-[90vh] overflow-y-auto bg-slate-50 dark:bg-[#1e293b] border-none shadow-2xl">
+            <DialogContent className="min-w-[90vh] max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-white/20 dark:border-slate-800/50 shadow-2xl rounded-3xl">
               <form onSubmit={handleSubmit}>
                 <DialogHeader className="mb-6">
-                  <DialogTitle className="text-2xl font-bold text-slate-900 dark:text-white">เพิ่มร้านค้า</DialogTitle>
+                  <DialogTitle className="text-2xl font-bold text-slate-900 dark:text-white">
+                    {editingId ? "แก้ไขข้อมูลร้านค้า" : "เพิ่มร้านค้า"}
+                  </DialogTitle>
                 </DialogHeader>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -240,12 +271,44 @@ export default function StoreInformation({ stores }: any) {
 
                   {/* Row 6 */}
                   <Field>
-                    <FieldLabel className="text-slate-700 dark:text-slate-300">สถานะ</FieldLabel>
-                    <div className="flex items-center gap-2 bg-white dark:bg-slate-800/50 border-2 border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 text-black dark:text-white">
-                      <input type="hidden" name="status" value="เปิดการขาย" />
-                      <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
-                      <span className="text-sm font-medium">เปิดการขาย</span>
-                    </div>
+                    <FieldLabel className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 flex items-center gap-2">
+                      สถานะร้านค้า
+                      {form.status === "เปิดการขาย" ? (
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                      ) : (
+                        <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
+                      )}
+                    </FieldLabel>
+                    <Select value={form.status} onValueChange={(v) => handleSelectChange('status', v)}>
+                      <SelectTrigger className={cn(
+                        "h-11 rounded-xl transition-all duration-300 border-2",
+                        form.status === "เปิดการขาย"
+                          ? "bg-emerald-500/5 border-emerald-500/20 hover:border-emerald-500/40 text-emerald-700 dark:text-emerald-400"
+                          : "bg-rose-500/5 border-rose-500/20 hover:border-rose-500/40 text-rose-700 dark:text-rose-400"
+                      )}>
+                        <SelectValue placeholder="เลือกสถานะ" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-1 overflow-hidden">
+                        <SelectItem value="เปิดการขาย" className="focus:bg-emerald-500/10 rounded-xl cursor-pointer py-3 group">
+                          <div className="flex items-center gap-3">
+                            <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] group-hover:scale-110 transition-transform" />
+                            <div className="flex flex-col text-left">
+                              <span className="font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 transition-colors">เปิดการขาย</span>
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">ร้านยังดำเนินกิจการปกติ</span>
+                            </div>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="ปิดการขาย" className="focus:bg-rose-500/10 rounded-xl cursor-pointer py-3 group">
+                          <div className="flex items-center gap-3">
+                            <div className="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] group-hover:scale-110 transition-transform" />
+                            <div className="flex flex-col text-left">
+                              <span className="font-bold text-slate-900 dark:text-white group-hover:text-rose-600 transition-colors">ปิดการขาย</span>
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">ร้านเลิกกิจการหรือยกเลิกการขาย</span>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </Field>
                   <div className="md:col-span-2">
                     <Field>
@@ -290,11 +353,11 @@ export default function StoreInformation({ stores }: any) {
         <CardContent>
 
           {/* FILTER */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
 
             <Input
               placeholder="รหัส / ชื่อร้าน / เจ้าของ"
-              className=" text-white border-white/10"
+              className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500/20 transition-all"
             />
 
             <Select>
@@ -318,10 +381,10 @@ export default function StoreInformation({ stores }: any) {
           </div>
 
           {/* TABLE */}
-          <div className="overflow-hidden rounded-lg border border-white/10">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/20 backdrop-blur-sm">
 
             <Table>
-              <TableHeader className="bg-[#475569] ">
+              <TableHeader className=" bg-[#475569]  ">
                 <TableRow>
                   <TableHead>ลำดับ</TableHead>
                   <TableHead>รหัส</TableHead>
@@ -331,33 +394,60 @@ export default function StoreInformation({ stores }: any) {
                   <TableHead>เบอร์โทร</TableHead>
                   <TableHead>ประเภทลูกค้า</TableHead>
                   <TableHead>สถานะ</TableHead>
+                  <TableHead></TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
 
-              <TableBody className="bg-[#0f172a]">
+              <TableBody>
                 {!stores || stores.length === 0 ? (
-                  <TableRow className="bg-[#475569]">
-                    <TableCell colSpan={8} className="text-center py-6 text-white/60">
-                      ไม่มีข้อมูล
+                  <TableRow>
+                    <TableCell colSpan={10} className="text-center py-12 text-slate-400 dark:text-slate-500 italic">
+                      <div className="flex flex-col items-center gap-2">
+                        <span className="text-3xl">📭</span>
+                        ไม่พบข้อมูลร้านค้าในขณะนี้
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
                   stores.map((store: any, index: number) => (
-                    <TableRow key={store.id || index}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell className="font-mono">{store.code}</TableCell>
-                      <TableCell className="font-medium">{store.name}</TableCell>
-                      <TableCell>{store.owner}</TableCell>
-                      <TableCell>{store.type}</TableCell>
-                      <TableCell>{store.phone}</TableCell>
-                      <TableCell>{store.customerType}</TableCell>
+                    <TableRow key={store.id || index} className="hover:bg-blue-500/5 dark:hover:bg-blue-500/10 transition-colors border-b border-slate-100 dark:border-slate-800/50">
+                      <TableCell className="text-slate-500 dark:text-slate-400 font-medium">{index + 1}</TableCell>
+                      <TableCell className="font-mono text-slate-600 dark:text-slate-300">{store.code}</TableCell>
+                      <TableCell className="font-semibold text-slate-900 dark:text-white">{store.name}</TableCell>
+                      <TableCell className="text-slate-600 dark:text-slate-300">{store.owner}</TableCell>
+                      <TableCell className="text-slate-600 dark:text-slate-300">{store.type}</TableCell>
+                      <TableCell className="text-slate-600 dark:text-slate-300">{store.phone}</TableCell>
+                      <TableCell className="text-slate-600 dark:text-slate-300">{store.customerType}</TableCell>
                       <TableCell>
                         <span className={cn(
-                          "px-2 py-1 rounded text-xs",
-                          store.status === "เปิดการขาย" ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
+                          "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                          store.status === "เปิดการขาย"
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                            : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
                         )}>
                           {store.status}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-blue-600 hover:bg-blue-500/10 hover:text-blue-700 dark:hover:text-blue-300"
+                          onClick={() => handleEdit(store)}
+                        >
+                          <span className="text-lg mr-2">✏️</span> แก้ไข
+                        </Button>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 dark:text-red-400 hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-300"
+                          onClick={() => handleDelete(store)}
+                        >
+                          <span className="text-lg mr-2">🗑️</span> ลบ
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))

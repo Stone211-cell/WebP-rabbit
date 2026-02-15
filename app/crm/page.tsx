@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTheme } from 'next-themes';
 import { useCRM } from '@/components/hooks/useCRM';
+import { axiosInstance } from '@/lib/axios';
 import './crm.css';
 
 import Dashboard from '@/components/pagecomponents/Dashboard/Dashboard';
@@ -23,7 +25,21 @@ import StoreInformation from '@/components/pagecomponents/StoreInformation/Store
 
 
 export default function CRMPage() {
-  const { stores, visits, plans, forecasts, } = useCRM();
+  const { stores, visits, plans, forecasts, fetchStores, fetchVisits } = useCRM();
+  const [profiles, setProfiles] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadProfiles = async () => {
+      try {
+        const res = await axiosInstance.get('/profile');
+        setProfiles(res.data);
+      } catch (e) {
+        console.error("Failed to load profiles", e);
+      }
+    };
+    loadProfiles();
+  }, []);
+
   const [activePage, setActivePage] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('crm_active_page') || 'dashboard';
@@ -35,7 +51,11 @@ export default function CRMPage() {
     localStorage.setItem('crm_active_page', activePage);
   }, [activePage]);
 
-  const [darkMode, setDarkMode] = useState(false);
+  const { theme, setTheme } = useTheme();
+
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
 
 
 
@@ -147,9 +167,9 @@ export default function CRMPage() {
               <div className="storage-text" id="storageText">ดึงข้อมูล...</div>
             </div>
             {/*  */}
-            <button className="dark-toggle dark:bg-[#0f172a]" >
-              <span id="darkIcon">{darkMode ? '☀️' : '🌙'}</span>
-              <span id="darkText">{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
+            <button className="dark-toggle dark:bg-[#0f172a]" onClick={toggleTheme}>
+              <span id="darkIcon">{theme === 'dark' ? '☀️' : '🌙'}</span>
+              <span id="darkText">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
             </button>
           </div>
         </div>
@@ -185,12 +205,20 @@ export default function CRMPage() {
 
             {/* ข้อมูลร้านค้า */}
             <div id="masterdb" className="page" style={{ display: activePage === 'masterdb' ? 'block' : 'none' }}>
-              <StoreInformation stores={stores} />
+              <StoreInformation
+                stores={stores}
+                onRefresh={fetchStores}
+              />
             </div>
 
             {/* บันทึกเข้าพบ */}
             <div id="visit" className="page" style={{ display: activePage === 'visit' ? 'block' : 'none' }}>
-              <VisitForm stores={stores} visits={visits} />
+              <VisitForm
+                stores={stores}
+                visits={visits}
+                profiles={profiles}
+                onRefresh={fetchVisits}
+              />
             </div>
 
             {/* แผนสัปดาห์ */}

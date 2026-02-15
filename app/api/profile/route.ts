@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { profileSchema } from '@/lib/validate/Zod';
 import { renderError } from '@/lib/rendererror';
 import { clerkClient, currentUser } from '@clerk/nextjs/server';
 
-const prisma = new PrismaClient();
+export async function GET() {
+    try {
+        const profiles = await prisma.profile.findMany({
+            orderBy: { name: 'asc' }
+        });
+        return NextResponse.json(profiles);
+    } catch (error) {
+        return NextResponse.json({ error: 'Failed to fetch profiles' }, { status: 500 });
+    }
+}
 
 export async function POST(request: NextRequest) {
     try {
