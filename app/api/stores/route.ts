@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { storeSchema } from '@/lib/validate/Zod';
+import { renderError } from '@/lib/rendererror';
 
 // GET - โหลดทุกร้านค้า
 export async function GET(request: NextRequest) {
@@ -46,6 +48,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const validatedData = storeSchema.parse(body);
 
     // ลองสร้างรหัสและบันทึก (Retry 3 ครั้งหากชน)
     let store = null;
@@ -53,7 +56,7 @@ export async function POST(request: NextRequest) {
     while (retries > 0) {
       try {
         // สร้างรหัสอัตโนมัติ
-        let code = body.code;
+        let code = validatedData.code;
         if (!code) {
           const lastStore = await prisma.store.findFirst({
             where: { code: { startsWith: 'KHN-C' } },
@@ -69,21 +72,10 @@ export async function POST(request: NextRequest) {
 
         store = await prisma.store.create({
           data: {
+            ...validatedData,
             code,
-            name: body.name,
-            owner: body.owner || null,
-            type: body.type || null,
-            grade: body.grade || null,
-            phone: body.phone || null,
-            location: body.location || null,
-            products: body.products || null,
-            quantity: body.quantity || null,
-            freq: body.freq || null,
-            supplier: body.supplier || null,
-            payment: body.payment || 'เงินสด',
-            paymentScore: body.paymentScore || null,
-            status: body.status || 'เปิดการขาย',
-            closeReason: body.closeReason || null,
+            payment: validatedData.payment || 'เงินสด',
+            status: validatedData.status || 'เปิดการขาย',
           },
         });
         break; // สำเร็จ ออกจาก loop
@@ -98,13 +90,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!store) {
-      throw new Error("Failed to create store after retries");
-    }
-
     return NextResponse.json(store, { status: 201 });
   } catch (error) {
-    console.error('POST /api/stores error:', error);
-    return NextResponse.json({ error: 'Failed to create store' }, { status: 500 });
+    return renderError(error);
   }
 }

@@ -7,12 +7,12 @@ export interface Store {
   name: string;
   owner: string | null;
   type: string | null;
-  grade: string | null;
+  customerType: string | null;
   phone: string | null;
-  location: string | null;
-  products: string | null;
+  address: string | null;
+  productUsed: string | null;
   quantity: string | null;
-  freq: string | null;
+  orderPeriod: string | null;
   supplier: string | null;
   payment: string | null;
   paymentScore: string | null;

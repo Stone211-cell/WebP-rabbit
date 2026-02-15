@@ -17,13 +17,24 @@ import FAQ from '@/components/pagecomponents/FAQ/FAQ';
 import Fine from '@/components/pagecomponents/Fine/Fine';
 
 import ProductManagement from '@/components/pagecomponents/ProductManagement';
-import Storeinformation from '@/components/pagecomponents/StoreInformation/StoreInformation';
+
+import StoreInformation from '@/components/pagecomponents/StoreInformation/StoreInformation';
 
 
 
 export default function CRMPage() {
   const { stores, visits, plans, forecasts, } = useCRM();
-  const [activePage, setActivePage] = useState('dashboard');
+  const [activePage, setActivePage] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('crm_active_page') || 'dashboard';
+    }
+    return 'dashboard';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('crm_active_page', activePage);
+  }, [activePage]);
+
   const [darkMode, setDarkMode] = useState(false);
 
 
@@ -51,7 +62,7 @@ export default function CRMPage() {
                 </svg>
               </div>
               <div className="logo-text-container dark:text-white dark:border-gray-700">
-                <div className="logo-text dark:text-white ">COWPHET CRM aaa</div>
+                <div className="logo-text dark:text-white ">COWPHET CRM</div>
                 <div className="logo-sub dark:text-gray-300">Sales Force Management</div>
               </div>
             </div>
@@ -174,7 +185,7 @@ export default function CRMPage() {
 
             {/* ข้อมูลร้านค้า */}
             <div id="masterdb" className="page" style={{ display: activePage === 'masterdb' ? 'block' : 'none' }}>
-              <Storeinformation stores={stores} />
+              <StoreInformation stores={stores} />
             </div>
 
             {/* บันทึกเข้าพบ */}

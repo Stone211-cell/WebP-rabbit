@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { storeSchema } from '@/lib/validate/Zod';
+import { renderError } from '@/lib/rendererror';
 
 /* =========================
    GET - ดูร้านค้าเดียว พร้อมประวัติ
@@ -56,33 +58,19 @@ export async function PUT(
     const { id } = await context.params;
     const body = await request.json();
 
+    // ใช้ storeSchema.partial() สำหรับการอัปเดต (อนุญาตให้ส่งบางฟิลด์ได้)
+    const validatedData = storeSchema.partial().parse(body);
+
     const store = await prisma.store.update({
       where: { id },
       data: {
-        name: body.name,
-        owner: body.owner ?? null,
-        type: body.type ?? null,
-        grade: body.grade ?? null,
-        phone: body.phone ?? null,
-        location: body.location ?? null,
-        products: body.products ?? null,
-        quantity: body.quantity ?? null,
-        freq: body.freq ?? null,
-        supplier: body.supplier ?? null,
-        payment: body.payment ?? null,
-        paymentScore: body.paymentScore ?? null,
-        status: body.status ?? 'เปิดการขาย',
-        closeReason: body.closeReason ?? null,
+        ...validatedData as any, // Cast as any because partial zod might have issues with prisma's strict typing if not handled carefully
       },
     });
 
     return NextResponse.json(store);
   } catch (error) {
-    console.error('PUT /api/stores/[id] error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update store' },
-      { status: 500 }
-    );
+    return renderError(error);
   }
 }
 
