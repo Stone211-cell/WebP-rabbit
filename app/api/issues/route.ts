@@ -45,10 +45,7 @@ export async function POST(req: Request) {
         const validatedData = issueSchema.parse(body)
 
         const issue = await prisma.issue.create({
-            data: {
-                ...validatedData,
-                date: new Date(validatedData.date),
-            },
+            data: validatedData, // Date is already a Date object from Zod
             include: {
                 store: true
             }

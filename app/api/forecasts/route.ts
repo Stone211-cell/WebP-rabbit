@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
         ...validatedData,
         forecast: body.forecast ? parseFloat(body.forecast) : null,
         actual: body.actual ? parseFloat(body.actual) : null,
-        weekStart: new Date(validatedData.weekStart),
+        weekStart: validatedData.weekStart, // Date is already a Date object from Zod
       },
       include: {
         store: true,

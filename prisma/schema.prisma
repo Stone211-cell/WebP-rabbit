@@ -43,6 +43,7 @@ model Store {
   issues       Issue[]
 }
 
+// เข้าพบ
 model Visit {
   id          String   @id @default(uuid())
   date        DateTime
@@ -74,6 +75,9 @@ model Plan {
   store     Store?   @relation(fields: [masterId], references: [id])
 }
 
+/**
+ * คาดการณ์รายสัปดาห์
+ */
 model Forecast {
   id          String   @id @default(uuid())
   masterId    String

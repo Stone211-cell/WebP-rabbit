@@ -179,6 +179,7 @@ export function useCRM() {
   return {
     stores,
     visits,
+    setVisits, // Expose for manual updates (performance optimization)
     plans,
     forecasts,
     issues,

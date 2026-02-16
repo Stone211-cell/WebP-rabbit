@@ -54,10 +54,7 @@ export async function POST(request: NextRequest) {
     const validatedData = visitSchema.parse(body);
 
     const visit = await prisma.visit.create({
-      data: {
-        ...validatedData,
-        date: new Date(validatedData.date),
-      },
+      data: validatedData, // Date is already a Date object from Zod
       include: {
         store: true,
       },

@@ -40,10 +40,7 @@ export async function POST(request: NextRequest) {
     const validatedData = planSchema.parse(body);
 
     const plan = await prisma.plan.create({
-      data: {
-        ...validatedData,
-        date: new Date(validatedData.date),
-      },
+      data: validatedData, // Date is already a Date object from Zod
       include: {
         store: true,
       },
