@@ -4,30 +4,30 @@ import { useEffect, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-// import PurchaseDialog from "@/components/purchase/PurchaseDialog"
 import axios from "axios"
 
+import { handleApiError } from "@/lib/handleError"
+import PurchaseDialog from "@/components/purchase/PurchaseDialog"
+import { format } from "date-fns"
+
 export default function OrderTracking({ stores, visits }: any) {
-    const [data, setData] = useState<any[]>([])
+    const [posts, setPosts] = useState<any[]>([])
     const [search, setSearch] = useState("")
     const [status, setStatus] = useState("all")
 
-    const fetchData = async () => {
-        // ===============================
-        // 🔥 Axios (คอมเมนต์ไว้ตามสั่ง)
-        // ===============================
-        /*
-        const res = await axios.get("/api/purchase", {
-          params: { search, status },
-        })
-        setData(res.data)
-        */
-
-        setData([]) // mock
+    const handleCreate = async () => {
+        try {
+            const res = await axios.get("/api/OrderTracking", {
+                params: { search, status },
+            })
+            setPosts(res.data)
+        } catch (error) {
+            handleApiError(error)
+        }
     }
 
     useEffect(() => {
-        fetchData()
+        handleCreate()
     }, [search, status])
 
     return (
@@ -37,12 +37,13 @@ export default function OrderTracking({ stores, visits }: any) {
                 <h1 className="text-xl font-semibold dark:text-white">
                     ติดตามการซื้อของลูกค้า
                 </h1>
-                {/* <PurchaseDialog onSuccess={fetchData} /> */}
+
+                <PurchaseDialog stores={stores} onSuccess={handleCreate} />
             </div>
 
             <div className="flex gap-4 dark:bg-[#0f172a]">
                 <Input
-                    placeholder="ค้นหาร้าน, รอบบิล..."
+                    placeholder="ค้นหารอบบิล..."
                     onChange={(e) => setSearch(e.target.value)}
                     className="bg-white dark:bg-[#1e293b] dark:text-white border-slate-200 dark:border-slate-700"
                 />
@@ -74,21 +75,36 @@ export default function OrderTracking({ stores, visits }: any) {
                 </TableHeader>
 
                 <TableBody>
-                    {data.length === 0 ? (
+                    {posts.length === 0 ? (
                         <TableRow className="hover:bg-transparent dark:border-slate-700">
                             <TableCell colSpan={5} className="text-center h-24 text-muted-foreground dark:text-slate-500">
                                 ไม่มีข้อมูล
                             </TableCell>
                         </TableRow>
                     ) : (
-                        data.map((item) => (
-                            <TableRow key={item.id} className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                                <TableCell className="dark:text-slate-200">{item.round}</TableCell>
-                                <TableCell className="dark:text-slate-200">{item.date}</TableCell>
-                                <TableCell className="dark:text-slate-200">{item.storeName}</TableCell>
-                                <TableCell className="dark:text-slate-200">{item.status}</TableCell>
-                                <TableCell className="dark:text-slate-200">{item.amount}</TableCell>
-                            </TableRow>
+                        posts.map((post: any) => (
+                            <tr key={post.id} className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                <TableCell className="dark:text-slate-200">{post.round}</TableCell>
+                                <TableCell className="dark:text-slate-200">
+                                    {post.date ? format(new Date(post.date), "dd/MM/yyyy") : "-"}
+                                </TableCell>
+                                <TableCell className="dark:text-slate-200">
+                                    {stores?.find((s: any) => s.id === post.storeId)?.name || "ไม่พบชื่อร้าน"}
+                                </TableCell>
+                                <TableCell className="dark:text-slate-200 px-4">
+                                    <div className={`
+                                        inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border
+                                        ${post.status === "paid"
+                                            ? "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800"
+                                            : "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800"}
+                                    `}>
+                                        {post.status === "paid" ? "✅ ซื้อแล้ว" : "⌛ ยังไม่ซื้อ"}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="dark:text-slate-200 font-bold">
+                                    ฿{(post.amount || 0).toLocaleString()}
+                                </TableCell>
+                            </tr>
                         ))
                     )}
                 </TableBody>

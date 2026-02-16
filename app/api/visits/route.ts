@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { visitSchema } from '@/lib/validate/Zod';
+import { renderError } from '@/lib/rendererror';
 
 // GET - โหลดทั้งหมด
 export async function GET(request: NextRequest) {
@@ -41,8 +43,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(visits);
   } catch (error) {
-    console.error('GET /api/visits error:', error);
-    return NextResponse.json({ error: 'Failed to fetch visits' }, { status: 500 });
+    return renderError(error);
   }
 }
 
@@ -50,19 +51,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const validatedData = visitSchema.parse(body);
 
     const visit = await prisma.visit.create({
       data: {
-        date: new Date(body.date),
-        sales: body.sales,
-        storeRef: body.storeRef || null,
-        masterId: body.masterId || null,
-        visitCat: body.visitCat || null,
-        visitType: body.visitType,
-        dealStatus: body.dealStatus || 'เปิดการขาย',
-        closeReason: body.closeReason || null,
-        notes: body.notes || null,
-        order: body.order || null,
+        ...validatedData,
+        date: new Date(validatedData.date),
       },
       include: {
         store: true,
@@ -71,7 +65,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(visit, { status: 201 });
   } catch (error) {
-    console.error('POST /api/visits error:', error);
-    return NextResponse.json({ error: 'Failed to create visit' }, { status: 500 });
+    return renderError(error);
   }
 }

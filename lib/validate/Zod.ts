@@ -2,8 +2,6 @@ import z from "zod";
 
 /**
  * 🎯 Zod Schema สำหรับ Profile
- * 
- * แค่กำหนด validation rules ที่นี่ - ที่เหลือทำอัตโนมัติ!
  */
 export const profileSchema = z.object({
     name: z.string().min(3, "ชื่อต้องมีอย่างน้อย 3 ตัวอักษร"),
@@ -31,4 +29,79 @@ export const storeSchema = z.object({
     paymentScore: z.string().optional().nullable(),
     status: z.string().default("เปิดการขาย"),
     closeReason: z.string().optional().nullable(),
+})
+
+/**
+ * 🎯 Zod Schema สำหรับ การเข้าพบ (Visit)
+ */
+export const visitSchema = z.object({
+    date: z.string().min(1, "กรุณาเลือกวันที่"),
+    sales: z.string().min(1, "กรุณาเลือกชื่อผู้แทนขาย"),
+    visitType: z.string().min(1, "กรุณาเลือกประเภทการเยี่ยม"),
+    masterId: z.string().min(1, "กรุณาเลือกร้านค้า"),
+    visitCat: z.string().optional().nullable(),
+    dealStatus: z.string().optional().default("เปิดการขาย"),
+    notes: z.any().optional().nullable(),
+    order: z.string().optional().nullable(),
+})
+
+/**
+ * 🎯 Zod Schema สำหรับ แผนงาน (Plan)
+ */
+export const planSchema = z.object({
+    date: z.string().min(1, "กรุณาเลือกวันที่"),
+    sales: z.string().min(1, "กรุณาสระบุชื่อผู้แทนขาย"),
+    masterId: z.string().min(1, "กรุณาเลือกร้านค้า"),
+    visitCat: z.string().optional().nullable(),
+    notes: z.string().optional().nullable(),
+    order: z.string().optional().nullable(),
+})
+
+/**
+ * 🎯 Zod Schema สำหรับ การคาดการณ์ (Forecast)
+ */
+export const forecastSchema = z.object({
+    masterId: z.string().min(1, "กรุณาเลือกร้านค้า"),
+    product: z.string().min(1, "กรุณาระบุสินค้า"),
+    targetWeek: z.number().min(0, "เป้าหมายรายสัปดาห์ต้องมากกว่า 0"),
+    targetMonth: z.number().min(0, "เป้าหมายรายเดือนต้องมากกว่า 0"),
+    weekStart: z.string().min(1, "กรุณาระบุสัปดาห์ที่เริ่ม"),
+    notes: z.string().optional().nullable(),
+})
+
+/**
+ * 🎯 Zod Schema สำหรับ สินค้า (Product)
+ */
+export const productSchema = z.object({
+    code: z.string().min(1, "กรุณาระบุรหัสสินค้า"),
+    name: z.string().min(1, "กรุณาระบุชื่อสินค้า"),
+    category: z.string().optional().nullable(),
+    price: z.number().min(0, "ราคาต้องมีค่ามากกว่าหรือเท่ากับ 0"),
+    unit: z.string().optional().nullable(),
+    description: z.string().optional().nullable(),
+    image: z.string().optional().nullable(),
+})
+
+/**
+ * 🎯 Zod Schema สำหรับ รายการซื้อ (Purchase)
+ */
+export const purchaseSchema = z.object({
+    round: z.string().min(1, "กรุณาระบุรอบบิล"),
+    date: z.string().min(1, "กรุณาเลือกวันที่"),
+    storeId: z.string().min(1, "กรุณาเลือกร้านค้า"),
+    amount: z.union([z.number(), z.string()]).transform((val) => Number(val) || 0),
+    status: z.string().default("pending"),
+})
+
+/**
+ * 🎯 Zod Schema สำหรับ ปัญหา/คำร้องเรียน (Issue)
+ */
+export const issueSchema = z.object({
+    date: z.string().min(1, "กรุณาเลือกวันที่"),
+    masterId: z.string().min(1, "กรุณาเลือกร้านค้า"),
+    type: z.string().min(1, "กรุณาเลือกประเภทปัญหา"),
+    detail: z.string().min(1, "กรุณากรอกรายละเอียดปัญหา"),
+    recorder: z.string().min(1, "กรุณาระบุผู้บันทึก"),
+    status: z.string().default("pending"),
+    notes: z.string().optional().nullable(),
 })

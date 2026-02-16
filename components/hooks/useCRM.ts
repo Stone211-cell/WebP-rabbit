@@ -9,6 +9,7 @@ export function useCRM() {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [forecasts, setForecasts] = useState<Forecast[]>([]);
+  const [issues, setIssues] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   /* ---------------- STORES ---------------- */
@@ -122,6 +123,36 @@ export function useCRM() {
     setForecasts((prev) => prev.filter((f) => f.id !== id));
   };
 
+  /* ---------------- ISSUES ---------------- */
+
+  const fetchIssues = useCallback(async (search?: string, type?: string, status?: string) => {
+    try {
+      const res = await axios.get('/api/issues', {
+        params: { search, type, status },
+      });
+      setIssues(res.data);
+    } catch (error) {
+      console.error('Failed to fetch issues:', error);
+    }
+  }, []);
+
+  const createIssue = async (issue: any) => {
+    const res = await axios.post('/api/issues', issue);
+    setIssues((prev) => [res.data, ...prev]);
+    return res.data;
+  };
+
+  const updateIssue = async (id: string, issue: any) => {
+    const res = await axios.put(`/api/issues/${id}`, issue);
+    setIssues((prev) => prev.map((i) => (i.id === id ? res.data : i)));
+    return res.data;
+  };
+
+  const deleteIssue = async (id: string) => {
+    await axios.delete(`/api/issues/${id}`);
+    setIssues((prev) => prev.filter((i) => i.id !== id));
+  };
+
   /* ---------------- INIT ---------------- */
 
   useEffect(() => {
@@ -129,7 +160,8 @@ export function useCRM() {
     fetchVisits();
     fetchPlans();
     fetchForecasts();
-  }, [fetchStores, fetchVisits, fetchPlans, fetchForecasts]);
+    fetchIssues();
+  }, [fetchStores, fetchVisits, fetchPlans, fetchForecasts, fetchIssues]);
 
   /* ---------------- SEARCH ---------------- */
 
@@ -149,6 +181,7 @@ export function useCRM() {
     visits,
     plans,
     forecasts,
+    issues,
     loading,
     searchStore,
     fetchStores,
@@ -165,5 +198,9 @@ export function useCRM() {
     createForecast,
     updateForecast,
     deleteForecast,
+    fetchIssues,
+    createIssue,
+    updateIssue,
+    deleteIssue,
   };
 }

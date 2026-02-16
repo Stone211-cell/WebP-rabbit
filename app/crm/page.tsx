@@ -18,14 +18,18 @@ import OrderTracking from '@/components/pagecomponents/OrderTracking/OrderTracki
 import FAQ from '@/components/pagecomponents/FAQ/FAQ';
 import Fine from '@/components/pagecomponents/Fine/Fine';
 
-import ProductManagement from '@/components/pagecomponents/ProductManagement';
+// import ProductManagement from '@/components/pagecomponents/ProductManagement';
 
 import StoreInformation from '@/components/pagecomponents/StoreInformation/StoreInformation';
 
 
 
 export default function CRMPage() {
-  const { stores, visits, plans, forecasts, fetchStores, fetchVisits, fetchPlans } = useCRM();
+  const {
+    stores, visits, plans, forecasts, issues,
+    fetchStores, fetchVisits, fetchPlans, fetchForecasts, fetchIssues,
+    createIssue, updateIssue, deleteIssue
+  } = useCRM();
   const [profiles, setProfiles] = useState<any[]>([]);
 
   useEffect(() => {
@@ -149,12 +153,14 @@ export default function CRMPage() {
             >
               🔍 ค้นหา
             </button>
-            <button
+
+
+            {/* <button
               className={`nav-tab ${activePage === 'products' ? 'active' : ''}`}
               onClick={() => setActivePage('products')}
             >
               🛍️ จัดการสินค้า
-            </button>
+            </button> */}
 
 
           </div>
@@ -233,7 +239,11 @@ export default function CRMPage() {
 
             {/* คาดการณ์รายสัปดาห์ */}
             <div id="forecast" className="page" style={{ display: activePage === 'forecast' ? 'block' : 'none' }}>
-              <ForecastForm stores={stores} forecasts={forecasts} />
+              <ForecastForm
+                stores={stores}
+                forecasts={forecasts}
+                onRefresh={fetchForecasts}
+              />
             </div>
 
             {/* jobcard */}
@@ -243,7 +253,7 @@ export default function CRMPage() {
 
             {/* แจ้งเตือนนัดหมาย */}
             <div id="alerts" className="page" style={{ display: activePage === 'alerts' ? 'block' : 'none' }}>
-              <Alerts stores={stores} visits={visits} />
+              <Alerts stores={stores} visits={visits} forecasts={forecasts} />
             </div>
 
             {/* ส่วนเสริมใหม่จ้า api ยังไม่ต่อ ติดตามคำสั่งซื้อ */}
@@ -253,22 +263,26 @@ export default function CRMPage() {
 
             {/* คำถามที่พบบ่อย */}
             <div id="FAQ" className="page" style={{ display: activePage === 'faq' ? 'block' : 'none' }}>
-              <FAQ stores={stores} visits={visits} />
+              <FAQ
+                stores={stores}
+                issues={issues}
+                profiles={profiles}
+                onRefresh={fetchIssues}
+                onCreate={createIssue}
+                onUpdate={updateIssue}
+                onDelete={deleteIssue}
+              />
             </div>
 
-            {/* ค่าปรับการเข้าพบ */}
+            {/* ค้นหา ข้อมูลทั้งหมด */}
             <div id="Fine" className="page" style={{ display: activePage === 'fine' ? 'block' : 'none' }}>
-              <Fine stores={stores} visits={visits} />
-            </div>
-            {/* ค่าปรับการเข้าพบ */}
-            <div id="Fine" className="page" style={{ display: activePage === 'fine' ? 'block' : 'none' }}>
-              <Fine stores={stores} visits={visits} />
+              <Fine stores={stores} visits={visits} plans={plans} />
             </div>
 
             {/* จัดการสินค้า (NEW) */}
-            <div id="products" className="page" style={{ display: activePage === 'products' ? 'block' : 'none' }}>
+            {/* <div id="products" className="page" style={{ display: activePage === 'products' ? 'block' : 'none' }}>
               <ProductManagement />
-            </div>
+            </div> */}
 
           </section>
         </div>

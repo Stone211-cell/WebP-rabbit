@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { axiosInstance } from "@/lib/axios"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
@@ -30,131 +30,78 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 
-export default function VisitForm({ stores, visits, profiles, onRefresh }: any) {
+import { useStoreSearch } from "@/components/hooks/useStoreSearch"
+
+export default function VisitForm({ visits, profiles, onRefresh }: any) {
   const [form, setForm] = useState<any>({
     sales: "",
-    date: new Date().toLocaleDateString('en-CA'), // Get local date in YYYY-MM-DD format
+    date: new Date().toLocaleDateString('en-CA'),
     visitType: "new",
     dealStatus: "เปิดการขาย",
-    notes: {} // Store 8-tab details as JSON
+    closeReason: "",
+    visitCat: "ตรวจเยี่ยมประจำเดือน",
+    notes: {}
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
   const [salesFilter, setSalesFilter] = useState("all")
   const [historySearch, setHistorySearch] = useState("")
-  const [isSearching, setIsSearching] = useState(false)
-  const [suggestions, setSuggestions] = useState<any[]>([])
-  const [showSuggestions, setShowSuggestions] = useState(false)
+
+  // 💡 ใช้ Hook จัดการค้นหาร้านค้า
+  const {
+    storeSearch,
+    setStoreSearch,
+    isSearching,
+    suggestions,
+    showSuggestions,
+    selectedStore,
+    selectStore,
+    clearStore,
+    handleManualSearch
+  } = useStoreSearch()
+
+  // ซิงค์สถานะการขายจากร้านค้าที่เลือก
+  useEffect(() => {
+    if (selectedStore) {
+      setForm(prev => ({
+        ...prev,
+        dealStatus: selectedStore.status || "เปิดการขาย",
+        closeReason: selectedStore.closeReason || ""
+      }))
+    }
+  }, [selectedStore])
 
   const handleChange = (name: string, value: any) => {
-    setForm((prev: any) => ({ ...prev, [name]: value }))
+    setForm(prev => ({ ...prev, [name]: value }))
   }
 
-  // Debounced API Search for Stores
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      // Changed threshold to > 0 (1 character or more)
-      if (form.storeSearch?.length > 0 && form.storeSearch !== form.storeRef) {
-        setIsSearching(true)
-        setShowSuggestions(true)
-        try {
-          const res = await axiosInstance.get(`/stores?search=${form.storeSearch}`)
-          setSuggestions(res.data.slice(0, 10)) // Increased to 10 for better visibility
-        } catch (err) {
-          console.error("Search failed", err)
-          setSuggestions([])
-        } finally {
-          setIsSearching(false)
-        }
-      } else {
-        setSuggestions([])
-        setShowSuggestions(false)
-      }
-    }, 500)
-    return () => clearTimeout(timer)
-  }, [form.storeSearch, form.storeRef])
-
-  const selectStore = (store: any) => {
-    setForm((prev: any) => ({
-      ...prev,
-      masterId: store.id,
-      storeRef: store.code,
-      storeName: store.name,
-      owner: store.owner,
-      phone: store.phone,
-      type: store.type,
-      customerType: store.customerType,
-      address: store.address,
-      productUsed: store.productUsed,
-      quantity: store.quantity,
-      orderPeriod: store.orderPeriod,
-      supplier: store.supplier,
-      payment: store.payment,
-      storeSearch: store.code,
-      dealStatus: store.status || "เปิดการขาย",
-      closeReason: store.closeReason || ""
-    }))
-    setSuggestions([])
-    setShowSuggestions(false)
-  }
-
-  const clearStore = () => {
-    setForm((prev: any) => ({
-      ...prev,
-      masterId: "",
-      storeRef: "",
-      storeName: "",
-      owner: "",
-      phone: "",
-      type: "",
-      customerType: "",
-      address: "",
-      productUsed: "",
-      quantity: "",
-      orderPeriod: "",
-      supplier: "",
-      payment: "",
-      storeSearch: "",
-      dealStatus: "เปิดการขาย",
-      closeReason: ""
-    }))
-    setSuggestions([])
-    setShowSuggestions(false)
-  }
-
-  const handleManualSearch = async () => {
-    if (!form.storeSearch || form.storeSearch === form.storeRef) return
-    setIsSearching(true)
-    setShowSuggestions(true)
-    try {
-      const res = await axiosInstance.get(`/stores?search=${form.storeSearch}`)
-      setSuggestions(res.data.slice(0, 10))
-    } catch (err) {
-      console.error("Manual search failed", err)
-      setSuggestions([])
-    } finally {
-      setIsSearching(false)
-    }
-  }
-
+  // 🚀 จัดการการบันทึก (Clean Pattern)
   const handleSubmit = async () => {
-    if (!form.sales || !form.masterId) {
-      alert("กรุณาเลือกเซลล์และร้านค้า")
+    if (!form.sales || !selectedStore) {
+      toast.error("กรุณาเลือกเซลล์และร้านค้า")
       return
     }
+
     setIsSubmitting(true)
     try {
       await axiosInstance.post("/visits", {
         ...form,
+        masterId: selectedStore.id,
         date: new Date(form.date).toISOString()
       })
       toast.success("บันทึกการเข้าพบเรียบร้อยแล้ว!")
+
+      // ล้างฟอร์ม
       setForm({
-        date: new Date().toISOString().split('T')[0],
+        ...form,
+        date: new Date().toLocaleDateString('en-CA'),
         visitType: "new",
         dealStatus: "เปิดการขาย",
+        closeReason: "",
+        visitCat: "ตรวจเยี่ยมประจำเดือน",
         notes: {}
       })
+      clearStore()
+
       if (onRefresh) onRefresh()
     } catch (error) {
       handleApiError(error)
@@ -175,195 +122,92 @@ export default function VisitForm({ stores, visits, profiles, onRefresh }: any) 
     <div className="p-6 space-y-6 dark:bg-[#0f172a] min-h-screen text-black">
 
       {/* ================= FORM ================= */}
-
-      <Card className="shadow-2xl border-white/10 dark:border-white/5 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-3xl overflow-hidden">
+      <Card className="shadow-2xl border-white/10 dark:border-white/5 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-blue-600/10 to-indigo-600/10 border-b border-white/10 dark:border-white/5 py-8">
-          <CardTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-400">
+          <CardTitle className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-400">
             บันทึกการเข้าพบลูกค้า
           </CardTitle>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 font-medium">กรอกข้อมูลการเยี่ยมเยียนและสถานะการขายล่าสุด</p>
+          <p className="text-slate-500 dark:text-slate-400 text-xs mt-1 font-bold italic">กรอกข้อมูลการเยี่ยมเยียนและสถานะการขายล่าสุด</p>
         </CardHeader>
 
-        <CardContent className="space-y-6">
-
-          {/* Row 1 */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="relative group">
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 flex items-center gap-2 text-xs">
-                <span className="p-1 bg-blue-500/10 rounded-md text-blue-500">👤</span>
-                พนักงานขาย (เซลล์) *
-              </Label>
+        <CardContent className="p-8 space-y-8">
+          {/* Main Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+            <div className="space-y-1.5">
+              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 flex items-center gap-2 text-xs">👤 พนักงานขาย *</Label>
               <Select value={form.sales} onValueChange={(v) => handleChange("sales", v)}>
-                <SelectTrigger className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl h-10 transition-all hover:bg-white/80 dark:hover:bg-slate-800/80 hover:border-blue-500/30">
-                  <SelectValue placeholder="เลือกรายชื่อผู้เข้าพบ" />
+                <SelectTrigger className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl">
+                  <SelectValue placeholder="เลือกรายชื่อ" />
                 </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-1 overflow-hidden">
-                  {profiles && profiles.length > 0 ? (
-                    profiles.map((p: any) => (
-                      <SelectItem key={p.id} value={p.name} className="focus:bg-blue-500/10 dark:focus:bg-blue-500/20 rounded-xl cursor-pointer py-2.5 group/item">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex-shrink-0">
-                            {p.profileImage ? (
-                              <img src={p.profileImage} alt={p.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-slate-400 uppercase">
-                                {p.name.substring(0, 2)}
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="font-bold text-slate-900 dark:text-white group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 transition-colors">
-                              {p.name}
-                            </span>
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 italic">
-                              {p.email || "ไม่มีอีเมล"}
-                            </span>
-                          </div>
-                        </div>
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <div className="p-6 text-center space-y-2">
-                      <div className="text-2xl opacity-20 italic font-serif">Empty</div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium italic">ไม่พบรายชื่อเซลล์ในระบบ</p>
-                    </div>
-                  )}
+                <SelectContent>
+                  {profiles?.map((p: any) => (
+                    <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div>
-              <Label>วันที่เข้าพบ *</Label>
-              <Input
-                type="date"
-                value={form.date || ""}
-                onChange={(e) => handleChange("date", e.target.value)}
-                className="dark:bg-[#1e293b] border-gray-600"
-              />
+            <div className="space-y-1.5">
+              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">วันที่เข้าพบ *</Label>
+              <Input type="date" value={form.date} onChange={(e) => handleChange("date", e.target.value)} className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl font-bold" />
             </div>
 
-            <div>
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">ลำดับ</Label>
-              <Input value="1" readOnly className="bg-slate-100/30 dark:bg-slate-800/20 border-slate-200 dark:border-slate-700 h-10 rounded-xl text-center cursor-not-allowed" />
+            <div className="space-y-1.5">
+              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs opacity-50">ลำดับ</Label>
+              <Input value="1" readOnly className="bg-slate-100/30 dark:bg-slate-800/20 h-12 rounded-2xl text-center cursor-not-allowed" />
             </div>
 
-            <div className="relative">
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">รหัสลูกค้า / ชื่อร้าน * <span className="text-blue-500 font-normal italic">(พิมพ์หรือกดแว่นขยายเพื่อหา)</span></Label>
+            <div className="md:col-span-2 relative space-y-1.5">
+              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">รหัสลูกค้า / ชื่อร้าน *</Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Input
-                    placeholder="ค้นคารหัสร้าน หรือ ชื่อร้าน..."
-                    value={form.storeSearch || ""}
-                    onChange={(e) => handleChange("storeSearch", e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        handleManualSearch()
-                      }
-                    }}
-                    className="bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl h-10 font-bold pr-10"
+                    placeholder="รหัส หรือ ชื่อร้าน..."
+                    value={storeSearch}
+                    onChange={(e) => setStoreSearch(e.target.value)}
+                    className="bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl font-bold pr-10"
                   />
-
-                  {form.storeSearch && !isSearching && (
-                    <button
-                      type="button"
-                      onClick={clearStore}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                    >
-                      ✕
-                    </button>
+                  {selectedStore && (
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-blue-500 text-white text-[10px] rounded-md pointer-events-none">{selectedStore.name}</div>
                   )}
-
-                  {isSearching && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                    </div>
-                  )}
+                  {storeSearch && <button onClick={clearStore} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">✕</button>}
                 </div>
-
-                <Button
-                  type="button"
-                  onClick={handleManualSearch}
-                  disabled={isSearching}
-                  className="rounded-xl h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center"
-                >
-                  <span className="text-lg">🔍</span>
-                </Button>
+                <Button onClick={handleManualSearch} disabled={isSearching} className="rounded-2xl h-12 px-5 bg-blue-600">🔍</Button>
               </div>
 
-              {/* Autocomplete Suggestions */}
               {showSuggestions && (
-                <div className="absolute z-50 w-full md:w-[calc(100%-3rem)] mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[300px] overflow-y-auto">
-                  {suggestions.length > 0 ? (
-                    suggestions.map((s) => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => selectStore(s)}
-                        className="w-full px-4 py-3 text-left hover:bg-blue-500/10 dark:hover:bg-blue-500/20 transition-colors flex flex-col border-b border-slate-100 dark:border-slate-800/50 last:border-0 group"
-                      >
-                        <span className="font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 text-sm whitespace-nowrap overflow-hidden text-ellipsis">{s.name}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono italic">{s.code}</span>
-                          <span className="text-[10px] text-slate-400">|</span>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 italic">{s.owner || "No Owner"}</span>
-                        </div>
-                      </button>
-                    ))
-                  ) : !isSearching && (
-                    <div className="p-8 text-center space-y-2">
-                      <div className="text-3xl opacity-20 italic">Empty</div>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">ไม่พบร้านค้าที่ตรงกับการค้นหา</p>
-                    </div>
-                  )}
+                <div className="absolute z-50 w-full mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden max-h-[300px] overflow-y-auto">
+                  {suggestions.map((s) => (
+                    <button key={s.id} onClick={() => selectStore(s)} className="w-full px-4 py-3 text-left hover:bg-blue-500/10 border-b last:border-0">
+                      <span className="font-bold text-sm text-slate-900 dark:text-white">{s.name}</span>
+                      <div className="text-[10px] text-slate-500 italic">{s.code}</div>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
-
-            <div>
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">หัวข้อเข้าพบ *</Label>
-              <Input
-                placeholder="ตรวจเยี่ยมประจำเดือน"
-                value={form.visitCat || ""}
-                onChange={(e) => handleChange("visitCat", e.target.value)}
-                className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-10 rounded-xl"
-              />
-            </div>
           </div>
 
-          {/* Row 2 */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Separator className="bg-slate-200/50 dark:bg-slate-700/50" />
+
+          {/* Form Contexts */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-1.5">
+              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">หัวข้อเข้าพบ *</Label>
+              <Input placeholder="เช่น ตรวจเยี่ยมประจำเดือน" value={form.visitCat} onChange={(e) => handleChange("visitCat", e.target.value)} className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl" />
+            </div>
+
             <div className="space-y-1.5">
               <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">ประเภทเข้าพบ *</Label>
-              <Select value={form.visitType} onValueChange={(v) => handleChange("visitType", v)} >
-                <SelectTrigger className="p-5 py-6 bg-white/50 dark:bg-[#0f172a] border-slate-200 dark:border-slate-700 h-10 rounded-xl hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all hover:border-blue-500/30">
-                  <SelectValue placeholder="เลือกประเภท" />
+              <Select value={form.visitType} onValueChange={(v) => handleChange("visitType", v)}>
+                <SelectTrigger className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl">
+                  <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-white/95 dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-1 overflow-hidden">
-                  <SelectItem value="new" className="focus:bg-blue-500/10 dark:bg-[#0f172a] rounded-xl cursor-pointer py-2.5 group">
-                    <div className="flex flex-col text-left">
-                      <span className="font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">ร้านใหม่</span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">เปิดหน้าใหม่ / ยังไม่เคยซื้อ</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="continuous" className="focus:bg-indigo-500/10 dark:bg-[#0f172a] rounded-xl cursor-pointer py-2.5 group">
-                    <div className="flex flex-col text-left">
-                      <span className="font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 transition-colors">ร้านติดต่อต่อเนื่อง</span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">อยู่ในระหว่างการติดตามผล</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="follow" className="focus:bg-emerald-500/10 dark:bg-[#0f172a] rounded-xl cursor-pointer py-2.5 group">
-                    <div className="flex flex-col text-left">
-                      <span className="font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 transition-colors">ร้านเดิม</span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">ลูกค้าปัจจุบันที่มีการสั่งซื้อ</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="database" className="focus:bg-amber-500/10 dark:bg-[#0f172a] rounded-xl cursor-pointer py-2.5 group">
-                    <div className="flex flex-col text-left">
-                      <span className="font-bold text-slate-900 dark:text-white group-hover:text-amber-600 transition-colors">ร้านฐานข้อมูลเดิม</span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">ร้านค้าเก่าที่เคยติดต่อในอดีต</span>
-                    </div>
-                  </SelectItem>
+                <SelectContent>
+                  <SelectItem value="new">ร้านใหม่</SelectItem>
+                  <SelectItem value="continuous">ร้านติดต่อต่อเนื่อง</SelectItem>
+                  <SelectItem value="follow">ร้านเดิม</SelectItem>
+                  <SelectItem value="database">ร้านฐานข้อมูลเดิม</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -372,118 +216,43 @@ export default function VisitForm({ stores, visits, profiles, onRefresh }: any) 
               <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">สถานะการขาย</Label>
               <Select value={form.dealStatus} onValueChange={(v) => handleChange("dealStatus", v)}>
                 <SelectTrigger className={cn(
-                  "h-10 rounded-xl transition-all duration-300 border-2 p-5 py-6",
-                  form.dealStatus === "เปิดการขาย"
-                    ? "bg-emerald-500/5 border-emerald-500/20 hover:border-emerald-500/40 text-emerald-700 dark:text-emerald-400"
-                    : "bg-rose-500/5 border-rose-500/20 hover:border-rose-500/40 text-rose-700 dark:text-rose-400"
+                  "h-12 rounded-2xl border-2",
+                  form.dealStatus === "เปิดการขาย" ? "bg-emerald-50/50 border-emerald-500/20 text-emerald-600" : "bg-rose-50/50 border-rose-500/20 text-rose-600"
                 )}>
-                  <SelectValue placeholder="เลือกสถานะ" />
+                  <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-white/95 dark:bg-slate-900/95 border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-1 overflow-hidden">
-                  <SelectItem value="เปิดการขาย" className="focus:bg-emerald-500/10 rounded-xl cursor-pointer py-2.5 group dark:bg-[#0f172a]">
-                    <div className="flex items-center gap-3 ">
-                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] group-hover:scale-110 transition-transform" />
-                      <div className="flex flex-col text-left">
-                        <span className="font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 transition-colors ">เปิดการขาย</span>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">กำลังดำเนินการขาย</span>
-                      </div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="ปิดการขาย" className="focus:bg-rose-500/10 rounded-xl cursor-pointer py-2.5 group dark:bg-[#0f172a]">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] group-hover:scale-110 transition-transform" />
-                      <div className="flex flex-col text-left">
-                        <span className="font-bold text-slate-900 dark:text-white group-hover:text-rose-600 transition-colors">ปิดการขาย</span>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">หยุดการขาย / ไม่สามารถขายได้</span>
-                      </div>
-                    </div>
-                  </SelectItem>
+                <SelectContent>
+                  <SelectItem value="เปิดการขาย">เปิดการขาย</SelectItem>
+                  <SelectItem value="ปิดการขาย">ปิดการขาย</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
-            <div>
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs opacity-50">ชื่อร้าน</Label>
-              <Input value={form.storeName || ""} readOnly className="bg-slate-100/10 dark:bg-slate-800/10 border-slate-200 dark:border-slate-700 h-10 rounded-xl text-slate-500 cursor-not-allowed" />
-            </div>
-
-            <div>
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs opacity-50">เจ้าของ</Label>
-              <Input value={form.owner || ""} readOnly className="bg-slate-100/10 dark:bg-slate-800/10 border-slate-200 dark:border-slate-700 h-10 rounded-xl text-slate-500 cursor-not-allowed" />
-            </div>
           </div>
 
-          {/* Row 3 - Store Details (Synchronized) */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs opacity-50">เบอร์โทร</Label>
-              <Input value={form.phone || ""} readOnly className="bg-slate-100/10 dark:bg-slate-800/10 border-slate-200 dark:border-slate-700 h-10 rounded-xl text-slate-500 cursor-not-allowed" />
+          {/* Store Insight - Only shown when store selected */}
+          {selectedStore && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-blue-500/5 p-6 rounded-3xl border border-blue-500/10">
+              <div className="space-y-1 md:col-span-2"><Label className="text-[10px] text-slate-400 font-bold">ที่อยู่</Label><p className="text-xs font-bold text-slate-600 dark:text-slate-300">{selectedStore.address || "-"}</p></div>
+              <div className="space-y-1"><Label className="text-[10px] text-slate-400 font-bold">เบอร์โทร</Label><p className="text-xs font-bold text-slate-600 dark:text-slate-300">{selectedStore.phone || "-"}</p></div>
+              <div className="space-y-1"><Label className="text-[10px] text-slate-400 font-bold">เงื่อนไขชำระ</Label><p className="text-xs font-bold text-blue-600">{selectedStore.payment || "เงินสด"}</p></div>
             </div>
-            <div>
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs opacity-50">ประเภทร้าน</Label>
-              <Input value={form.type || ""} readOnly className="bg-slate-100/10 dark:bg-slate-800/10 border-slate-200 dark:border-slate-700 h-10 rounded-xl text-slate-500 cursor-not-allowed" />
-            </div>
-            <div>
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs opacity-50">ประเภทลูกค้า</Label>
-              <Input value={form.customerType || ""} readOnly className="bg-slate-100/10 dark:bg-slate-800/10 border-slate-200 dark:border-slate-700 h-10 rounded-xl text-slate-500 cursor-not-allowed" />
-            </div>
-            <div>
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs opacity-50">ที่อยู่ / พิกัด</Label>
-              <Input value={form.address || ""} readOnly className="bg-slate-100/10 dark:bg-slate-800/10 border-slate-200 dark:border-slate-700 h-10 rounded-xl text-slate-500 cursor-not-allowed" />
-            </div>
-          </div>
+          )}
 
-          {/* Row 4 - Product Details */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs opacity-50">สินค้าที่ใช้</Label>
-              <Input value={form.productUsed || ""} readOnly className="bg-slate-100/10 dark:bg-slate-800/10 border-slate-200 dark:border-slate-700 h-10 rounded-xl text-slate-500 cursor-not-allowed" />
+          {form.dealStatus === "ปิดการขาย" && (
+            <div className="space-y-1.5 animate-in slide-in-from-top-2 duration-300">
+              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs text-rose-500">เหตุผลที่ปิดการขาย *</Label>
+              <Input placeholder="ระบุเหตุผลในการปิดการขาย..." value={form.closeReason} onChange={(e) => handleChange("closeReason", e.target.value)} className="bg-rose-50/50 border-rose-200 h-12 rounded-2xl text-rose-700 font-bold" />
             </div>
-            <div>
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs opacity-50">ปริมาณการสั่ง</Label>
-              <Input value={form.quantity || ""} readOnly className="bg-slate-100/10 dark:bg-slate-800/10 border-slate-200 dark:border-slate-700 h-10 rounded-xl text-slate-500 cursor-not-allowed" />
-            </div>
-            <div>
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs opacity-50">ระยะเวลาสั่ง</Label>
-              <Input value={form.orderPeriod || ""} readOnly className="bg-slate-100/10 dark:bg-slate-800/10 border-slate-200 dark:border-slate-700 h-10 rounded-xl text-slate-500 cursor-not-allowed" />
-            </div>
-            <div>
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs opacity-50">รับของเดิมจาก</Label>
-              <Input value={form.supplier || ""} readOnly className="bg-slate-100/10 dark:bg-slate-800/10 border-slate-200 dark:border-slate-700 h-10 rounded-xl text-slate-500 cursor-not-allowed" />
-            </div>
-          </div>
+          )}
 
-          {/* Row 5 - Sales Status & Reason */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs opacity-50">เงื่อนไขชำระ</Label>
-              <Input value={form.payment || "เงินสด"} readOnly className="bg-slate-100/10 dark:bg-slate-800/10 border-slate-200 dark:border-slate-700 h-10 rounded-xl text-slate-500 cursor-not-allowed w-full md:w-1/2" />
-            </div>
-            {form.dealStatus === "ปิดการขาย" && (
-              <div className="animate-in fade-in slide-in-from-left-2 duration-300">
-                <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">เหตุผลที่ปิดการขาย</Label>
-                <Input
-                  placeholder="กรอกเมื่อเลือก ปิดการขาย"
-                  value={form.closeReason || ""}
-                  onChange={(e) => handleChange("closeReason", e.target.value)}
-                  className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-10 rounded-xl"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Tabs ครั้งที่ 1-8 */}
+          {/* Detailed Visit Notes */}
           <div className="space-y-4">
-            <Label className="text-slate-700 dark:text-slate-300 font-bold text-lg">บันทึกรายละเอียดการพบปะ</Label>
+            <Label className="text-slate-900 dark:text-white font-black text-lg">บันทึกรายละเอียดการพบปะ</Label>
             <Tabs defaultValue="1" className="w-full">
-              <div className="overflow-x-auto pb-2 scrollbar-hide">
-                <TabsList className="bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 inline-flex min-w-full md:min-w-0">
+              <div className="overflow-x-auto pb-2 scrollbar-none">
+                <TabsList className="bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-2xl border border-slate-200 dark:border-slate-700">
                   {Array.from({ length: 8 }).map((_, i) => (
-                    <TabsTrigger
-                      key={i}
-                      value={`${i + 1}`}
-                      className="rounded-xl px-4 py-2 text-xs font-bold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400"
-                    >
+                    <TabsTrigger key={i} value={`${i + 1}`} className="rounded-xl px-4 py-2 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-blue-600 shadow-none">
                       ครั้งที่ {i + 1}
                     </TabsTrigger>
                   ))}
@@ -491,15 +260,12 @@ export default function VisitForm({ stores, visits, profiles, onRefresh }: any) 
               </div>
 
               {Array.from({ length: 8 }).map((_, i) => (
-                <TabsContent key={i} value={`${i + 1}`} className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <TabsContent key={i} value={`${i + 1}`} className="mt-4">
                   <Textarea
                     placeholder={`รายละเอียดการพูดคุย ครั้งที่ ${i + 1}...`}
                     value={form.notes?.[i + 1] || ""}
-                    onChange={(e) => {
-                      const newNotes = { ...form.notes, [i + 1]: e.target.value }
-                      handleChange("notes", newNotes)
-                    }}
-                    className="min-h-[120px] bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-2xl p-4 focus:ring-2 focus:ring-blue-500/20 transition-all font-medium leading-relaxed"
+                    onChange={(e) => handleChange("notes", { ...form.notes, [i + 1]: e.target.value })}
+                    className="min-h-[150px] bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-[2rem] p-6 focus:ring-2 focus:ring-blue-500/20 transition-all font-medium leading-relaxed"
                   />
                 </TabsContent>
               ))}
@@ -507,128 +273,100 @@ export default function VisitForm({ stores, visits, profiles, onRefresh }: any) 
           </div>
 
           <div className="flex gap-4 pt-4">
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded-xl shadow-lg shadow-blue-500/20 transition-all hover:scale-105"
-            >
-              {isSubmitting ? "กำลังบันทึก..." : "💾 บันทึกเข้าพบ"}
+            <Button onClick={handleSubmit} disabled={isSubmitting} className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black text-lg py-8 rounded-[2rem] shadow-xl transition-all active:scale-95">
+              {isSubmitting ? "กำลังบันทึก..." : "💾 บันทึกการเข้าพบลูกค้า"}
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => setForm({ date: new Date().toISOString().split('T')[0], visitType: "new", dealStatus: "เปิดการขาย", notes: {} })}
-              className="border-slate-200 dark:border-slate-700 px-8 py-2 rounded-xl"
-            >
-              ล้างฟอร์ม
-            </Button>
+            <Button variant="outline" onClick={clearStore} className="md:w-64 py-8 rounded-[2rem] font-bold border-slate-200">ล้างข้อมูล</Button>
           </div>
         </CardContent>
       </Card>
 
-      <Separator />
+      <Separator className="my-10" />
 
-      {/* ================= TABLE ================= */}
-
-      <Card className="shadow-2xl border-white/10 dark:border-white/5 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-3xl overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-indigo-600/10 to-purple-600/10 border-b border-white/10 dark:border-white/5 py-6">
-          <CardTitle className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-            <span className="p-2 bg-indigo-500/10 rounded-lg text-indigo-500">📊</span>
-            รายการเข้าพบทั้งหมด
+      {/* ================= HISTORY TABLE ================= */}
+      <Card className="shadow-2xl border-white/10 dark:border-white/5 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-indigo-600/10 to-purple-600/10 border-b p-8">
+          <CardTitle className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-3">
+            <span className="p-2.5 bg-indigo-500/10 rounded-2xl">📊</span>
+            ประวัติการเข้าพบ
           </CardTitle>
         </CardHeader>
 
-        <CardContent className="p-6 flex flex-col md:flex-row gap-6 bg-slate-50/30 dark:bg-slate-900/10">
-          <div className="flex-1 space-y-2">
-            <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">ค้นหาประวัติ</Label>
-            <div className="relative">
+        <CardContent className="p-8 space-y-8">
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="flex-1 space-y-1.5">
+              <Label className="text-xs font-black uppercase text-slate-400">ค้นหาประวัติ</Label>
               <Input
-                placeholder="ค้นหารหัส / ชื่อร้าน / รายละเอียด..."
+                placeholder="รหัส / ชื่อร้าน / รายละเอียด..."
                 value={historySearch}
                 onChange={(e) => setHistorySearch(e.target.value)}
-                className="bg-white/60 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl h-10 pl-10 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
+                className="bg-white/60 dark:bg-slate-800/60 h-12 rounded-2xl"
               />
-              <span className="absolute left-3.5 top-2.5 text-slate-400">🔍</span>
+            </div>
+
+            <div className="w-full md:w-80 space-y-1.5">
+              <Label className="text-xs font-black uppercase text-slate-400">กรอกตามรายชื่อเซลล์</Label>
+              <Select value={salesFilter} onValueChange={setSalesFilter}>
+                <SelectTrigger className="bg-white/60 dark:bg-slate-800/60 h-12 rounded-2xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">ทั้งหมด (All Units)</SelectItem>
+                  {profiles?.map((p: any) => (
+                    <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          <div className="w-full md:w-72 space-y-2">
-            <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">กรองตามรายชื่อเซลล์</Label>
-            <Select value={salesFilter} onValueChange={setSalesFilter}>
-              <SelectTrigger className="bg-white/60 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-xl h-10 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium">
-                <SelectValue placeholder="ทุกรายชื่อ" />
-              </SelectTrigger>
-              <SelectContent className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-slate-200 dark:border-slate-800 rounded-xl">
-                <SelectItem value="all" className="font-bold text-blue-600">ทั้งหมด [Show All]</SelectItem>
-                {profiles?.map((p: any) => (
-                  <SelectItem key={p.id} value={p.name} className="cursor-pointer">{p.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-
-
-
-        </CardContent>
-
-        <CardContent>
-          <Table>
-            <TableHeader className="bg-slate-100/50 dark:bg-slate-800/50">
-              <TableRow className="border-b border-slate-200 dark:border-slate-800 hover:bg-transparent">
-                <TableHead className="font-bold text-slate-700 dark:text-slate-200 py-4 uppercase text-[10px] tracking-widest">วันที่เข้าพบ</TableHead>
-                <TableHead className="font-bold text-slate-700 dark:text-slate-200 py-4 uppercase text-[10px] tracking-widest">รหัสลูกค้า</TableHead>
-                <TableHead className="font-bold text-slate-700 dark:text-slate-200 py-4 uppercase text-[10px] tracking-widest">ชื่อสถานประกอบการ</TableHead>
-                <TableHead className="font-bold text-slate-700 dark:text-slate-200 py-4 uppercase text-[10px] tracking-widest">พนักงานขาย</TableHead>
-                <TableHead className="font-bold text-slate-700 dark:text-slate-200 py-4 uppercase text-[10px] tracking-widest">สรุปการเข้าพบ</TableHead>
-                <TableHead className="font-bold text-slate-700 dark:text-slate-200 py-4 uppercase text-[10px] tracking-widest text-center">ประเภท</TableHead>
-                <TableHead className="font-bold text-slate-700 dark:text-slate-200 py-4 uppercase text-[10px] tracking-widest text-center">ความคืบหน้า</TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {filteredVisits.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-slate-400">
-                    ไม่พบข้อมูลประวัติการเข้าพบ
-                  </TableCell>
+          <div className="rounded-[2rem] border border-slate-200/50 dark:border-slate-800/50 overflow-hidden shadow-inner bg-white/20">
+            <Table>
+              <TableHeader className="bg-slate-100/50 dark:bg-slate-800/50">
+                <TableRow className="border-b dark:border-slate-800">
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 pl-6">วันที่</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">ร้านค้า</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">พนักงานขาย</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">สรุปการเข้าพบ</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-center">สถานะ</TableHead>
                 </TableRow>
-              ) : (
-                filteredVisits.map((v: any) => (
-                  <TableRow key={v.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                    <TableCell className="font-medium">{new Date(v.date).toLocaleDateString()}</TableCell>
-                    <TableCell className="font-mono text-xs">{v.store?.code || "-"}</TableCell>
-                    <TableCell className="font-bold">{v.store?.name || "-"}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="font-semibold text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800">
-                        {v.sales}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">{v.visitCat || "-"}</span>
-                        {v.notes && Object.keys(v.notes).length > 0 && (
-                          <span className="text-[10px] text-indigo-500 font-medium italic mt-1 flex items-center gap-1">
-                            📝 มีบันทึก {Object.keys(v.notes).length} ครั้ง
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">{v.visitType === "new" ? "ร้านใหม่" : "ติดตาม"}</TableCell>
-                    <TableCell>
-                      <div className="flex justify-center">
+              </TableHeader>
+              <TableBody>
+                {filteredVisits.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="h-32 text-center text-slate-400 italic text-xs">ไม่พบข้อมูลประวัติ</TableCell></TableRow>
+                ) : (
+                  filteredVisits.map((v: any) => (
+                    <TableRow key={v.id} className="hover:bg-blue-500/5 transition-colors border-b dark:border-slate-800/50">
+                      <TableCell className="py-5 pl-6 font-bold text-xs">{new Date(v.date).toLocaleDateString('th-TH')}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-black text-slate-900 dark:text-white text-xs">{v.store?.name || "-"}</span>
+                          <span className="text-[10px] font-mono text-slate-400">{v.store?.code || "-"}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell><Badge variant="outline" className="font-bold text-blue-600 rounded-lg text-[10px]">{v.sales}</Badge></TableCell>
+                      <TableCell className="max-w-xs">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-xs text-slate-700 dark:text-slate-300">{v.visitCat || "-"}</span>
+                          {Object.keys(v.notes || {}).length > 0 && (
+                            <span className="text-[10px] text-indigo-500 font-bold mt-1">📝 บันทึก {Object.keys(v.notes).length} ครั้ง</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
                         <span className={cn(
-                          "px-2 py-1 rounded-full text-[10px] font-bold shadow-sm",
+                          "px-2.5 py-1 rounded-full text-[10px] font-black shadow-sm",
                           v.dealStatus === "เปิดการขาย" ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-rose-500/10 text-rose-600 border border-rose-500/20"
                         )}>
                           {v.dealStatus}
                         </span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma'; 
+import { prisma } from '@/lib/prisma';
+import { planSchema } from '@/lib/validate/Zod';
+import { renderError } from '@/lib/rendererror';
 
 // GET - โหลดแผน
 export async function GET(request: NextRequest) {
@@ -27,8 +29,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(plans);
   } catch (error) {
-    console.error('GET /api/plans error:', error);
-    return NextResponse.json({ error: 'Failed to fetch plans' }, { status: 500 });
+    return renderError(error);
   }
 }
 
@@ -36,16 +37,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const validatedData = planSchema.parse(body);
 
     const plan = await prisma.plan.create({
       data: {
-        date: new Date(body.date),
-        sales: body.sales,
-        storeRef: body.storeRef || null,
-        masterId: body.masterId || null,
-        visitCat: body.visitCat || null,
-        notes: body.notes || null,
-        order: body.order || null,
+        ...validatedData,
+        date: new Date(validatedData.date),
       },
       include: {
         store: true,
@@ -54,7 +51,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(plan, { status: 201 });
   } catch (error) {
-    console.error('POST /api/plans error:', error);
-    return NextResponse.json({ error: 'Failed to create plan' }, { status: 500 });
+    return renderError(error);
   }
 }

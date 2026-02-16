@@ -40,6 +40,7 @@ model Store {
   forecasts    Forecast[]
   plans        Plan[]
   visitHistory Visit[]
+  issues       Issue[]
 }
 
 model Visit {
@@ -103,4 +104,31 @@ model Product {
   status      String   @default("active")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// orderTracking
+model Purchase {
+  id        String   @id @default(uuid())
+  round     String
+  date      DateTime
+  storeId   String
+  amount    Float    @default(0)
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// FAQ
+model Issue {
+  id        String   @id @default(uuid())
+  date      DateTime
+  masterId  String
+  type      String
+  detail    String
+  recorder  String
+  status    String   @default("pending")
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  store     Store    @relation(fields: [masterId], references: [id])
 }

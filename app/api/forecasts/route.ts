@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { forecastSchema } from '@/lib/validate/Zod';
+import { renderError } from '@/lib/rendererror';
 
 // GET - โหลดคาดการณ์
 export async function GET(request: NextRequest) {
@@ -30,8 +32,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(forecasts);
   } catch (error) {
-    console.error('GET /api/forecasts error:', error);
-    return NextResponse.json({ error: 'Failed to fetch forecasts' }, { status: 500 });
+    return renderError(error);
   }
 }
 
@@ -39,17 +40,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const validatedData = forecastSchema.parse(body);
 
     const forecast = await prisma.forecast.create({
       data: {
-        masterId: body.masterId,
-        product: body.product,
-        targetWeek: parseFloat(body.targetWeek),
-        targetMonth: parseFloat(body.targetMonth),
+        ...validatedData,
         forecast: body.forecast ? parseFloat(body.forecast) : null,
         actual: body.actual ? parseFloat(body.actual) : null,
-        notes: body.notes || null,
-        weekStart: new Date(body.weekStart),
+        weekStart: new Date(validatedData.weekStart),
       },
       include: {
         store: true,
@@ -58,7 +56,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(forecast, { status: 201 });
   } catch (error) {
-    console.error('POST /api/forecasts error:', error);
-    return NextResponse.json({ error: 'Failed to create forecast' }, { status: 500 });
+    return renderError(error);
   }
 }

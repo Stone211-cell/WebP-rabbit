@@ -39,11 +39,7 @@ export async function GET(
 
     return NextResponse.json(store);
   } catch (error) {
-    console.error('GET /api/stores/[id] error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch store' },
-      { status: 500 }
-    );
+    return renderError(error);
   }
 }
 
@@ -64,7 +60,7 @@ export async function PUT(
     const store = await prisma.store.update({
       where: { id },
       data: {
-        ...validatedData as any, // Cast as any because partial zod might have issues with prisma's strict typing if not handled carefully
+        ...validatedData as any,
       },
     });
 
@@ -90,10 +86,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('DELETE /api/stores/[id] error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete store' },
-      { status: 500 }
-    );
+    return renderError(error);
   }
 }

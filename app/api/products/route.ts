@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { productSchema } from '@/lib/validate/Zod';
+import { renderError } from '@/lib/rendererror';
 
 // GET - Get all products with optional search
 export async function GET(request: NextRequest) {
@@ -24,8 +26,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json(products);
     } catch (error) {
-        console.error('GET /api/products error:', error);
-        return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
+        return renderError(error);
     }
 }
 
@@ -33,24 +34,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-
-        // Basic validation
-        if (!body.code || !body.name) {
-            return NextResponse.json(
-                { error: 'Code and Name are required.' },
-                { status: 400 }
-            );
-        }
+        const validatedData = productSchema.parse(body);
 
         const newProduct = await prisma.product.create({
             data: {
-                code: body.code,
-                name: body.name,
-                category: body.category || null,
-                price: parseFloat(body.price) || 0,
-                unit: body.unit || null,
-                description: body.description || null,
-                image: body.image || null,
+                ...validatedData,
                 status: body.status || 'active',
             },
         });
@@ -63,7 +51,6 @@ export async function POST(request: NextRequest) {
                 { status: 409 }
             );
         }
-        console.error('POST /api/products error:', error);
-        return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
+        return renderError(error);
     }
 }
