@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { axiosInstance } from "@/lib/axios"
+import { createPlan, updatePlan, deletePlan } from "@/lib/api/plans"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -28,13 +29,16 @@ import {
 } from "@/components/ui/table"
 
 import { useStoreSearch } from "@/components/hooks/useStoreSearch"
+import { VisitTopics } from "@/lib/types/manu"
+import { ActionButton } from "@/components/crmhelper/helper"
 
 export default function PlanForm({ plans, profiles, onRefresh }: any) {
     const [form, setForm] = useState<any>({
         sales: "",
         date: new Date().toLocaleDateString('en-CA'),
         visitCat: "ตรวจเยี่ยมประจำเดือน",
-        notes: ""
+        notes: "",
+        order: "1"
     })
     const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -50,6 +54,24 @@ export default function PlanForm({ plans, profiles, onRefresh }: any) {
         clearStore,
         handleManualSearch
     } = useStoreSearch()
+
+    // --- Order Auto-Calculation ---
+    useEffect(() => {
+        if (!form.sales || !form.date) return
+
+        const targetDate = new Date(form.date).setHours(0, 0, 0, 0)
+        const relevantPlans = (plans || []).filter((p: any) =>
+            p.sales === form.sales &&
+            new Date(p.date).setHours(0, 0, 0, 0) === targetDate
+        )
+
+        if (relevantPlans.length > 0) {
+            const maxOrder = Math.max(...relevantPlans.map((p: any) => parseInt(p.order) || 0))
+            setForm((prev: any) => ({ ...prev, order: String(maxOrder + 1) }))
+        } else {
+            setForm((prev: any) => ({ ...prev, order: "1" }))
+        }
+    }, [form.sales, form.date, plans])
 
     // --- Week Navigation Logic ---
     const [currentWeekStart, setCurrentWeekStart] = useState(() => {
@@ -94,6 +116,13 @@ export default function PlanForm({ plans, profiles, onRefresh }: any) {
         return `${startDay} ${startMonth} - ${endDay} ${endMonth} ${thaiYear}`
     }
 
+    const [editingPlan, setEditingPlan] = useState<any>(null)
+
+
+    // ... imports
+
+    // ... inside component
+
     // 🚀 จัดการการบันทึก (Clean Pattern)
     const handleSubmit = async () => {
         if (!form.sales || !selectedStore) {
@@ -103,21 +132,33 @@ export default function PlanForm({ plans, profiles, onRefresh }: any) {
 
         setIsSubmitting(true)
         try {
-            await axiosInstance.post("/plans", {
-                ...form,
-                masterId: selectedStore.id,
-                date: new Date(form.date).toISOString(),
-            })
-            toast.success("บันทึกแผนเรียบร้อยแล้ว")
+            if (editingPlan) {
+                // UPDATE
+                await updatePlan(editingPlan.id, {
+                    ...form,
+                    masterId: selectedStore.id,
+                    date: new Date(form.date).toISOString(),
+                })
+                toast.success("แก้ไขแผนงานเรียบร้อยแล้ว")
+                setEditingPlan(null)
+            } else {
+                // CREATE
+                await createPlan({
+                    ...form,
+                    masterId: selectedStore.id,
+                    date: new Date(form.date).toISOString(),
+                })
+                toast.success("บันทึกแผนเรียบร้อยแล้ว")
+            }
 
             // ล้างฟอร์ม
             setForm({
                 ...form,
                 date: new Date().toLocaleDateString('en-CA'),
                 visitCat: "ตรวจเยี่ยมประจำเดือน",
-                notes: ""
+                notes: "",
+                order: "1"
             })
-            clearStore()
 
             if (onRefresh) onRefresh()
         } catch (error) {
@@ -125,6 +166,27 @@ export default function PlanForm({ plans, profiles, onRefresh }: any) {
         } finally {
             setIsSubmitting(false)
         }
+    }
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("คุณต้องการลบแผนงานนี้ใช่หรือไม่?")) return
+
+        try {
+            await deletePlan(id)
+            toast.success("ลบแผนงานเรียบร้อยแล้ว")
+            if (onRefresh) onRefresh()
+        } catch (error) {
+            handleApiError(error)
+        }
+    }
+
+    const handleCancelEdit = () => {
+        setEditingPlan(null)
+        setForm({
+            ...form,
+            notes: "",
+            visitCat: "ตรวจเยี่ยมประจำเดือน"
+        })
     }
 
     return (
@@ -173,10 +235,19 @@ export default function PlanForm({ plans, profiles, onRefresh }: any) {
                             </Select>
                         </div>
 
-                        {/* Date */}
+                        {/* Date & Order */}
                         <div className="space-y-1.5">
-                            <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">วันที่แผน *</Label>
-                            <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl font-bold" />
+                            <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">วันที่ / ลำดับ *</Label>
+                            <div className="flex gap-2">
+                                <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="flex-1 bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl font-bold" />
+                                <Input
+                                    type="text"
+                                    value={form.order}
+                                    readOnly
+                                    className="w-20 bg-slate-100/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl font-bold text-center cursor-not-allowed text-slate-500"
+                                    placeholder="ลำดับ"
+                                />
+                            </div>
                         </div>
 
                         {/* Category */}
@@ -187,10 +258,9 @@ export default function PlanForm({ plans, profiles, onRefresh }: any) {
                                     <SelectValue placeholder="เลือกหัวข้อ" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="ตรวจเยี่ยมประจำเดือน">ตรวจเยี่ยมประจำเดือน</SelectItem>
-                                    <SelectItem value="ติดตามยอดค้างชำระ">ติดตามยอดค้างชำระ</SelectItem>
-                                    <SelectItem value="แนะนำสินค้าใหม่">แนะนำสินค้าใหม่</SelectItem>
-                                    <SelectItem value="เจรจาขยายฐานลูกค้า">เจรจาขยายฐานลูกค้า</SelectItem>
+                                    {VisitTopics.map(topic => (
+                                        <SelectItem key={topic} value={topic}>{topic}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -228,73 +298,137 @@ export default function PlanForm({ plans, profiles, onRefresh }: any) {
                         </div>
                     </div>
 
-                    {/* STORE DETAILS VISUALIZATION */}
+                    {/* STORE DETAILS VISUALIZATION (Updated per Image) */}
                     {selectedStore && (
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 bg-slate-500/5 p-6 rounded-3xl border border-slate-200/50">
-                            <div className="space-y-1"><Label className="text-[10px] text-slate-400 font-bold">ชื่อร้าน</Label><Input value={selectedStore.name} readOnly className="h-9 bg-white/30 rounded-xl text-xs font-bold" /></div>
-                            <div className="space-y-1"><Label className="text-[10px] text-slate-400 font-bold">เจ้าของ</Label><Input value={selectedStore.owner || "-"} readOnly className="h-9 bg-white/30 rounded-xl text-xs font-bold" /></div>
-                            <div className="space-y-1"><Label className="text-[10px] text-slate-400 font-bold">เบอร์โทร</Label><Input value={selectedStore.phone || "-"} readOnly className="h-9 bg-white/30 rounded-xl text-xs font-bold" /></div>
-                            <div className="space-y-1"><Label className="text-[10px] text-slate-400 font-bold">ประเภทร้าน</Label><Input value={selectedStore.type || "-"} readOnly className="h-9 bg-white/30 rounded-xl text-xs font-bold" /></div>
-                            <div className="space-y-1"><Label className="text-[10px] text-slate-400 font-bold">ที่อยู่</Label><Input value={selectedStore.address || "-"} readOnly className="h-9 bg-white/30 rounded-xl text-xs font-bold" /></div>
+                        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 p-6 bg-[#0f172a] rounded-[2rem] border border-slate-800 shadow-xl mb-6 animate-in fade-in duration-500">
+                            <div className="space-y-1.5 md:col-span-1">
+                                <Label className="text-[10px] font-bold text-slate-400">ชื่อร้าน</Label>
+                                <Input value={selectedStore.name} readOnly className="h-9 bg-[#1e293b] border-slate-700 text-slate-200 text-xs font-bold rounded-lg focus-visible:ring-0" />
+                            </div>
+                            <div className="space-y-1.5 md:col-span-1">
+                                <Label className="text-[10px] font-bold text-slate-400">เจ้าของ</Label>
+                                <Input value={selectedStore.owner || "-"} readOnly className="h-9 bg-[#1e293b] border-slate-700 text-slate-200 text-xs font-bold rounded-lg focus-visible:ring-0" />
+                            </div>
+                            <div className="space-y-1.5 md:col-span-1">
+                                <Label className="text-[10px] font-bold text-slate-400">เบอร์โทร</Label>
+                                <Input value={selectedStore.phone || "-"} readOnly className="h-9 bg-[#1e293b] border-slate-700 text-slate-200 text-xs font-bold rounded-lg focus-visible:ring-0" />
+                            </div>
+                            <div className="space-y-1.5 md:col-span-1">
+                                <Label className="text-[10px] font-bold text-slate-400">ประเภทร้าน</Label>
+                                <Input value={selectedStore.type || "-"} readOnly className="h-9 bg-[#1e293b] border-slate-700 text-slate-200 text-xs font-bold rounded-lg focus-visible:ring-0" />
+                            </div>
+                            <div className="space-y-1.5 md:col-span-1">
+                                <Label className="text-[10px] font-bold text-slate-400">ประเภทลูกค้า</Label>
+                                <Input value={selectedStore.customerType || "-"} readOnly className="h-9 bg-[#1e293b] border-slate-700 text-slate-200 text-xs font-bold rounded-lg focus-visible:ring-0" />
+                            </div>
+                            <div className="space-y-1.5 md:col-span-1">
+                                <Label className="text-[10px] font-bold text-slate-400">ที่อยู่/พิกัด</Label>
+                                <Input value={selectedStore.address || "-"} readOnly className="h-9 bg-[#1e293b] border-slate-700 text-slate-200 text-xs font-bold rounded-lg focus-visible:ring-0" />
+                            </div>
+
+                            <div className="space-y-1.5 md:col-span-2">
+                                <Label className="text-[10px] font-bold text-slate-400">สินค้าที่ใช้</Label>
+                                <Input value={selectedStore.productUsed || "-"} readOnly className="h-9 bg-[#1e293b] border-slate-700 text-slate-200 text-xs font-bold rounded-lg focus-visible:ring-0" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-bold text-slate-400">ปริมาณ</Label>
+                                <Input value={selectedStore.quantity || "-"} readOnly className="h-9 bg-[#1e293b] border-slate-700 text-slate-200 text-xs font-bold rounded-lg focus-visible:ring-0" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-bold text-slate-400">ระยะเวลาสั่ง</Label>
+                                <Input value={selectedStore.orderPeriod || "-"} readOnly className="h-9 bg-[#1e293b] border-slate-700 text-slate-200 text-xs font-bold rounded-lg focus-visible:ring-0" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-bold text-slate-400">รับของเดิมจาก</Label>
+                                <Input value={selectedStore.supplier || "-"} readOnly className="h-9 bg-[#1e293b] border-slate-700 text-slate-200 text-xs font-bold rounded-lg focus-visible:ring-0" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-bold text-slate-400">เงื่อนไขชำระ</Label>
+                                <Input value={selectedStore.payment || "-"} readOnly className="h-9 bg-[#1e293b] border-slate-700 text-slate-200 text-xs font-bold rounded-lg focus-visible:ring-0" />
+                            </div>
                         </div>
                     )}
 
                     <Textarea placeholder="บันทึกรายละเอียด..." value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 rounded-2xl min-h-[100px]" />
 
                     <div className="flex gap-4">
-                        <Button onClick={handleSubmit} disabled={isSubmitting} className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black text-lg py-7 rounded-3xl shadow-xl">
-                            {isSubmitting ? "กำลังบันทึก..." : "เพิ่มแผนงานสัปดาห์"}
+                        <Button onClick={handleSubmit} disabled={isSubmitting} className={cn(
+                            "flex-1 text-white font-black text-lg py-7 rounded-3xl shadow-xl transition-all",
+                            editingPlan ? "bg-amber-500 hover:bg-amber-600" : "bg-gradient-to-r from-blue-600 to-indigo-600"
+                        )}>
+                            {isSubmitting ? "กำลังบันทึก..." : editingPlan ? "⚡ บันทึกการแก้ไข" : "เพิ่มแผนงานสัปดาห์"}
                         </Button>
-                        <Button onClick={() => setForm({ ...form, notes: "" })} variant="outline" className="md:w-48 py-7 rounded-3xl font-bold">ล้างฟอร์ม</Button>
+                        <Button onClick={editingPlan ? handleCancelEdit : () => setForm({ ...form, notes: "" })} variant="outline" className="md:w-48 py-7 rounded-3xl font-bold">
+                            {editingPlan ? "ยกเลิก" : "ล้างฟอร์ม"}
+                        </Button>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* TABLE */}
-            <div className="space-y-4 pt-4">
+            {/* MAIN PLAN LIST (Always Visible, matching reference) */}
+            <div className="space-y-4 pt-8 animate-in fade-in duration-500">
                 <div className="flex items-center gap-3">
-                    <div className="w-1.5 h-8 bg-blue-500 rounded-full" />
-                    <h3 className="text-xl font-black text-slate-900 dark:text-white">รายการแผนงาน</h3>
+                    <div className="w-1.5 h-8 bg-indigo-500 rounded-full" />
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                        รายการ แผน <span className="text-sm font-normal text-slate-500 ml-2">(ทั้งหมด {plans?.length || 0} รายการ)</span>
+                    </h3>
                 </div>
 
-                {plans && Object.entries((plans || []).reduce((acc: any, p: any) => {
-                    const salesName = p.sales || "ไม่ระบุเซลล์"
-                    if (!acc[salesName]) acc[salesName] = []
-                    acc[salesName].push(p)
-                    return acc
-                }, {})).map(([salesName, salesPlans]: [string, any]) => (
-                    <div key={salesName} className="space-y-3">
-                        <div className="flex items-center gap-2 px-4 py-2 bg-slate-100/50 dark:bg-slate-800/50 rounded-xl border border-slate-200/50 w-fit">
-                            <span className="text-sm font-black text-slate-700 dark:text-slate-300">👤 {salesName}</span>
-                            <span className="text-[10px] font-bold text-slate-400 ml-2">{salesPlans.length} รายการ</span>
-                        </div>
-
-                        <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md rounded-[2rem] border border-white/20 dark:border-slate-800/50 shadow-xl overflow-hidden">
-                            <Table>
-                                <TableHeader className="bg-slate-800/5 dark:bg-white/5">
-                                    <TableRow className="border-slate-200 dark:border-slate-800">
-                                        <TableHead className="py-4 font-black uppercase text-[10px]">วันที่</TableHead>
-                                        <TableHead className="py-4 font-black uppercase text-[10px]">ชื่อร้าน</TableHead>
-                                        <TableHead className="py-4 font-black uppercase text-[10px]">หัวข้อ</TableHead>
-                                        <TableHead className="py-4 font-black uppercase text-[10px]">บันทึก</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {salesPlans.map((p: any) => (
-                                        <TableRow key={p.id} className="border-slate-100 dark:border-slate-800/50 hover:bg-blue-500/5 transition-colors">
-                                            <TableCell className="py-4 text-xs font-bold">{new Date(p.date).toLocaleDateString('th-TH')}</TableCell>
-                                            <TableCell className="text-xs font-bold">{p.store?.name || p.storeName}</TableCell>
+                <div className="bg-[#0f172a] rounded-[2rem] border border-slate-800 shadow-xl overflow-hidden">
+                    <Table>
+                        <TableHeader className="bg-slate-800/50">
+                            <TableRow className="border-slate-800 hover:bg-transparent">
+                                <TableHead className="py-4 font-bold text-slate-400 pl-6">วันที่</TableHead>
+                                <TableHead className="py-4 font-bold text-slate-400">รหัส</TableHead>
+                                <TableHead className="py-4 font-bold text-slate-400">ชื่อร้าน</TableHead>
+                                <TableHead className="py-4 font-bold text-slate-400">เซลล์</TableHead>
+                                <TableHead className="py-4 font-bold text-slate-400">หัวข้อเข้าพบ</TableHead>
+                                <TableHead className="py-4 font-bold text-slate-400">บันทึก</TableHead>
+                                <TableHead className="py-4 font-bold text-slate-400 text-right pr-6">จัดการ</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {plans && plans.length > 0 ? (
+                                plans
+                                    .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                                    .map((p: any) => (
+                                        <TableRow key={p.id} className="border-b border-slate-800 hover:bg-slate-800/10 transition-colors">
+                                            <TableCell className="py-3 text-xs text-slate-200 font-bold pl-6">{new Date(p.date).toLocaleDateString('th-TH')}</TableCell>
+                                            <TableCell className="py-3 text-xs text-blue-500 font-bold">{p.store?.code || "-"}</TableCell>
+                                            <TableCell className="py-3 text-xs text-slate-200 font-bold">{p.store?.name || p.storeName || "-"}</TableCell>
+                                            <TableCell className="py-3 text-xs text-slate-200 font-bold">{p.sales}</TableCell>
                                             <TableCell>
-                                                <span className="px-2 py-0.5 rounded-lg text-[9px] font-bold bg-blue-500/10 text-blue-600 border border-blue-500/20">{p.visitCat}</span>
+                                                <span className={cn(
+                                                    "px-2 py-1 rounded-md text-[10px] font-bold border",
+                                                    p.visitCat === "ตรวจเยี่ยมประจำเดือน" ? "bg-[#e6f4ea] text-[#1e8e3e] border-[#ceead6]" :
+                                                        p.visitCat === "ติดตามผล" ? "bg-[#fef7e0] text-[#b06000] border-[#feefc3]" :
+                                                            "bg-[#e8f0fe] text-[#1967d2] border-[#d2e3fc]"
+                                                )}>
+                                                    {p.visitCat}
+                                                </span>
                                             </TableCell>
-                                            <TableCell className="text-[11px] text-slate-500 italic max-w-[200px] truncate">{p.notes || "-"}</TableCell>
+                                            <TableCell className="text-slate-400 text-xs">{p.notes || "-"}</TableCell>
+                                            <TableCell className="text-right pr-6">
+                                                <ActionButton
+                                                    label="ลบ"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleDelete(p.id)}
+                                                    className="h-7 px-3 text-[10px] bg-slate-800/50 text-slate-400 border border-slate-700 rounded hover:bg-slate-700 hover:text-white transition-all"
+                                                />
+                                            </TableCell>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </div>
-                ))}
+                                    ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={7} className="h-24 text-center text-slate-500 italic">
+                                        ยังไม่มีแผนงานในสัปดาห์นี้
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
             </div>
         </div>
     )

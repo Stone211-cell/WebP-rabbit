@@ -63,6 +63,7 @@ import ChartCard from "@/components/crmhelper/charts/ChartCard"
 import { useCRM } from "@/components/hooks/useCRM"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { ActionButton, FilterButton } from "@/components/crmhelper/helper"
 
 type Period = 'day' | 'week' | 'month' | 'quarter' | 'year'
 
@@ -77,7 +78,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
   // State
   const [currentDate, setCurrentDate] = useState<Date>(new Date())
   const [summaryState, setSummaryState] = useState<any[]>(Array.isArray(summary) ? summary : [])
-  const [period, setPeriod] = useState<Period>('day')
+  const [period, setPeriod] = useState<Period>('month')
 
   // Calendar Visit Popup State
   const [showVisitPopup, setShowVisitPopup] = useState(false)
@@ -267,31 +268,43 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
         console.log("📊 Imported Data:", data.length, "rows")
         toast.loading(`กำลังประมวลผล ${data.length} รายการ (Fast Mode ⚡)...`, { id: 'import-toast' })
 
-        // 1. Pre-fetch ALL stores for lookup (Performance Optimization)
-        // Note: Assuming /api/stores returns all stores. If paginated, this needs adjustment.
-        // For now, consistent with user suggestion.
-        const storesResponse = await fetch('/api/stores?limit=999999')
+        // 1. Pre-fetch ALL stores AND Profiles for lookup (Performance Optimization)
+        const [storesResponse, profilesResponse] = await Promise.all([
+          fetch('/api/stores?limit=999999'),
+          fetch('/api/profile')
+        ])
+
         const stores = await storesResponse.json()
         const storeMap = new Map(stores.map((s: any) => [s.code, s.id]))
 
-        console.log(`📚 Loaded ${storeMap.size} existing stores`)
+        const profiles = await profilesResponse.json()
+        const validSales = new Set(profiles.map((p: any) => p.name))
+
+        console.log(`📚 Loaded ${storeMap.size} stores and ${validSales.size} profiles`)
 
         // 2. Identify NEW stores to create
         const uniqueStoreCodes = new Set<string>()
         const newStoresToCreate: any[] = []
 
         data.forEach((row: any) => {
-          const code = row['รหัส'] || row['code']
+          // Helper to get value from row with fuzzy key matching (Scoped for this block)
+          const getValue = (obj: any, candidates: string[]) => {
+            const keys = Object.keys(obj)
+            const foundKey = keys.find(k => candidates.includes(k.trim().toLowerCase()))
+            return foundKey ? obj[foundKey] : undefined
+          }
+
+          const code = getValue(row, ['รหัส', 'code', 'store_code', 'รหัสร้าน'])
           if (code && !storeMap.has(code) && !uniqueStoreCodes.has(code)) {
             uniqueStoreCodes.add(code)
             newStoresToCreate.push({
               code: code,
-              name: row['ชื่อร้าน'] || row['name'] || code,
-              owner: row['เจ้าของ'] || null,
-              type: row['ประเภทร้าน'] || 'general',
-              customerType: row['ประเภทลูกค้า'] || null,
-              phone: row['เบอร์โทร'] || null,
-              address: row['ที่อยู่'] || null,
+              name: getValue(row, ['ชื่อร้าน', 'name', 'store_name']) || code,
+              owner: getValue(row, ['เจ้าของ', 'owner']) || null,
+              type: getValue(row, ['ประเภทร้าน', 'type', 'store_type']) || 'general',
+              customerType: getValue(row, ['ประเภทลูกค้า', 'customertype']) || null,
+              phone: getValue(row, ['เบอร์โทร', 'phone', 'tel']) || null,
+              address: getValue(row, ['ที่อยู่', 'address']) || null,
               status: 'active'
             })
           }
@@ -323,7 +336,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
         }
 
         // 3. Create Visits in Parallel
-        toast.loading(`กำลังบันทึกการเข้าพบ ${data.length} รายการ...`, { id: 'import-toast' })
+        toast.loading(`กำลังบันทึกการเข้าพบ ${data.length} รายการ (ตรวจสอบรายชื่อเซลล์)...`, { id: 'import-toast' })
 
         let successCount = 0
         let errorCount = 0
@@ -332,20 +345,40 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
 
         const visitPromises = data.map(async (row: any) => {
           try {
-            const storeCode = row['รหัส'] || row['code']
-            const storeId = storeMap.get(storeCode) || null
+            // Helper to get value from row with fuzzy key matching
+            const getValue = (obj: any, candidates: string[]) => {
+              const keys = Object.keys(obj)
+              const foundKey = keys.find(k => candidates.includes(k.trim().toLowerCase()))
+              return foundKey ? obj[foundKey] : undefined
+            }
+
+            const storeCode = getValue(row, ['รหัส', 'code', 'store_code', 'รหัสร้าน'])
+            const storeId = storeCode ? (storeMap.get(storeCode) || null) : null
+
+            // Check Sales Name with fuzzy matching
+            let rawSales = getValue(row, ['เซลล์', 'sales', 'sale', 'sales_name', 'พนักงานขาย'])
+            let salesName = rawSales || 'ไม่ระบุ'
+
+            if (salesName !== 'ไม่ระบุ') {
+              salesName = String(salesName).trim() // Ensure string and trim
+              if (!validSales.has(salesName)) {
+                salesName = `${salesName} (ยังไม่ลงทะเบียน)`
+              }
+            }
 
             const visitData = {
-              date: row['วันที่'] || row['date'] || new Date().toISOString(),
-              sales: row['เซลล์'] || row['sales'] || 'ไม่ระบุ',
+              date: getValue(row, ['วันที่', 'date', 'visit_date']) || new Date().toISOString(),
+              sales: salesName,
               storeRef: storeCode || null,
               masterId: storeId, // Resolve ID from map
-              visitCat: row['ประเภทลูกค้า'] || row['customerType'] || null,
-              visitType: row['ประเภทการเข้าพบ'] || row['visitType'] || 'general',
-              dealStatus: row['สถานะ'] || row['status'] || 'pending',
-              closeReason: row['เหตุผล'] || row['reason'] || null,
-              notes: {},
-              order: row['คำสั่งซื้อ'] || row['order'] || null
+              visitCat: getValue(row, ['หัวข้อเข้าพบ', 'ประเภทลูกค้า', 'customertype', 'visit_cat']) || null,
+              visitType: getValue(row, ['ประเภทเข้าพบ', 'visittype', 'visit_type']) || 'general',
+              dealStatus: getValue(row, ['สถานะ', 'status', 'deal_status']) || 'pending',
+              closeReason: getValue(row, ['เหตุผล', 'reason', 'close_reason']) || null,
+              notes: {
+                text: getValue(row, ['บันทึก', 'notes', 'note', 'details']) || null
+              },
+              order: getValue(row, ['คำสั่งซื้อ', 'order', 'order_amount']) || null
             }
 
             const res = await fetch('/api/visits', {
@@ -397,76 +430,110 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
     e.target.value = ''
   }
 
+  // --- CHART CONFIG (Colors & Labels for Stacked Bar) ---
+  const chartConfig = {
+    typeA: { label: "ร้านเดิม A", color: "#3b82f6" }, // Blue
+    typeB: { label: "ร้านเดิม B", color: "#06b6d4" }, // Cyan
+    new: { label: "ร้านใหม่ N", color: "#22c55e" },   // Green
+    closed: { label: "ปิดการขาย", color: "#ef4444" },  // Red
+    typeT: { label: "พัฒนา T", color: "#eab308" },    // Yellow
+    typeD: { label: "ตัวแทน D", color: "#a855f7" },    // Purple
+    general: { label: "ทั่วไป", color: "#94a3b8" }     // Slate
+  }
+
   // --- AGGREGATION: Sales Performance (Real Data) ---
+  // Group by Sales Rep -> Then by Type (Stacked)
   const salesPerformance = useMemo(() => {
     return filteredVisits.reduce((acc: any[], visit: any) => {
-      const name = visit.sales || "ไม่ระบุ"
-      const existing = acc.find(item => item.name === name)
+      const name = (visit.sales || "ไม่ระบุ").trim() // Sales Rep Name
+      let rep = acc.find((item: any) => item.name === name)
 
-      // Check if "New Store" visit (using visitType or other indicator)
-      const isNew = visit.visitType === 'new' || visit.visitCat === 'ใหม่'
-
-      if (existing) {
-        existing.total++
-        if (isNew) existing.new++
-        if (visit.dealStatus === 'closed') existing.closed++
-      } else {
-        acc.push({
+      if (!rep) {
+        rep = {
           name,
-          total: 1,
-          new: isNew ? 1 : 0,
-          closed: visit.dealStatus === 'closed' ? 1 : 0,
-          plans: 0 // Will be populated next
-        })
+          total: 0,
+          // Stacked Data properties (initialize - ensure numbers)
+          typeA: 0, typeB: 0, new: 0, closed: 0, typeT: 0, typeD: 0, general: 0,
+          plans: 0
+        }
+        acc.push(rep)
       }
+
+      rep.total++
+
+      // Categorize Visit
+      const cat = visit.visitCat || visit.store?.customerType || ""
+      const status = visit.dealStatus
+      const lowerCat = cat.toLowerCase()
+
+      // Determine which stack to increment - Priority Logic
+      if (status === 'closed') {
+        rep.closed++
+      } else if (lowerCat.includes('a')) {
+        rep.typeA++
+      } else if (lowerCat.includes('b')) {
+        rep.typeB++
+      } else if (lowerCat.includes('ใหม่') || lowerCat.includes('n') || visit.visitType === 'new') {
+        rep.new++
+      } else if (lowerCat.includes('t')) {
+        rep.typeT++
+      } else if (lowerCat.includes('d')) {
+        rep.typeD++
+      } else {
+        rep.general++
+      }
+
       return acc
     }, [])
   }, [filteredVisits])
 
-  // Merge Plans into Sales Performance
-  plans?.forEach((plan: any) => {
-    const name = plan.sales || "ไม่ระบุ"
-    const existing = salesPerformance.find((item: any) => item.name === name)
-    if (existing) {
-      existing.plans++
-    } else {
-      salesPerformance.push({ name, total: 0, new: 0, closed: 0, plans: 1 })
-    }
-  })
+  // Merge Plans Count to salesPerformance (for Table view if needed)
+  // But strictly for the "Future Plans" Chart, we need a separate structure grouped by Rep -> Type
 
-  // Calculate Percentages
+  const plansStats = useMemo(() => {
+    if (!plans) return []
+    return plans.reduce((acc: any[], plan: any) => {
+      const name = plan.sales || "ไม่ระบุ"
+      let rep = acc.find((item: any) => item.name === name)
+
+      if (!rep) {
+        rep = {
+          name,
+          total: 0,
+          typeA: 0, typeB: 0, new: 0, closed: 0, typeT: 0, typeD: 0, general: 0
+        }
+        acc.push(rep)
+      }
+
+      rep.total++
+
+      const cat = plan.visitCat || plan.store?.customerType || ""
+      const lowerCat = cat.toLowerCase()
+
+      // Logic for plans categorization
+      if (lowerCat.includes('a')) rep.typeA++
+      else if (lowerCat.includes('b')) rep.typeB++
+      else if (lowerCat.includes('ใหม่') || lowerCat.includes('n')) rep.new++
+      else if (lowerCat.includes('t')) rep.typeT++
+      else if (lowerCat.includes('d')) rep.typeD++
+      else rep.general++
+
+      return acc
+    }, [])
+  }, [plans])
+
+
+  // Calculate Percentages for Table
   salesPerformance.forEach((item: any) => {
     item.percent = item.total > 0 ? Math.round((item.closed / item.total) * 100) : 0
   })
 
-  // DEBUG: Log aggregated data
-  console.log('📊 Dashboard Debug Info:')
-  console.log('Total Visits:', displayVisits.length)
-  console.log('Total Plans:', plans?.length || 0)
-  console.log('Sales Performance:', salesPerformance)
-  console.log('Sample Visit:', displayVisits[0])
-
-  // --- CHART DATA PREPARATION (Updated for Visuals) ---
-
-  // 1. Visits by Sales Rep (Bar Chart)
-  const visitsBySalesData = salesPerformance.map((item: any) => ({
-    name: item.name,
-    value: item.total
-  }))
-
-  // 2. Plans by Sales Rep (Bar Chart)
-  const plansBySalesData = salesPerformance.map((item: any) => ({
-    name: item.name,
-    value: item.plans
-  }))
-
-  // 3. Closed Deals by Sales Rep (Bar Chart)
+  // 3. CLOSED DEALS DATA (For Charts)
   const closedBySalesData = salesPerformance.map((item: any) => ({
     name: item.name,
     value: item.closed
   }))
 
-  // 4. Store Types (Donut/Pie Logic - Top 5)
   const storeTypesData = displayStores.reduce((acc: any[], store: any) => {
     const type = store.type || "ไม่ระบุ"
     const existing = acc.find(i => i.name === type)
@@ -497,15 +564,26 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
         </div>
 
         {/* Actions */}
-        <div className="flex flex-wrap gap-2 items-center justify-between">
+        <div className="flex  flex-wrap gap-2 items-center justify-between">
           <div className="flex gap-2">
             <ActionButton onClick={handleExportVisits} label="Export เข้าพบ" icon={<FileSpreadsheet className="w-4 h-4 mr-2 text-green-600" />} />
             <ActionButton onClick={handleExportPlans} label="Export แผน" icon={<FileSpreadsheet className="w-4 h-4 mr-2 text-blue-600" />} />
             <ActionButton onClick={handleExportAll} label="Export ทั้งหมด" icon={<Database className="w-4 h-4 mr-2 text-purple-600" />} />
+            <ActionButton onClick={() => { fetchVisits(); fetchPlans(); toast.success("รีเฟรชข้อมูลล่าสุดแล้ว") }} label="รีเฟรช" icon={<Zap className="w-4 h-4 mr-2 text-amber-500" />} />
             <div className="relative">
               <input type="file" ref={fileInputRef} onChange={handleImportExcel} className="hidden" accept=".xlsx, .xls" />
               <ActionButton onClick={() => fileInputRef.current?.click()} label="Import Excel" icon={<Upload className="w-4 h-4 mr-2" />} />
             </div>
+          </div>
+          <div className="flex gap-2">
+            <ActionButton
+              onClick={handleExportPlans}
+              label="ล้างข้อมูล"
+              className="bg-red-500 hover:bg-red-600 text-white border-red-600 dark:bg-red-600 dark:hover:bg-red-700"
+              icon={<FileSpreadsheet className="w-4 h-4 mr-2 text-white" />}
+              variant="default"
+            />
+
           </div>
         </div>
       </div>
@@ -620,9 +698,16 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${visit.dealStatus === 'closed' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-orange-500'}`}></div>
-                        <h4 className="font-bold text-slate-800 dark:text-slate-200 text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                          {visit.store?.name || visit.storeRef || "ไม่ระบุร้าน"}
-                        </h4>
+                        <div>
+                          <h4 className="font-bold text-slate-800 dark:text-slate-200 text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">
+                            {visit.store?.name || visit.storeRef || "ไม่ระบุร้าน"}
+                          </h4>
+                          {visit.store?.code && (
+                            <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">
+                              #{visit.store.code}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {visit.dealStatus === 'closed' ? (
@@ -726,37 +811,39 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
 
       {/* ================== 3. CHARTS ================== */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1 h-[320px]">
+        <div className="lg:col-span-1 h-[400px]">
           <ChartCard
-            title="การเข้าพบ - รายเซลล์"
-            detail={`จำนวนการเข้าพบทั้งหมด ${stats.totalVisits} ครั้ง`}
+            title="ผลงานรายเซลล์ - จำแนกตามภารกิจ"
+            detail="เปรียบเทียบภารกิจรายบุคคล (สัปดาห์นี้)"
             ran="ทั้งหมด"
-            data={visitsBySalesData}
-            dataKey="value"
+            data={salesPerformance}
             nameKey="name"
-            config={{ value: { label: "เข้าพบ", color: "#3b82f6" } }}
+
+            config={chartConfig}
+            type="stacked"
           />
         </div>
-        <div className="lg:col-span-1 h-[320px]">
+        <div className="lg:col-span-1 h-[400px]">
           <ChartCard
-            title="แผนงาน - รายเซลล์"
-            detail={`จำนวนแผนทั้งหมด ${plans?.length || 0} แผน`}
+            title="แผนเข้าพบ - เป้าหมายรายเซลล์"
+            detail="แผนงานแยกตามประเภทลูกค้า"
             ran="ทั้งหมด"
-            data={plansBySalesData}
-            dataKey="value"
+            data={plansStats}
             nameKey="name"
-            config={{ value: { label: "แผน", color: "#10b981" } }}
+            config={chartConfig}
+            type="stacked"
           />
         </div>
-        <div className="lg:col-span-1 h-[320px]">
+        <div className="lg:col-span-1 h-[400px]">
           <ChartCard
-            title="ปิดการขาย - รายเซลล์"
+            title="ยอดปิดการขาย - รายเซลล์"
             detail={`ปิดสำเร็จ ${stats.closedDeals} ครั้ง (${stats.successRate}%)`}
             ran="ทั้งหมด"
             data={closedBySalesData}
             dataKey="value"
             nameKey="name"
             config={{ value: { label: "ปิดการขาย", color: "#f43f5e" } }}
+            type="bar"
           />
         </div>
       </div>
@@ -931,33 +1018,6 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
   )
 }
 
-// ---------------- Helper Components ----------------
-
-function FilterButton({ active, onClick, label, icon }: { active: boolean, onClick: () => void, label: string, icon: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`
-        flex items-center justify-center py-4 px-4 rounded-lg text-sm font-medium transition-all duration-200 border
-        ${active
-          ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/30'
-          : 'bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-        }
-      `}
-    >
-      {icon}
-      {label}
-    </button>
-  )
-}
-
-function ActionButton({ label, icon, onClick }: { label: string, icon: React.ReactNode, onClick?: () => void }) {
-  return (
-    <Button onClick={onClick} variant="outline" className="bg-white dark:bg-[#1e293b] text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-      {icon} {label}
-    </Button>
-  )
-}
 
 // THE GENERATOR COMPONENT (Compact, Full Width, Beautiful)
 function Generator({ icon, label, value, sub, glowColor, active }: any) {

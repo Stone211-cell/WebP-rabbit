@@ -84,7 +84,7 @@ function CustomTooltip({ active, payload, label }: any) {
 
 
 /* ================================
-   MAIN COMPONENT
+   MAIN COMPONENT (Upgraded for Stacked/Multi-Bar)
 ================================ */
 
 export default function ChartCard({
@@ -94,26 +94,46 @@ export default function ChartCard({
     data = [],
     config = { mobile: { label: "จำนวน", color: "#60a5fa" } },
     dataKey = "mobile",
-    nameKey = "name"
+    nameKey = "name",
+    type = "bar", // 'bar' | 'stacked'
+    xAxisLabel = false
 }: any) {
     // Fallback if no data
-    const displayData = data.length > 0 ? data : [{ name: "ไม่มีข้อมูล", [dataKey]: 0 }]
+    const displayData = data.length > 0 ? data : [{ name: "ไม่มีข้อมูล", [typeof dataKey === 'string' ? dataKey : 'value']: 0 }]
+
+    // Determine keys for rendering bars
+    // If 'stacked', config keys are used. If 'bar', dataKey is used.
+    const barKeys = type === 'stacked' ? Object.keys(config) : [dataKey]
 
     return (
         <Card className="shadow-lg flex flex-col h-full border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1e293b]">
-            <CardHeader>
-                <CardTitle className="text-base text-slate-900 dark:text-white">{title}</CardTitle>
-                <CardDescription className="text-slate-600 dark:text-slate-400">
-                    {detail} | ช่วง: {ran}
+            <CardHeader className="pb-2">
+                <CardTitle className="text-base text-slate-900 dark:text-white flex items-center gap-2">
+                    {title}
+                </CardTitle>
+                <CardDescription className="text-slate-600 dark:text-slate-400 text-xs">
+                    {detail}
                 </CardDescription>
+
+                {/* Custom Legend for Stacked Chart */}
+                {type === 'stacked' && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                        {Object.entries(config).map(([key, conf]: any) => (
+                            <div key={key} className="flex items-center gap-1.5 min-w-max">
+                                <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: conf.color }}></div>
+                                <span className="text-[10px] text-slate-500 dark:text-slate-400">{conf.label}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </CardHeader>
 
-            <CardContent className="flex-1 min-h-[250px]">
+            <CardContent className="flex-1 min-h-[250px] p-2">
                 <ChartContainer
                     config={config}
                     className="h-full w-full aspect-auto"
                 >
-                    <BarChart data={displayData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <BarChart data={displayData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
                         <CartesianGrid
                             vertical={false}
                             strokeDasharray="3 3"
@@ -124,32 +144,61 @@ export default function ChartCard({
                             dataKey={nameKey}
                             tickLine={false}
                             axisLine={false}
-                            tickMargin={8}
-                            className="text-xs text-slate-600 dark:text-slate-400"
-                            tick={{ fill: 'currentColor', opacity: 0.8 }}
+                            tickMargin={10}
+                            className="text-xs text-slate-600 dark:text-slate-400 font-medium"
+                            tick={{ fill: 'currentColor', opacity: 0.8, fontSize: 11 }}
                         />
 
                         <YAxis
                             tickLine={false}
                             axisLine={false}
                             className="text-xs text-slate-600 dark:text-slate-400"
-                            tick={{ fill: 'currentColor', opacity: 0.8 }}
+                            tick={{ fill: 'currentColor', opacity: 0.8, fontSize: 10 }}
+                            width={25}
                         />
 
                         <ChartTooltip
-                            content={<CustomTooltip />}
-                            cursor={{ fill: 'transparent' }}
-                        />
-
-                        <Bar
-                            dataKey={dataKey}
-                            radius={[6, 6, 0, 0]}
-                            fill={config[dataKey]?.color || "#60a5fa"}
-                            fillOpacity={0.9}
-                            activeBar={{
-                                fillOpacity: 1,
+                            cursor={{ fill: 'rgba(255,255,255,0.1)' }}
+                            content={({ active, payload, label }) => {
+                                if (!active || !payload?.length) return null
+                                return (
+                                    <div className="rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 shadow-xl z-50">
+                                        <p className="text-sm font-bold text-slate-900 dark:text-white mb-2">{label}</p>
+                                        <div className="space-y-1">
+                                            {payload.map((entry: any, index: number) => (
+                                                <div key={index} className="flex items-center gap-2 text-xs">
+                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></div>
+                                                    <span className="text-slate-500 dark:text-slate-400">{entry.name}:</span>
+                                                    <span className="font-medium text-slate-900 dark:text-slate-200">{entry.value}</span>
+                                                </div>
+                                            ))}
+                                            {type === 'stacked' && (
+                                                <div className="pt-2 mt-2 border-t border-slate-100 dark:border-slate-700 flex justify-between gap-4 font-bold text-xs text-slate-700 dark:text-slate-300">
+                                                    <span>รวม</span>
+                                                    <span>{payload.reduce((sum: number, entry: any) => sum + (Number(entry.value) || 0), 0)}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )
                             }}
                         />
+
+                        {/* Render Bars based on Type */}
+                        {barKeys.map((key) => (
+                            <Bar
+                                key={key}
+                                dataKey={key}
+                                stackId={type === 'stacked' ? "a" : undefined}
+                                fill={config[key]?.color || "#60a5fa"}
+                                radius={
+                                    type === 'stacked'
+                                        ? [0, 0, 0, 0] // Stacked middle bars usually square
+                                        : [4, 4, 0, 0] // Regular bars rounded top
+                                }
+                                maxBarSize={50}
+                            />
+                        ))}
                     </BarChart>
                 </ChartContainer>
             </CardContent>

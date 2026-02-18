@@ -1,43 +1,37 @@
-import axios from 'axios'
-import type { Plan } from '@/lib/types/crm'
-
-// baseURL
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-
-// axios instance
-const api = axios.create({
-  baseURL: API_URL,
-})
+import { axiosInstance } from "@/lib/axios"
+import type { Plan } from "@/lib/types/crm" // Ensure this type exists or use any
 
 /**
- * ดึงข้อมูลแผน (filter ตามช่วงวันที่)
+ * Fetch list of plans (filter by week range usually)
  */
-export async function fetchPlans(
-  startDate?: string,
-  endDate?: string
-): Promise<Plan[]> {
+export async function fetchPlans(weekStart?: string, weekEnd?: string): Promise<Plan[]> {
   const params: Record<string, string> = {}
+  if (weekStart) params.weekStart = weekStart
+  if (weekEnd) params.weekEnd = weekEnd
 
-  if (startDate) params.startDate = startDate
-  if (endDate) params.endDate = endDate
-
-  const res = await api.get<Plan[]>('/api/plans', { params })
+  const res = await axiosInstance.get('/plans', { params })
   return res.data
 }
 
 /**
- * สร้างแผนใหม่
+ * Create a new plan
  */
-export async function createPlan(
-  payload: Omit<Plan, 'id' | 'createdAt' | 'updatedAt'>
-): Promise<Plan> {
-  const res = await api.post<Plan>('/api/plans', payload)
+export async function createPlan(payload: any): Promise<Plan> {
+  const res = await axiosInstance.post('/plans', payload)
   return res.data
 }
 
 /**
- * ลบแผน
+ * Update an existing plan
+ */
+export async function updatePlan(id: string, payload: any): Promise<Plan> {
+  const res = await axiosInstance.put(`/plans/${id}`, payload)
+  return res.data
+}
+
+/**
+ * Delete a plan
  */
 export async function deletePlan(id: string): Promise<void> {
-  await api.delete(`/api/plans/${id}`)
+  await axiosInstance.delete(`/plans/${id}`)
 }

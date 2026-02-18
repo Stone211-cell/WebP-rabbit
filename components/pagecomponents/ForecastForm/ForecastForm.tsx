@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { axiosInstance } from "@/lib/axios"
+import { createForecast, updateForecast, deleteForecast } from "@/lib/api/forecasts"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
 import { addWeeks, subWeeks, format, startOfWeek, endOfWeek, isSameWeek } from "date-fns"
@@ -178,10 +179,10 @@ export default function ForecastForm({ forecasts, onRefresh }: any) {
             }
 
             if (editingItem) {
-                await axiosInstance.put(`/forecasts/${editingItem.id}`, payload)
+                await updateForecast(editingItem.id, payload)
                 toast.success("อัปเดตข้อมูลเรียบร้อย")
             } else {
-                await axiosInstance.post("/forecasts", payload)
+                await createForecast(payload)
                 toast.success("เพิ่มข้อมูลเรียบร้อย")
             }
 
@@ -198,7 +199,7 @@ export default function ForecastForm({ forecasts, onRefresh }: any) {
     const handleDelete = async (id: string) => {
         if (!confirm("ยืนยันการลบรายการนี้?")) return
         try {
-            await axiosInstance.delete(`/forecasts/${id}`)
+            await deleteForecast(id)
             toast.success("ลบรายการรเรียบร้อย")
             if (onRefresh) onRefresh(weekStart.toISOString())
         } catch (error) {
@@ -451,9 +452,10 @@ export default function ForecastForm({ forecasts, onRefresh }: any) {
                                         </div>
                                         <div>
                                             <h4 className="text-2xl font-black text-slate-900 dark:text-white leading-none mb-1.5">{group.store?.name}</h4>
-                                            <div className="flex gap-2 text-xs font-mono text-slate-500">
-                                                <span className="bg-slate-200 dark:bg-slate-800 px-2 rounded-md">{group.store?.code}</span>
-                                                <span className="opacity-70">{group.items.length} รายการ</span>
+                                            <div className="flex gap-2 text-xs font-mono text-slate-500 items-center">
+                                                <span className="bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-md text-slate-700 dark:text-slate-300 font-bold">{group.store?.code}</span>
+                                                <span className="opacity-70">| {group.store?.name}</span>
+                                                <span className="opacity-50">({group.items.length} รายการ)</span>
                                             </div>
                                         </div>
                                     </div>
@@ -474,12 +476,12 @@ export default function ForecastForm({ forecasts, onRefresh }: any) {
                                         const diff = (f.actual || 0) - (f.forecast || 0)
 
                                         return (
-                                            <Card key={f.id} className="relative overflow-hidden border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 backdrop-blur-sm rounded-[1.5rem] hover:shadow-lg transition-all group">
-                                                <div className="p-6 space-y-6">
+                                            <Card key={f.id} className="relative overflow-hidden border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 backdrop-blur-sm rounded-[1.2rem] hover:shadow-lg transition-all group">
+                                                <div className="p-4 space-y-1">
                                                     {/* Top Row: Product Name & Edit */}
                                                     <div className="flex justify-between items-start">
                                                         <div>
-                                                            <h4 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                                                            <h4 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
                                                                 {f.product}
                                                             </h4>
                                                         </div>
@@ -494,7 +496,7 @@ export default function ForecastForm({ forecasts, onRefresh }: any) {
                                                     </div>
 
                                                     {/* Progress Bars Row */}
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {/* Week Target */}
                                                         <div className="space-y-2">
                                                             <div className="flex justify-between text-xs font-bold">
@@ -532,18 +534,18 @@ export default function ForecastForm({ forecasts, onRefresh }: any) {
                                                 </div>
 
                                                 {/* Bottom Stats Footer */}
-                                                <div className="bg-slate-50/50 dark:bg-black/20 p-4 flex justify-between items-center text-xs border-t border-slate-100 dark:border-slate-800">
+                                                <div className="bg-slate-50/50 dark:bg-black/20 px-4 py-3 flex justify-between items-center text-[10px] border-t border-slate-100 dark:border-slate-800">
                                                     <div className="text-center w-1/3 border-r border-slate-200 dark:border-slate-800">
-                                                        <div className="opacity-50 mb-1">คาดการณ์</div>
-                                                        <div className="font-bold text-blue-500 text-base">{f.forecast?.toLocaleString()}</div>
+                                                        <div className="opacity-50 mb-0.5">คาดการณ์</div>
+                                                        <div className="font-bold text-blue-500 text-sm">{f.forecast?.toLocaleString()}</div>
                                                     </div>
                                                     <div className="text-center w-1/3 border-r border-slate-200 dark:border-slate-800">
-                                                        <div className="opacity-50 mb-1">ซื้อจริง</div>
-                                                        <div className="font-bold text-emerald-500 text-base">{f.actual?.toLocaleString()}</div>
+                                                        <div className="opacity-50 mb-0.5">ซื้อจริง</div>
+                                                        <div className="font-bold text-emerald-500 text-sm">{f.actual?.toLocaleString()}</div>
                                                     </div>
                                                     <div className="text-center w-1/3">
-                                                        <div className="opacity-50 mb-1">ส่วนต่าง</div>
-                                                        <div className={cn("font-bold text-base", diff >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                                        <div className="opacity-50 mb-0.5">ส่วนต่าง</div>
+                                                        <div className={cn("font-bold text-sm", diff >= 0 ? "text-emerald-500" : "text-rose-500")}>
                                                             {diff > 0 ? "+" : ""}{diff.toLocaleString()}
                                                         </div>
                                                     </div>

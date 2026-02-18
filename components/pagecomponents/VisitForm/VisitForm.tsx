@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { axiosInstance } from "@/lib/axios"
+import { createVisit } from "@/lib/api/visits"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -31,8 +32,12 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 
 import { useStoreSearch } from "@/components/hooks/useStoreSearch"
+import { VisitTopics, VisitTypes, DealStatuses } from "@/lib/types/manu"
+import { VisitDetailModal } from "./VisitDetailModal"
+import { Eye } from "lucide-react"
 
-export default function VisitForm({ visits, profiles, onRefresh }: any) {
+export default function
+  VisitForm({ visits, profiles, onRefresh }: any) {
   const [form, setForm] = useState<any>({
     sales: "",
     date: new Date().toLocaleDateString('en-CA'),
@@ -45,6 +50,7 @@ export default function VisitForm({ visits, profiles, onRefresh }: any) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [salesFilter, setSalesFilter] = useState("all")
   const [historySearch, setHistorySearch] = useState("")
+  const [selectedVisit, setSelectedVisit] = useState<any>(null)
 
   // 💡 ใช้ Hook จัดการค้นหาร้านค้า
   const {
@@ -83,7 +89,7 @@ export default function VisitForm({ visits, profiles, onRefresh }: any) {
 
     setIsSubmitting(true)
     try {
-      await axiosInstance.post("/visits", {
+      await createVisit({
         ...form,
         masterId: selectedStore.id,
         date: new Date(form.date).toISOString()
@@ -194,7 +200,16 @@ export default function VisitForm({ visits, profiles, onRefresh }: any) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-1.5">
               <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">หัวข้อเข้าพบ *</Label>
-              <Input placeholder="เช่น ตรวจเยี่ยมประจำเดือน" value={form.visitCat} onChange={(e) => handleChange("visitCat", e.target.value)} className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl" />
+              <Select value={form.visitCat} onValueChange={(v) => handleChange("visitCat", v)}>
+                <SelectTrigger className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl">
+                  <SelectValue placeholder="เลือกหัวข้อ" />
+                </SelectTrigger>
+                <SelectContent>
+                  {VisitTopics.map(topic => (
+                    <SelectItem key={topic} value={topic}>{topic}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
@@ -204,10 +219,9 @@ export default function VisitForm({ visits, profiles, onRefresh }: any) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="new">ร้านใหม่</SelectItem>
-                  <SelectItem value="continuous">ร้านติดต่อต่อเนื่อง</SelectItem>
-                  <SelectItem value="follow">ร้านเดิม</SelectItem>
-                  <SelectItem value="database">ร้านฐานข้อมูลเดิม</SelectItem>
+                  {VisitTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -222,8 +236,9 @@ export default function VisitForm({ visits, profiles, onRefresh }: any) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="เปิดการขาย">เปิดการขาย</SelectItem>
-                  <SelectItem value="ปิดการขาย">ปิดการขาย</SelectItem>
+                  {DealStatuses.map((status) => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -329,11 +344,12 @@ export default function VisitForm({ visits, profiles, onRefresh }: any) {
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">พนักงานขาย</TableHead>
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">สรุปการเข้าพบ</TableHead>
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-center">สถานะ</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-center">จัดการ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredVisits.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="h-32 text-center text-slate-400 italic text-xs">ไม่พบข้อมูลประวัติ</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="h-32 text-center text-slate-400 italic text-xs">ไม่พบข้อมูลประวัติ</TableCell></TableRow>
                 ) : (
                   filteredVisits.map((v: any) => (
                     <TableRow key={v.id} className="hover:bg-blue-500/5 transition-colors border-b dark:border-slate-800/50">
@@ -361,6 +377,16 @@ export default function VisitForm({ visits, profiles, onRefresh }: any) {
                           {v.dealStatus}
                         </span>
                       </TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setSelectedVisit(v)}
+                          className="hover:bg-blue-500/10 hover:text-blue-500 rounded-full h-8 w-8"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -369,6 +395,11 @@ export default function VisitForm({ visits, profiles, onRefresh }: any) {
           </div>
         </CardContent>
       </Card>
+
+      <VisitDetailModal
+        visit={selectedVisit}
+        onClose={() => setSelectedVisit(null)}
+      />
     </div>
   )
 }

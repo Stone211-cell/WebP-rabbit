@@ -1,6 +1,6 @@
-'use client'
 import { useState, useEffect } from "react"
 import { axiosInstance } from "@/lib/axios"
+import { createStore, updateStore, deleteStore } from "@/lib/api/stores"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -27,6 +27,8 @@ import {
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Textarea } from "@/components/ui/textarea"
+import { StoreTypes, CreditRatings, OrderPeriods, CustomerGroups } from "@/lib/types/manu"
+import { ActionButton } from "@/components/crmhelper/helper"
 
 export default function StoreInformation({ stores, onRefresh }: { stores: any, onRefresh?: () => void }) {
   const [open, setOpen] = useState(false)
@@ -34,8 +36,13 @@ export default function StoreInformation({ stores, onRefresh }: { stores: any, o
   const [editingId, setEditingId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
 
+  // Filters
+  const [filterType, setFilterType] = useState("all")
+  const [filterRating, setFilterRating] = useState("all")
+
   const initialForm = {
     name: "",
+    code: "", // Added code field if not auto-generated strictly by backend, or just for view
     owner: "",
     type: "",
     customerType: "",
@@ -44,7 +51,7 @@ export default function StoreInformation({ stores, onRefresh }: { stores: any, o
     productUsed: "",
     quantity: "",
     orderPeriod: "",
-    supplier: "",
+    supplier: "", // รับของเดิมจาก
     payment: "เงินสด",
     paymentScore: "",
     status: "เปิดการขาย",
@@ -65,16 +72,16 @@ export default function StoreInformation({ stores, onRefresh }: { stores: any, o
     if (!editingId) localStorage.setItem("store_draft", JSON.stringify(form))
   }, [form, editingId])
 
-  // 🚀 CRUD Handlers (Clean Pattern)
+  // 🚀 CRUD Handlers
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     try {
       if (editingId) {
-        await axiosInstance.put(`/stores/${editingId}`, form)
+        await updateStore(editingId, form)
         toast.success("แก้ไขข้อมูลร้านค้าสำเร็จ!")
       } else {
-        await axiosInstance.post("/stores", form)
+        await createStore(form)
         toast.success("เพิ่มร้านค้าเรียบร้อยแล้ว!")
       }
       resetForm()
@@ -90,7 +97,7 @@ export default function StoreInformation({ stores, onRefresh }: { stores: any, o
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบร้านค้า "${name}"?`)) return
     try {
-      await axiosInstance.delete(`/stores/${id}`)
+      await deleteStore(id)
       toast.success("ลบร้านค้าเรียบร้อยแล้ว!")
       if (onRefresh) onRefresh()
     } catch (error) {
@@ -110,12 +117,17 @@ export default function StoreInformation({ stores, onRefresh }: { stores: any, o
     setOpen(true)
   }
 
-  const filteredStores = (stores || []).filter((s: any) =>
-    !search ||
-    s.name?.toLowerCase().includes(search.toLowerCase()) ||
-    s.code?.toLowerCase().includes(search.toLowerCase()) ||
-    s.owner?.toLowerCase().includes(search.toLowerCase())
-  )
+  const filteredStores = (stores || []).filter((s: any) => {
+    const matchSearch = !search ||
+      s.name?.toLowerCase().includes(search.toLowerCase()) ||
+      s.code?.toLowerCase().includes(search.toLowerCase()) ||
+      s.owner?.toLowerCase().includes(search.toLowerCase())
+
+    const matchType = filterType === "all" || s.type === filterType
+    const matchRating = filterRating === "all" || s.paymentScore === filterRating
+
+    return matchSearch && matchType && matchRating
+  })
 
   return (
     <div className="w-full min-h-screen text-black dark:text-white bg-transparent p-6 space-y-8 animate-in fade-in duration-700">
@@ -136,54 +148,108 @@ export default function StoreInformation({ stores, onRefresh }: { stores: any, o
                 <span className="text-xl mr-2">＋</span> เพิ่มร้านค้าใหม่
               </Button>
             </DialogTrigger>
-            <DialogContent className="min-w-[90vw] md:min-w-[800px] max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-white/20 rounded-[3rem] shadow-2xl">
-              <form onSubmit={handleSubmit} className="p-4 md:p-8 space-y-8">
+            <DialogContent className="min-w-[90vw] md:min-w-[900px] max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-white/20 rounded-[3rem] shadow-2xl">
+              <form onSubmit={handleSubmit} className="p-4 md:p-8 space-y-6">
                 <DialogHeader>
-                  <DialogTitle className="text-3xl font-black text-slate-900 dark:text-white">
+                  <DialogTitle className="text-3xl font-black text-slate-900 dark:text-white mb-4">
                     {editingId ? "📝 แก้ไขข้อมูลร้าน" : "✨ เพิ่มร้านค้าใหม่"}
                   </DialogTitle>
                 </DialogHeader>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ชื่อร้าน *</FieldLabel><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="ระบุชื่อร้านค้า" className="h-12 rounded-2xl font-bold bg-white dark:bg-slate-800" required /></Field>
-                  <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">เจ้าของร้าน</FieldLabel><Input value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })} placeholder="ชื่อเจ้าของ" className="h-12 rounded-2xl font-bold bg-white dark:bg-slate-800" /></Field>
-                  <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">เบอร์โทร</FieldLabel><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="0xx-xxx-xxxx" className="h-12 rounded-2xl font-bold bg-white dark:bg-slate-800" /></Field>
+                  {/* Row 1 */}
+                  <div className="md:col-span-1">
+                    <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500 mb-2">รหัสลูกค้า (อัตโนมัติ)</FieldLabel>
+                    <div className="h-12 flex items-center px-4 rounded-2xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 select-none">
+                      {editingId ? form.code : "System Auto-Gen"}
+                    </div>
+                  </div>
+                  <div className="md:col-span-1">
+                    <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ชื่อร้าน *</FieldLabel><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="ชื่อร้าน" className="h-12 rounded-2xl font-bold bg-white dark:bg-slate-800" required /></Field>
+                  </div>
+                  <div className="md:col-span-1">
+                    <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">เจ้าของร้าน</FieldLabel><Input value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })} placeholder="ชื่อเจ้าของ" className="h-12 rounded-2xl font-bold bg-white dark:bg-slate-800" /></Field>
+                  </div>
 
+                  {/* Row 2 */}
                   <Field>
                     <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ประเภทร้าน</FieldLabel>
                     <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
                       <SelectTrigger className="h-12 rounded-2xl font-bold"><SelectValue placeholder="เลือกประเภท" /></SelectTrigger>
-                      <SelectContent><SelectItem value="retail">ขายปลีก (Retail)</SelectItem><SelectItem value="wholesale">ขายส่ง (Wholesale)</SelectItem></SelectContent>
+                      <SelectContent>
+                        {StoreTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      </SelectContent>
                     </Select>
                   </Field>
                   <Field>
                     <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ประเภทลูกค้า</FieldLabel>
                     <Select value={form.customerType} onValueChange={(v) => setForm({ ...form, customerType: v })}>
                       <SelectTrigger className="h-12 rounded-2xl font-bold"><SelectValue placeholder="เลือกกลุ่ม" /></SelectTrigger>
-                      <SelectContent><SelectItem value="general">ทั่วไป (General)</SelectItem><SelectItem value="vip">VIP (Premium)</SelectItem></SelectContent>
+                      <SelectContent>
+                        {CustomerGroups.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                      </SelectContent>
                     </Select>
                   </Field>
-                  <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">เงื่อนไขชำระ</FieldLabel><Input value={form.payment} onChange={(e) => setForm({ ...form, payment: e.target.value })} className="h-12 rounded-2xl font-bold" /></Field>
+                  <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">เบอร์โทร</FieldLabel><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="0xx-xxx-xxxx" className="h-12 rounded-2xl font-bold bg-white dark:bg-slate-800" /></Field>
 
-                  <div className="md:col-span-3"><Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ที่อยู่ / พิกัด</FieldLabel><Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="rounded-[2rem] min-h-[100px] p-6" /></Field></div>
+                  {/* Row 3: Address */}
+                  <div className="md:col-span-3"><Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ที่อยู่ / พิกัด</FieldLabel><Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="ที่อยู่หรือพิกัด" className="rounded-[2rem] min-h-[80px] p-4 font-bold bg-slate-50 dark:bg-slate-800" /></Field></div>
 
-                  <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">สินค้าที่ใช้</FieldLabel><Input value={form.productUsed} onChange={(e) => setForm({ ...form, productUsed: e.target.value })} className="h-12 rounded-2xl" /></Field>
-                  <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ปริมาณสั่ง</FieldLabel><Input value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} className="h-12 rounded-2xl" /></Field>
+                  {/* Row 4 */}
+                  <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">สินค้าที่ใช้</FieldLabel><Input value={form.productUsed} onChange={(e) => setForm({ ...form, productUsed: e.target.value })} placeholder="ชื่อสินค้า" className="h-12 rounded-2xl" /></Field>
+                  <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ปริมาณ</FieldLabel><Input value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} placeholder="เช่น 10 ถุง/เดือน" className="h-12 rounded-2xl" /></Field>
                   <Field>
-                    <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">สถานะร้าน</FieldLabel>
-                    <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                      <SelectTrigger className={cn("h-12 rounded-2xl font-black border-2", form.status === "เปิดการขาย" ? "bg-emerald-500/5 text-emerald-600 border-emerald-500/20" : "bg-rose-500/5 text-rose-600 border-rose-500/20")}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent><SelectItem value="เปิดการขาย">เปิดการขาย</SelectItem><SelectItem value="ปิดการขาย">ปิดการขาย</SelectItem></SelectContent>
+                    <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ระยะเวลาสั่ง</FieldLabel>
+                    <Select value={form.orderPeriod} onValueChange={(v) => setForm({ ...form, orderPeriod: v })}>
+                      <SelectTrigger className="h-12 rounded-2xl font-bold"><SelectValue placeholder="เลือกระยะเวลา" /></SelectTrigger>
+                      <SelectContent>
+                        {OrderPeriods.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                      </SelectContent>
                     </Select>
                   </Field>
+
+                  {/* Row 5 */}
+                  <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">รับของเดิมจาก</FieldLabel><Input value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} placeholder="ชื่อคู่แข่ง" className="h-12 rounded-2xl" /></Field>
+                  <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">เงื่อนไขชำระ</FieldLabel><Input value={form.payment} onChange={(e) => setForm({ ...form, payment: e.target.value })} className="h-12 rounded-2xl font-bold" /></Field>
+                  <Field>
+                    <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">คะแนนการชำระเงิน</FieldLabel>
+                    <Select value={form.paymentScore} onValueChange={(v) => setForm({ ...form, paymentScore: v })}>
+                      <SelectTrigger className="h-12 rounded-2xl font-bold"><SelectValue placeholder="เลือกคะแนน" /></SelectTrigger>
+                      <SelectContent>
+                        {CreditRatings.map(c => (
+                          <SelectItem key={c.value} value={c.value}>
+                            <span className="flex items-center gap-2">
+                              <span className="text-yellow-400">{"⭐".repeat(c.stars)}</span>
+                              <span>{c.label}</span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+
+                  {/* Row 6: Status & Reason */}
+                  <div className="md:col-span-1">
+                    <Field>
+                      <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">สถานะ</FieldLabel>
+                      <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                        <SelectTrigger className={cn("h-12 rounded-2xl font-black border-2", form.status === "เปิดการขาย" ? "bg-emerald-500/5 text-emerald-600 border-emerald-500/20" : "bg-rose-500/5 text-rose-600 border-rose-500/20")}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent><SelectItem value="เปิดการขาย">🟢 เปิดการขาย</SelectItem><SelectItem value="ปิดการขาย">🔴 ปิดการขาย</SelectItem></SelectContent>
+                      </Select>
+                    </Field>
+                  </div>
+                  <div className="md:col-span-2">
+                    <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">เหตุผลปิดการขาย (ถ้ามี)</FieldLabel><Input value={form.closeReason} onChange={(e) => setForm({ ...form, closeReason: e.target.value })} placeholder="เช่น ร้านปิดตัว" className="h-12 rounded-2xl" /></Field>
+                  </div>
+
                 </div>
 
-                <DialogFooter className="gap-4">
+                <DialogFooter className="gap-4 pt-4">
                   <DialogClose asChild><Button variant="outline" className="h-14 px-8 rounded-2xl font-bold border-slate-200">ยกเลิก</Button></DialogClose>
                   <Button type="submit" disabled={isSubmitting} className="h-14 px-12 rounded-2xl bg-blue-600 text-white font-black shadow-xl">
-                    {isSubmitting ? "กำลังบันทึก..." : "💾 บันทึกข้อมูล"}
+                    {isSubmitting ? "กำลังบันทึก..." : "💾 บันทึก"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -192,14 +258,46 @@ export default function StoreInformation({ stores, onRefresh }: { stores: any, o
         </CardHeader>
 
         <CardContent className="p-8 space-y-6">
-          <div className="relative">
-            <Input
-              placeholder="ค้นหารหัสร้าน, ชื่อร้าน หรือ ชื่อเจ้าของ..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-14 pl-12 rounded-2xl bg-white/50 border-slate-200 shadow-sm focus:ring-2 focus:ring-blue-500/20 transition-all font-bold"
-            />
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl grayscale opacity-50">🔍</span>
+          {/* Controls & Filters */}
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Input
+                placeholder="ค้นหารหัสร้าน, ชื่อร้าน หรือ เจ้าของ..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-14 pl-12 rounded-2xl bg-white/50 border-slate-200 shadow-sm focus:ring-2 focus:ring-blue-500/20 transition-all font-bold"
+              />
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl grayscale opacity-50">🔍</span>
+            </div>
+
+            {/* Filter: Type */}
+            <div className="w-full md:w-[200px]">
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="h-14 rounded-2xl font-bold bg-white/50 border-slate-200">
+                  <SelectValue placeholder="ประเภทร้าน" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">ทั้งหมด</SelectItem>
+                  {StoreTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filter: Rating/Status */}
+            <div className="w-full md:w-[200px]">
+              <Select value={filterRating} onValueChange={setFilterRating}>
+                <SelectTrigger className="h-14 rounded-2xl font-bold bg-white/50 border-slate-200">
+                  <SelectValue placeholder="สถานะ/คะแนน" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">ทั้งหมด</SelectItem>
+                  {CreditRatings.map(c => (
+                    <SelectItem key={c.value} value={c.value}>{c.label} ({c.stars}⭐)</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="rounded-[2rem] border border-slate-200/50 dark:border-slate-800/50 overflow-hidden shadow-inner bg-white/20">
@@ -208,22 +306,34 @@ export default function StoreInformation({ stores, onRefresh }: { stores: any, o
                 <TableRow className="border-b dark:border-slate-800">
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 pl-8">รหัส</TableHead>
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">ชื่อสถานประกอบการ</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">ประเภทร้าน</TableHead>
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">เจ้าของ</TableHead>
-                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">เบอร์โทร</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-center">เครดิต</TableHead>
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-center">สถานะ</TableHead>
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-right pr-8">จัดการ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredStores.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="h-40 text-center py-20 text-slate-400 italic">ไม่พบข้อมูลร้านค้า</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="h-40 text-center py-20 text-slate-400 italic">ไม่พบข้อมูลร้านค้า</TableCell></TableRow>
                 ) : (
                   filteredStores.map((s: any) => (
                     <TableRow key={s.id} className="hover:bg-blue-500/5 transition-colors border-b dark:border-slate-800/50">
                       <TableCell className="py-6 pl-8 font-mono text-xs font-bold text-slate-400">{s.code || "-"}</TableCell>
-                      <TableCell className="font-black text-slate-900 dark:text-white">{s.name}</TableCell>
-                      <TableCell className="text-sm font-bold text-slate-500">{s.owner || "-"}</TableCell>
-                      <TableCell className="text-sm font-bold text-slate-500">{s.phone || "-"}</TableCell>
+                      <TableCell className="font-black text-slate-900 dark:text-white">
+                        {s.name}
+                        <div className="text-[10px] font-normal text-slate-500 mt-1">{s.customerType}</div>
+                      </TableCell>
+                      <TableCell className="text-xs font-bold text-slate-600 dark:text-slate-300">{s.type || "-"}</TableCell>
+                      <TableCell className="text-sm font-bold text-slate-500">
+                        <div>{s.owner || "-"}</div>
+                        <div className="text-[10px] font-mono opacity-70">{s.phone}</div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {s.paymentScore ? (
+                          <span className="text-yellow-500 text-xs">{"⭐".repeat(parseInt(s.paymentScore))}</span>
+                        ) : <span className="text-slate-300">-</span>}
+                      </TableCell>
                       <TableCell className="text-center">
                         <span className={cn(
                           "px-3 py-1 rounded-full text-[10px] font-black shadow-sm",
@@ -232,8 +342,8 @@ export default function StoreInformation({ stores, onRefresh }: { stores: any, o
                       </TableCell>
                       <TableCell className="text-right pr-8">
                         <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => startEdit(s)} className="h-10 w-10 text-blue-600 hover:bg-blue-500/10 rounded-xl">✏️</Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id, s.name)} className="h-10 w-10 text-rose-500 hover:bg-rose-500/10 rounded-xl">🗑️</Button>
+                          <ActionButton variant="ghost" size="icon" onClick={() => startEdit(s)} className="h-10 w-10 text-blue-600 hover:bg-blue-500/10 rounded-xl" label="✏️" />
+                          <ActionButton variant="ghost" size="icon" onClick={() => handleDelete(s.id, s.name)} className="h-10 w-10 text-rose-500 hover:bg-rose-500/10 rounded-xl" label="🗑️" />
                         </div>
                       </TableCell>
                     </TableRow>
