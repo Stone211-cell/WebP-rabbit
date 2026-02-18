@@ -138,7 +138,7 @@ export default function
 
         <CardContent className="p-8 space-y-8">
           {/* Main Controls */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="space-y-1.5">
               <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 flex items-center gap-2 text-xs">👤 พนักงานขาย *</Label>
               <Select value={form.sales} onValueChange={(v) => handleChange("sales", v)}>
@@ -163,7 +163,7 @@ export default function
               <Input value="1" readOnly className="bg-slate-100/30 dark:bg-slate-800/20 h-12 rounded-2xl text-center cursor-not-allowed" />
             </div>
 
-            <div className="md:col-span-2 relative space-y-1.5">
+            <div className="md:col-span-2 lg:col-span-3 relative space-y-1.5">
               <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">รหัสลูกค้า / ชื่อร้าน *</Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
@@ -197,7 +197,7 @@ export default function
           <Separator className="bg-slate-200/50 dark:bg-slate-700/50" />
 
           {/* Form Contexts */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="space-y-1.5">
               <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">หัวข้อเข้าพบ *</Label>
               <Select value={form.visitCat} onValueChange={(v) => handleChange("visitCat", v)}>
@@ -319,7 +319,7 @@ export default function
               />
             </div>
 
-            <div className="w-full md:w-80 space-y-1.5">
+            <div className="w-full md:w-1/3 space-y-1.5">
               <Label className="text-xs font-black uppercase text-slate-400">กรอกตามรายชื่อเซลล์</Label>
               <Select value={salesFilter} onValueChange={setSalesFilter}>
                 <SelectTrigger className="bg-white/60 dark:bg-slate-800/60 h-12 rounded-2xl">

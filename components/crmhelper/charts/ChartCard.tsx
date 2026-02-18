@@ -96,7 +96,8 @@ export default function ChartCard({
     dataKey = "mobile",
     nameKey = "name",
     type = "bar", // 'bar' | 'stacked'
-    xAxisLabel = false
+    xAxisLabel = false,
+    renderTooltip // Optional custom tooltip renderer
 }: any) {
     // Fallback if no data
     const displayData = data.length > 0 ? data : [{ name: "ไม่มีข้อมูล", [typeof dataKey === 'string' ? dataKey : 'value']: 0 }]
@@ -161,6 +162,12 @@ export default function ChartCard({
                             cursor={{ fill: 'rgba(255,255,255,0.1)' }}
                             content={({ active, payload, label }) => {
                                 if (!active || !payload?.length) return null
+
+                                // Use custom renderer if provided
+                                if (renderTooltip) {
+                                    return renderTooltip({ active, payload, label })
+                                }
+
                                 return (
                                     <div className="rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 shadow-xl z-50">
                                         <p className="text-sm font-bold text-slate-900 dark:text-white mb-2">{label}</p>

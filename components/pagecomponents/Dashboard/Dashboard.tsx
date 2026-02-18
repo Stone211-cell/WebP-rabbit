@@ -454,12 +454,19 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
           total: 0,
           // Stacked Data properties (initialize - ensure numbers)
           typeA: 0, typeB: 0, new: 0, closed: 0, typeT: 0, typeD: 0, general: 0,
-          plans: 0
+          plans: 0,
+          visitedStores: [] as string[],
+          closedStores: [] as string[]
         }
         acc.push(rep)
       }
 
       rep.total++
+
+      const storeName = visit.store?.name || visit.storeRef || "ไม่ระบุร้าน"
+      if (!rep.visitedStores.includes(storeName)) {
+        rep.visitedStores.push(storeName)
+      }
 
       // Categorize Visit
       const cat = visit.visitCat || visit.store?.customerType || ""
@@ -469,6 +476,9 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
       // Determine which stack to increment - Priority Logic
       if (status === 'closed') {
         rep.closed++
+        if (!rep.closedStores.includes(storeName)) {
+          rep.closedStores.push(storeName)
+        }
       } else if (lowerCat.includes('a')) {
         rep.typeA++
       } else if (lowerCat.includes('b')) {
@@ -500,12 +510,18 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
         rep = {
           name,
           total: 0,
-          typeA: 0, typeB: 0, new: 0, closed: 0, typeT: 0, typeD: 0, general: 0
+          typeA: 0, typeB: 0, new: 0, closed: 0, typeT: 0, typeD: 0, general: 0,
+          plannedStores: [] as string[]
         }
         acc.push(rep)
       }
 
       rep.total++
+
+      const storeName = plan.store?.name || plan.storeCode || "ไม่ระบุร้าน"
+      if (!rep.plannedStores.includes(storeName)) {
+        rep.plannedStores.push(storeName)
+      }
 
       const cat = plan.visitCat || plan.store?.customerType || ""
       const lowerCat = cat.toLowerCase()
@@ -531,7 +547,8 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
   // 3. CLOSED DEALS DATA (For Charts)
   const closedBySalesData = salesPerformance.map((item: any) => ({
     name: item.name,
-    value: item.closed
+    value: item.closed,
+    stores: item.closedStores
   }))
 
   const storeTypesData = displayStores.reduce((acc: any[], store: any) => {
@@ -589,8 +606,8 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
       </div>
 
       {/* ================== 1. CALENDAR (Centered & Compact) ================== */}
-      <div className="flex justify-center py-4">
-        <Card className="dark:bg-[#1e293b] dark:border-slate-800 border-slate-200 shadow-xl w-full max-w-3xl border-t-4 border-t-blue-500">
+      <div className="flex justify-center py-6">
+        <Card className="dark:bg-[#1e293b] dark:border-slate-800 border-slate-200 shadow-xl w-full max-w-5xl border-t-4 border-t-blue-500">
           <CardHeader className="py-3 px-6 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
             <div className="flex items-center justify-between">
               <span className="text-xl font-bold dark:text-blue-100 text-slate-800">
@@ -761,7 +778,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
       )}
 
       {/* ================== 2. STATS (GENERATORS) ================== */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         <Generator
           icon={<MapPin className="text-blue-400" />}
           label="ร้านค้าทั้งหมด"
@@ -810,7 +827,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
       </div>
 
       {/* ================== 3. CHARTS ================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <div className="lg:col-span-1 h-[400px]">
           <ChartCard
             title="ผลงานรายเซลล์ - จำแนกตามภารกิจ"
@@ -821,6 +838,33 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
 
             config={chartConfig}
             type="stacked"
+            renderTooltip={({ active, payload, label }: any) => {
+              if (!active || !payload?.length) return null
+              const data = payload[0].payload
+              return (
+                <div className="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 shadow-xl z-50 min-w-[200px]">
+                  <p className="text-base font-bold text-slate-900 dark:text-white mb-2 pb-2 border-b dark:border-slate-700">{label}</p>
+                  <div className="space-y-2 mb-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">เข้าพบทั้งหมด</span>
+                      <span className="font-bold">{data.total} ครั้ง</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">ปิดการขาย</span>
+                      <span className="font-bold text-emerald-500">{data.closed} ครั้ง</span>
+                    </div>
+                  </div>
+
+                  <div className="text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wider">ร้านค้าที่เข้าพบ ({data.visitedStores.length})</div>
+                  <div className="max-h-[150px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                    {data.visitedStores.slice(0, 50).map((s: string, i: number) => (
+                      <div key={i} className="text-xs text-slate-600 dark:text-slate-300 truncate">• {s}</div>
+                    ))}
+                    {data.visitedStores.length > 50 && <div className="text-xs text-slate-400 italic">+ อีก {data.visitedStores.length - 50} ร้าน</div>}
+                  </div>
+                </div>
+              )
+            }}
           />
         </div>
         <div className="lg:col-span-1 h-[400px]">
@@ -832,6 +876,29 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
             nameKey="name"
             config={chartConfig}
             type="stacked"
+            renderTooltip={({ active, payload, label }: any) => {
+              if (!active || !payload?.length) return null
+              const data = payload[0].payload
+              return (
+                <div className="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 shadow-xl z-50 min-w-[200px]">
+                  <p className="text-base font-bold text-slate-900 dark:text-white mb-2 pb-2 border-b dark:border-slate-700">{label}</p>
+                  <div className="mb-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">แผนงานทั้งหมด</span>
+                      <span className="font-bold">{data.total} แผน</span>
+                    </div>
+                  </div>
+
+                  <div className="text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wider">ร้านค้าที่วางแผน ({data.plannedStores.length})</div>
+                  <div className="max-h-[150px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                    {data.plannedStores.slice(0, 50).map((s: string, i: number) => (
+                      <div key={i} className="text-xs text-slate-600 dark:text-slate-300 truncate">• {s}</div>
+                    ))}
+                    {data.plannedStores.length > 50 && <div className="text-xs text-slate-400 italic">+ อีก {data.plannedStores.length - 50} ร้าน</div>}
+                  </div>
+                </div>
+              )
+            }}
           />
         </div>
         <div className="lg:col-span-1 h-[400px]">
@@ -844,6 +911,31 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
             nameKey="name"
             config={{ value: { label: "ปิดการขาย", color: "#f43f5e" } }}
             type="bar"
+            renderTooltip={({ active, payload, label }: any) => {
+              if (!active || !payload?.length) return null
+              const data = payload[0].payload
+              return (
+                <div className="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 shadow-xl z-50 min-w-[200px]">
+                  <p className="text-base font-bold text-slate-900 dark:text-white mb-2 pb-2 border-b dark:border-slate-700">{label}</p>
+                  <div className="mb-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">ยอดปิดการขาย</span>
+                      <span className="font-bold text-emerald-500">{data.value} ครั้ง</span>
+                    </div>
+                  </div>
+                  {data.stores && data.stores.length > 0 && (
+                    <>
+                      <div className="text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wider">ร้านที่ปิดได้ ({data.stores.length})</div>
+                      <div className="max-h-[150px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                        {data.stores.slice(0, 50).map((s: string, i: number) => (
+                          <div key={i} className="text-xs text-slate-600 dark:text-slate-300 truncate">• {s}</div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )
+            }}
           />
         </div>
       </div>

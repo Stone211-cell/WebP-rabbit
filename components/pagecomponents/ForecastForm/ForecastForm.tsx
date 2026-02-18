@@ -469,7 +469,7 @@ export default function ForecastForm({ forecasts, onRefresh }: any) {
                                 </div>
 
                                 {/* Items Grid */}
-                                <div className="grid grid-cols-1 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {group.items.map((f: any) => {
                                         const progressWeek = f.targetWeek > 0 ? (f.actual / f.targetWeek) * 100 : 0
                                         const progressMonth = f.targetMonth > 0 ? (f.actual / f.targetMonth) * 100 : 0
@@ -566,7 +566,7 @@ export default function ForecastForm({ forecasts, onRefresh }: any) {
 
             {/* --- ADD/EDIT DIALOG --- */}
             <Dialog open={showDialog} onOpenChange={(o) => { if (!o) resetForm(); else setShowDialog(o); }}>
-                <DialogContent className="max-w-xl bg-slate-900 border-slate-800 text-white rounded-3xl p-0 overflow-hidden">
+                <DialogContent className="max-w-xl md:max-w-2xl lg:max-w-4xl bg-slate-900 border-slate-800 text-white rounded-3xl p-0 overflow-hidden">
                     <DialogHeader className="p-6 bg-slate-950/50">
                         <DialogTitle className="text-xl font-black flex items-center gap-2">
                             {editingItem ? <Edit2 className="text-blue-500" /> : <Plus className="text-blue-500" />}
@@ -609,7 +609,7 @@ export default function ForecastForm({ forecasts, onRefresh }: any) {
                             </div>
                         </div>
 
-                        <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-800 grid grid-cols-2 gap-6">
+                        <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-800 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             <div className="space-y-2">
                                 <Label className="text-xs text-slate-400 flex items-center gap-1"><Target size={12} className="text-blue-500" /> เป้าหมายสัปดาห์ (กก.) *</Label>
                                 <Input
