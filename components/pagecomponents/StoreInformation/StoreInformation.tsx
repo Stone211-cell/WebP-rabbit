@@ -34,7 +34,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { StoreTypes, CreditRatings, OrderPeriods, CustomerGroups } from "@/lib/types/manu"
 import { ActionButton } from "@/components/crmhelper/helper"
 
-export default function StoreInformation({ stores, onRefresh }: { stores: any, onRefresh?: () => void }) {
+export default function StoreInformation({ stores, onRefresh, isAdmin }: { stores: any, onRefresh?: () => void, isAdmin?: boolean }) {
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -276,23 +276,27 @@ export default function StoreInformation({ stores, onRefresh }: { stores: any, o
             />
 
             <div className="flex flex-wrap items-center gap-2">
-              <ActionButton
-                onClick={handleClear}
-                disabled={isClearing || isImporting}
-                variant="destructive"
-                className="bg-red-500 hover:bg-red-600 border-red-600 shadow-lg shadow-red-500/20 rounded-2xl px-6"
-                icon={<Trash2 className="w-4 h-4 mr-2" />}
-                label={isClearing ? "กำลังลบ..." : "ล้างข้อมูลทั้งหมด"}
-              />
+              {isAdmin && (
+                <>
+                  <ActionButton
+                    onClick={handleClear}
+                    disabled={isClearing || isImporting}
+                    variant="destructive"
+                    className="bg-red-500 hover:bg-red-600 border-red-600 shadow-lg shadow-red-500/20 rounded-2xl px-6"
+                    icon={<Trash2 className="w-4 h-4 mr-2" />}
+                    label={isClearing ? "กำลังลบ..." : "ล้างข้อมูลทั้งหมด"}
+                  />
 
-              <ActionButton
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isImporting}
-                variant="outline"
-                className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 shadow-lg shadow-slate-200/20 dark:shadow-none rounded-2xl px-6"
-                icon={<Upload className="w-4 h-4 mr-2" />}
-                label={isImporting ? "กำลังนำเข้า..." : "นำเข้า Excel"}
-              />
+                  <ActionButton
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isImporting}
+                    variant="outline"
+                    className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 shadow-lg shadow-slate-200/20 dark:shadow-none rounded-2xl px-6"
+                    icon={<Upload className="w-4 h-4 mr-2" />}
+                    label={isImporting ? "กำลังนำเข้า..." : "นำเข้า Excel"}
+                  />
+                </>
+              )}
 
               <ActionButton
                 onClick={handleExport}
@@ -302,127 +306,128 @@ export default function StoreInformation({ stores, onRefresh }: { stores: any, o
                 label="ส่งออก Excel"
               />
 
-              <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-xl shadow-blue-500/25 rounded-2xl px-8 py-6 font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
-                    <Plus className="w-5 h-5 mr-2" />
-                    เพิ่มร้านค้าใหม่
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="min-w-[90vw] md:min-w-[900px] max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-white/20 rounded-[3rem] shadow-2xl">
-                  <form onSubmit={handleSubmit} className="p-4 md:p-8 space-y-6">
-                    <DialogHeader>
-                      <DialogTitle className="text-3xl font-black text-slate-900 dark:text-white mb-4">
-                        {editingId ? "📝 แก้ไขข้อมูลร้าน" : "✨ เพิ่มร้านค้าใหม่"}
-                      </DialogTitle>
-                    </DialogHeader>
+              {isAdmin && (
+                <Dialog open={open} onOpenChange={setOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-xl shadow-blue-500/25 rounded-2xl px-8 py-6 font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
+                      <Plus className="w-5 h-5 mr-2" />
+                      เพิ่มร้านค้าใหม่
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="min-w-[90vw] md:min-w-[900px] max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-white/20 rounded-[3rem] shadow-2xl">
+                    <form onSubmit={handleSubmit} className="p-4 md:p-8 space-y-6">
+                      <DialogHeader>
+                        <DialogTitle className="text-3xl font-black text-slate-900 dark:text-white mb-4">
+                          {editingId ? "📝 แก้ไขข้อมูลร้าน" : "✨ เพิ่มร้านค้าใหม่"}
+                        </DialogTitle>
+                      </DialogHeader>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {/* Row 1 */}
-                      <div className="md:col-span-1">
-                        <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500 mb-2">รหัสลูกค้า (อัตโนมัติ)</FieldLabel>
-                        <div className="h-12 flex items-center px-4 rounded-2xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 select-none">
-                          {editingId ? form.code : "System Auto-Gen"}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Row 1 */}
+                        <div className="md:col-span-1">
+                          <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500 mb-2">รหัสลูกค้า (อัตโนมัติ)</FieldLabel>
+                          <div className="h-12 flex items-center px-4 rounded-2xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 select-none">
+                            {editingId ? form.code : "System Auto-Gen"}
+                          </div>
                         </div>
-                      </div>
-                      <div className="md:col-span-1">
-                        <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ชื่อร้าน *</FieldLabel><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="ชื่อร้าน" className="h-12 rounded-2xl font-bold bg-white dark:bg-slate-800" required /></Field>
-                      </div>
-                      <div className="md:col-span-1">
-                        <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">เจ้าของร้าน</FieldLabel><Input value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })} placeholder="ชื่อเจ้าของ" className="h-12 rounded-2xl font-bold bg-white dark:bg-slate-800" /></Field>
-                      </div>
+                        <div className="md:col-span-1">
+                          <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ชื่อร้าน *</FieldLabel><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="ชื่อร้าน" className="h-12 rounded-2xl font-bold bg-white dark:bg-slate-800" required /></Field>
+                        </div>
+                        <div className="md:col-span-1">
+                          <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">เจ้าของร้าน</FieldLabel><Input value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })} placeholder="ชื่อเจ้าของ" className="h-12 rounded-2xl font-bold bg-white dark:bg-slate-800" /></Field>
+                        </div>
 
-                      {/* Row 2 */}
-                      <Field>
-                        <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ประเภทร้าน</FieldLabel>
-                        <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                          <SelectTrigger className="h-12 rounded-2xl font-bold w-full [&>span]:line-clamp-1"><SelectValue placeholder="เลือกประเภท" /></SelectTrigger>
-                          <SelectContent>
-                            {StoreTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </Field>
-                      <Field>
-                        <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ประเภทลูกค้า</FieldLabel>
-                        <Select value={form.customerType} onValueChange={(v) => setForm({ ...form, customerType: v })}>
-                          <SelectTrigger className="h-12 rounded-2xl font-bold w-full [&>span]:line-clamp-1"><SelectValue placeholder="เลือกกลุ่ม" /></SelectTrigger>
-                          <SelectContent>
-                            {CustomerGroups.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </Field>
-                      <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">เบอร์โทร</FieldLabel><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="0xx-xxx-xxxx" className="h-12 rounded-2xl font-bold bg-white dark:bg-slate-800" /></Field>
-
-                      {/* Row 3: Address */}
-                      <div className="md:col-span-3"><Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ที่อยู่ / พิกัด</FieldLabel><Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="ที่อยู่หรือพิกัด" className="rounded-[2rem] min-h-[80px] p-4 font-bold bg-slate-50 dark:bg-slate-800" /></Field></div>
-
-                      {/* Row 4 */}
-                      <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">สินค้าที่ใช้</FieldLabel><Input value={form.productUsed} onChange={(e) => setForm({ ...form, productUsed: e.target.value })} placeholder="ชื่อสินค้า" className="h-12 rounded-2xl" /></Field>
-                      <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ปริมาณ</FieldLabel><Input value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} placeholder="เช่น 10 ถุง/เดือน" className="h-12 rounded-2xl" /></Field>
-                      <Field>
-                        <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ระยะเวลาสั่ง</FieldLabel>
-                        <Select value={form.orderPeriod} onValueChange={(v) => setForm({ ...form, orderPeriod: v })}>
-                          <SelectTrigger className="h-12 rounded-2xl font-bold w-full [&>span]:line-clamp-1"><SelectValue placeholder="เลือกระยะเวลา" /></SelectTrigger>
-                          <SelectContent>
-                            {OrderPeriods.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </Field>
-
-                      {/* Row 5 */}
-                      <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">รับของเดิมจาก</FieldLabel><Input value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} placeholder="ชื่อคู่แข่ง" className="h-12 rounded-2xl" /></Field>
-                      <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">เงื่อนไขชำระ</FieldLabel>
-                        <Select value={form.payment} onValueChange={(v) => setForm({ ...form, payment: v })}>
-                          <SelectTrigger className="h-12 rounded-2xl font-bold w-full [&>span]:line-clamp-1"><SelectValue placeholder="เลือกเงื่อนไข" /></SelectTrigger>
-                          <SelectContent>
-                            {["เงินสด", "เครดิต 7 วัน", "เครดิต 15 วัน", "เครดิต 30 วัน",].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </Field>
-                      <Field>
-                        <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">คะแนนการชำระเงิน</FieldLabel>
-                        <Select value={form.paymentScore} onValueChange={(v) => setForm({ ...form, paymentScore: v })}>
-                          <SelectTrigger className="h-12 rounded-2xl font-bold w-full [&>span]:line-clamp-1"><SelectValue placeholder="เลือกคะแนน" /></SelectTrigger>
-                          <SelectContent>
-                            {CreditRatings.map(c => (
-                              <SelectItem key={c.value} value={c.value}>
-                                <span className="flex items-center gap-2">
-                                  <span className="text-yellow-400">{"⭐".repeat(c.stars)}</span>
-                                  <span>{c.label}</span>
-                                </span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </Field>
-
-                      {/* Row 6: Status & Reason */}
-                      <div className="md:col-span-1">
+                        {/* Row 2 */}
                         <Field>
-                          <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">สถานะ</FieldLabel>
-                          <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                            <SelectTrigger className={cn("h-12 rounded-2xl font-black border-2 w-full [&>span]:line-clamp-1", form.status === "เปิดการขาย" ? "bg-emerald-500/5 text-emerald-600 border-emerald-500/20" : "bg-rose-500/5 text-rose-600 border-rose-500/20")}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent><SelectItem value="เปิดการขาย">🟢 เปิดการขาย</SelectItem><SelectItem value="ปิดการขาย">🔴 ปิดการขาย</SelectItem></SelectContent>
+                          <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ประเภทร้าน</FieldLabel>
+                          <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+                            <SelectTrigger className="h-12 rounded-2xl font-bold w-full [&>span]:line-clamp-1"><SelectValue placeholder="เลือกประเภท" /></SelectTrigger>
+                            <SelectContent>
+                              {StoreTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                            </SelectContent>
                           </Select>
                         </Field>
-                      </div>
-                      <div className="md:col-span-2">
-                        <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">เหตุผลปิดการขาย (ถ้ามี)</FieldLabel><Input value={form.closeReason} onChange={(e) => setForm({ ...form, closeReason: e.target.value })} placeholder="เช่น ร้านปิดตัว" className="h-12 rounded-2xl" /></Field>
+                        <Field>
+                          <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ประเภทลูกค้า</FieldLabel>
+                          <Select value={form.customerType} onValueChange={(v) => setForm({ ...form, customerType: v })}>
+                            <SelectTrigger className="h-12 rounded-2xl font-bold w-full [&>span]:line-clamp-1"><SelectValue placeholder="เลือกกลุ่ม" /></SelectTrigger>
+                            <SelectContent>
+                              {CustomerGroups.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                        <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">เบอร์โทร</FieldLabel><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="0xx-xxx-xxxx" className="h-12 rounded-2xl font-bold bg-white dark:bg-slate-800" /></Field>
+
+                        {/* Row 3: Address */}
+                        <div className="md:col-span-3"><Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ที่อยู่ / พิกัด</FieldLabel><Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="ที่อยู่หรือพิกัด" className="rounded-[2rem] min-h-[80px] p-4 font-bold bg-slate-50 dark:bg-slate-800" /></Field></div>
+
+                        {/* Row 4 */}
+                        <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">สินค้าที่ใช้</FieldLabel><Input value={form.productUsed} onChange={(e) => setForm({ ...form, productUsed: e.target.value })} placeholder="ชื่อสินค้า" className="h-12 rounded-2xl" /></Field>
+                        <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ปริมาณ</FieldLabel><Input value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} placeholder="เช่น 10 ถุง/เดือน" className="h-12 rounded-2xl" /></Field>
+                        <Field>
+                          <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">ระยะเวลาสั่ง</FieldLabel>
+                          <Select value={form.orderPeriod} onValueChange={(v) => setForm({ ...form, orderPeriod: v })}>
+                            <SelectTrigger className="h-12 rounded-2xl font-bold w-full [&>span]:line-clamp-1"><SelectValue placeholder="เลือกระยะเวลา" /></SelectTrigger>
+                            <SelectContent>
+                              {OrderPeriods.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </Field>
+
+                        {/* Row 5 */}
+                        <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">รับของเดิมจาก</FieldLabel><Input value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} placeholder="ชื่อคู่แข่ง" className="h-12 rounded-2xl" /></Field>
+                        <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">เงื่อนไขชำระ</FieldLabel>
+                          <Select value={form.payment} onValueChange={(v) => setForm({ ...form, payment: v })}>
+                            <SelectTrigger className="h-12 rounded-2xl font-bold w-full [&>span]:line-clamp-1"><SelectValue placeholder="เลือกเงื่อนไข" /></SelectTrigger>
+                            <SelectContent>
+                              {["เงินสด", "เครดิต 7 วัน", "เครดิต 15 วัน", "เครดิต 30 วัน",].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                        <Field>
+                          <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">คะแนนการชำระเงิน</FieldLabel>
+                          <Select value={form.paymentScore} onValueChange={(v) => setForm({ ...form, paymentScore: v })}>
+                            <SelectTrigger className="h-12 rounded-2xl font-bold w-full [&>span]:line-clamp-1"><SelectValue placeholder="เลือกคะแนน" /></SelectTrigger>
+                            <SelectContent>
+                              {CreditRatings.map(c => (
+                                <SelectItem key={c.value} value={c.value}>
+                                  <span className="flex items-center gap-2">
+                                    <span className="text-yellow-400">{"⭐".repeat(c.stars)}</span>
+                                    <span>{c.label}</span>
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </Field>
+
+                        {/* Row 6: Status & Reason */}
+                        <div className="md:col-span-1">
+                          <Field>
+                            <FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">สถานะ *</FieldLabel>
+                            <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                              <SelectTrigger className={cn("h-12 rounded-2xl font-black border-2 w-full [&>span]:line-clamp-1", form.status === "เปิดการขาย" ? "bg-emerald-500/5 text-emerald-600 border-emerald-500/20" : "bg-rose-500/5 text-rose-600 border-rose-500/20")}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent><SelectItem value="เปิดการขาย">🟢 เปิดการขาย</SelectItem><SelectItem value="ปิดการขาย">🔴 ปิดการขาย</SelectItem></SelectContent>
+                            </Select>
+                          </Field>
+                        </div>
+                        <div className="md:col-span-2">
+                          <Field><FieldLabel className="font-bold text-xs uppercase tracking-wider text-slate-500">เหตุผลปิดการขาย (ถ้ามี)</FieldLabel><Input value={form.closeReason} onChange={(e) => setForm({ ...form, closeReason: e.target.value })} placeholder="เช่น ร้านปิดตัว" className="h-12 rounded-2xl" /></Field>
+                        </div>
                       </div>
 
-                    </div>
-
-                    <DialogFooter className="gap-4 pt-4">
-                      <DialogClose asChild><Button variant="outline" className="h-14 px-8 rounded-2xl font-bold border-slate-200">ยกเลิก</Button></DialogClose>
-                      <Button type="submit" disabled={isSubmitting} className="h-14 px-12 rounded-2xl bg-blue-600 text-white font-black shadow-xl">
-                        {isSubmitting ? "กำลังบันทึก..." : "💾 บันทึก"}
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
+                      <DialogFooter className="gap-4 pt-4">
+                        <DialogClose asChild><Button variant="outline" className="h-14 px-8 rounded-2xl font-bold border-slate-200" onClick={resetForm}>ยกเลิก</Button></DialogClose>
+                        <Button type="submit" disabled={isSubmitting} className="h-14 px-12 rounded-2xl bg-blue-600 text-white font-black shadow-xl">
+                          {isSubmitting ? "กำลังบันทึก..." : "💾 บันทึก"}
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -513,10 +518,14 @@ export default function StoreInformation({ stores, onRefresh }: { stores: any, o
                         )}>{s.status}</span>
                       </TableCell>
                       <TableCell className="text-right pr-8">
-                        <div className="flex justify-end gap-2">
-                          <ActionButton variant="ghost" size="icon" onClick={() => startEdit(s)} className="h-10 w-10 text-blue-600 hover:bg-blue-500/10 rounded-xl" label="✏️" />
-                          <ActionButton variant="ghost" size="icon" onClick={() => handleDelete(s.id, s.name)} className="h-10 w-10 text-rose-500 hover:bg-rose-500/10 rounded-xl" label="🗑️" />
-                        </div>
+                        {isAdmin ? (
+                          <div className="flex justify-end gap-2">
+                            <ActionButton variant="ghost" size="icon" onClick={() => startEdit(s)} className="h-10 w-10 text-blue-600 hover:bg-blue-500/10 rounded-xl" label="✏️" />
+                            <ActionButton variant="ghost" size="icon" onClick={() => handleDelete(s.id, s.name)} className="h-10 w-10 text-rose-500 hover:bg-rose-500/10 rounded-xl" label="🗑️" />
+                          </div>
+                        ) : (
+                          <div className="text-xs text-slate-400 italic">View Only</div>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

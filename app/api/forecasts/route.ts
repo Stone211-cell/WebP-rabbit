@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { forecastSchema } from '@/lib/validate/Zod';
 import { renderError } from '@/lib/rendererror';
+import { checkIsAdmin } from '@/lib/auth';
 
 // GET - โหลดคาดการณ์
 export async function GET(request: NextRequest) {
@@ -40,6 +41,9 @@ export async function GET(request: NextRequest) {
 
 // POST - สร้างคาดการณ์
 export async function POST(request: NextRequest) {
+  if (!await checkIsAdmin()) {
+    return NextResponse.json({ error: 'Unauthorized: Admin only' }, { status: 403 });
+  }
   try {
     const body = await request.json();
     const validatedData = forecastSchema.parse(body);

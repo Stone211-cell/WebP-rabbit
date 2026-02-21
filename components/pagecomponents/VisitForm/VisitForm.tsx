@@ -41,7 +41,7 @@ import { VisitDetailModal } from "./VisitDetailModal"
 import { Eye, Trash2, Upload, FileSpreadsheet, MapPin, Phone, CreditCard, Package, Clock, Truck, User, Store } from "lucide-react"
 
 export default function
-  VisitForm({ visits, profiles, onRefresh }: any) {
+  VisitForm({ visits, profiles, onRefresh, isAdmin, hasProfile }: any) {
   const [form, setForm] = useState<any>({
     sales: "",
     date: new Date().toLocaleDateString('en-CA'),
@@ -140,13 +140,19 @@ export default function
     }
   }
 
-  const filteredVisits = (visits || []).filter((v: any) => {
-    const sMatch = !historySearch ||
-      v.store?.name?.toLowerCase().includes(historySearch.toLowerCase()) ||
-      v.store?.code?.toLowerCase().includes(historySearch.toLowerCase())
-    const salesMatch = salesFilter === "all" || v.sales === salesFilter
-    return sMatch && salesMatch
-  })
+  const handleDelete = async (id: string) => {
+    if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลการเข้าพบนี้?")) return
+    const toastId = toast.loading("กำลังลบข้อมูล...")
+    try {
+      await axiosInstance.delete(`/visits/${id}`)
+      toast.success("ลบข้อมูลสำเร็จ")
+      if (onRefresh) onRefresh()
+    } catch (error) {
+      handleApiError(error)
+    } finally {
+      toast.dismiss(toastId)
+    }
+  }
 
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -244,8 +250,34 @@ export default function
     exportToExcel(dataToExport, "VisitHistory");
   }
 
+  // Handle case where user has no profile
+  if (!isAdmin && !hasProfile) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 space-y-4 text-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
+        <div className="p-4 bg-amber-500/10 rounded-full animate-bounce">
+          <User className="w-12 h-12 text-amber-500" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white">กรุณาสร้างโปรไฟล์ก่อนบันทึกการเข้าพบ</h2>
+          <p className="text-slate-500 font-bold italic">ระบบจำเป็นต้องทราบตัวตนของคุณก่อนบันทึกข้อมูล</p>
+        </div>
+        <p className="max-w-md text-sm text-slate-400">
+          กรุณาไปที่หน้าข้อมูลส่วนตัวและสร้างโปรไฟล์ของคุณให้เรียบร้อยก่อน จึงจะสามารถใช้งานระบบบันทึกการเข้าพบได้
+        </p>
+      </div>
+    )
+  }
+
+  const filteredVisits = (visits || []).filter((v: any) => {
+    const sMatch = !historySearch ||
+      v.store?.name?.toLowerCase().includes(historySearch.toLowerCase()) ||
+      v.store?.code?.toLowerCase().includes(historySearch.toLowerCase())
+    const salesMatch = salesFilter === "all" || v.sales === salesFilter
+    return sMatch && salesMatch
+  })
+
   return (
-    <div className="p-6 space-y-6 dark:bg-[#0f172a] min-h-screen text-black">
+    <div className="p-6 space-y-6 dark:bg-[#0f172a] min-h-screen">
 
       {/* ================= FORM ================= */}
       <Card className="shadow-2xl border-white/10 dark:border-white/5 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] overflow-hidden">
@@ -263,7 +295,7 @@ export default function
               <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 flex items-center gap-2 text-xs">👤 พนักงานขาย *</Label>
               {profiles && profiles.length > 0 ? (
                 <Select value={form.sales} onValueChange={(v) => handleChange("sales", v)}>
-                  <SelectTrigger className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl">
+                  <SelectTrigger className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl text-black dark:text-white">
                     <SelectValue placeholder="เลือกรายชื่อ" />
                   </SelectTrigger>
                   <SelectContent>
@@ -284,7 +316,7 @@ export default function
 
             <div className="space-y-1.5">
               <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">วันที่เข้าพบ *</Label>
-              <Input type="date" value={form.date} onChange={(e) => handleChange("date", e.target.value)} className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl font-bold" />
+              <Input type="date" value={form.date} onChange={(e) => handleChange("date", e.target.value)} className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl font-bold text-black dark:text-white" />
             </div>
 
             <div className="space-y-1.5">
@@ -300,7 +332,7 @@ export default function
                     placeholder="รหัส หรือ ชื่อร้าน..."
                     value={storeSearch}
                     onChange={(e) => setStoreSearch(e.target.value)}
-                    className="bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl font-bold pr-10"
+                    className="bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl font-bold pr-10 text-black dark:text-white"
                   />
                   {selectedStore && (
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-blue-500 text-white text-[10px] rounded-md pointer-events-none">{selectedStore.name}</div>
@@ -330,7 +362,7 @@ export default function
             <div className="space-y-1.5">
               <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">หัวข้อเข้าพบ *</Label>
               <Select value={form.visitCat} onValueChange={(v) => handleChange("visitCat", v)}>
-                <SelectTrigger className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl">
+                <SelectTrigger className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl text-black dark:text-white">
                   <SelectValue placeholder="เลือกหัวข้อ" />
                 </SelectTrigger>
                 <SelectContent>
@@ -344,7 +376,7 @@ export default function
             <div className="space-y-1.5">
               <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">ประเภทเข้าพบ *</Label>
               <Select value={form.visitType} onValueChange={(v) => handleChange("visitType", v)}>
-                <SelectTrigger className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl">
+                <SelectTrigger className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl text-black dark:text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -375,7 +407,7 @@ export default function
 
           {/* Enhanced Store Profile - Only shown when store selected */}
           {selectedStore && (
-            <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="animate-in fade-in slide-in-from-top-4 duration-500 text-black">
               <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-[2rem] overflow-hidden shadow-sm">
                 {/* Profile Header */}
                 <div className="p-6 bg-gradient-to-r from-blue-600/5 to-indigo-600/5 border-b border-slate-200 dark:border-slate-700/50 flex items-center justify-between">
@@ -519,42 +551,46 @@ export default function
 
       {/* ================= HISTORY TABLE ================= */}
       <Card className="border-none bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl shadow-2xl rounded-[2.5rem] overflow-hidden">
-        <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-4 p-8 bg-gradient-to-r from-orange-600/5 to-amber-600/5 border-b border-white/10">
+        <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-4 p-8 bg-gradient-to-r from-orange-600/5 to-amber-600/5 border-b border-white/10 text-black">
           <CardTitle className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
             <span className="p-2.5 bg-orange-500/10 rounded-2xl">📝</span>
             บันทึก <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-600 dark:from-orange-400 dark:to-amber-400">การเข้าพบ</span>
           </CardTitle>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <ActionButton
-              onClick={handleClear}
-              disabled={isClearing || isImporting}
-              variant="destructive"
-              className="bg-red-500 hover:bg-red-600 border-red-600 shadow-lg shadow-red-500/20 rounded-2xl px-6"
-              icon={<Trash2 className="w-4 h-4 mr-2" />}
-              label={isClearing ? "กำลังลบ..." : "ล้างข้อมูลทั้งหมด"}
-            />
+          <div className="flex flex-wrap items-center gap-2">
+            {isAdmin && (
+              <>
+                <ActionButton
+                  onClick={handleClear}
+                  disabled={isClearing || isImporting}
+                  variant="destructive"
+                  className="bg-red-500 hover:bg-red-600 border-red-600 shadow-lg shadow-red-500/20 rounded-2xl px-6"
+                  icon={<Trash2 className="w-4 h-4 mr-2" />}
+                  label={isClearing ? "กำลังลบ..." : "ล้างข้อมูลทั้งหมด"}
+                />
 
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleImportExcel}
-              className="hidden"
-              accept=".xlsx, .xls"
-            />
-            <ActionButton
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isImporting}
-              variant="outline"
-              className="bg-white/50 dark:bg-slate-800/50 border-orange-200 dark:border-orange-800 shadow-lg shadow-orange-200/20 dark:shadow-none rounded-2xl px-6"
-              icon={<Upload className="w-4 h-4 mr-2 text-orange-600" />}
-              label={isImporting ? "กำลังนำเข้า..." : "นำเข้า Excel"}
-            />
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImportExcel}
+                  className="hidden"
+                  accept=".xlsx, .xls"
+                />
+                <ActionButton
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isImporting}
+                  variant="outline"
+                  className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 shadow-lg shadow-slate-200/20 dark:shadow-none rounded-2xl px-6"
+                  icon={<Upload className="w-4 h-4 mr-2" />}
+                  label={isImporting ? "กำลังนำเข้า..." : "นำเข้า Excel"}
+                />
+              </>
+            )}
 
             <ActionButton
               onClick={handleExport}
               variant="outline"
-              className="bg-white/50 dark:bg-slate-800/50 border-orange-200 dark:border-orange-800 shadow-lg shadow-orange-200/20 dark:shadow-none rounded-2xl px-6"
+              className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 shadow-lg shadow-slate-200/20 dark:shadow-none rounded-2xl px-6 text-black"
               icon={<FileSpreadsheet className="w-4 h-4 mr-2 text-green-600" />}
               label="ส่งออก Excel"
             />
@@ -569,14 +605,14 @@ export default function
                 placeholder="รหัส / ชื่อร้าน / รายละเอียด..."
                 value={historySearch}
                 onChange={(e) => setHistorySearch(e.target.value)}
-                className="bg-white/60 dark:bg-slate-800/60 h-12 rounded-2xl"
+                className="bg-white/60 dark:bg-slate-800/60 h-12 rounded-2xl text-black dark:text-white"
               />
             </div>
 
             <div className="w-full md:w-1/3 space-y-1.5">
               <Label className="text-xs font-black uppercase text-slate-400">กรอกตามรายชื่อเซลล์</Label>
               <Select value={salesFilter} onValueChange={setSalesFilter}>
-                <SelectTrigger className="bg-white/60 dark:bg-slate-800/60 h-12 rounded-2xl">
+                <SelectTrigger className="bg-white/60 dark:bg-slate-800/60 h-12 rounded-2xl text-black dark:text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -599,7 +635,7 @@ export default function
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">พนักงานขาย</TableHead>
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">สรุปการเข้าพบ</TableHead>
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-center">สถานะ</TableHead>
-                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-center">จัดการ</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-right pr-6">จัดการ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -609,14 +645,14 @@ export default function
                   filteredVisits.map((v: any, index: number) => (
                     <TableRow key={v.id} className="hover:bg-blue-500/5 transition-colors border-b dark:border-slate-800/50">
                       <TableCell className="text-center font-bold text-slate-500 text-xs pl-6">{index + 1}</TableCell>
-                      <TableCell className="py-5 font-bold text-xs">{new Date(v.date).toLocaleDateString('th-TH')}</TableCell>
+                      <TableCell className="py-5 font-bold text-xs text-black dark:text-white">{new Date(v.date).toLocaleDateString('th-TH')}</TableCell>
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-black text-slate-900 dark:text-white text-xs">{v.store?.name || "-"}</span>
                           <span className="text-[10px] font-mono text-slate-400">{v.store?.code || "-"}</span>
                         </div>
                       </TableCell>
-                      <TableCell><Badge variant="outline" className="font-bold text-blue-600 rounded-lg text-[10px]">{v.sales}</Badge></TableCell>
+                      <TableCell><Badge variant="outline" className="font-bold text-blue-600 border-blue-200 rounded-lg text-[10px]">{v.sales}</Badge></TableCell>
                       <TableCell className="max-w-xs">
                         <div className="flex flex-col">
                           <span className="font-bold text-xs text-slate-700 dark:text-slate-300">{v.visitCat || "-"}</span>
@@ -633,15 +669,27 @@ export default function
                           {v.dealStatus}
                         </span>
                       </TableCell>
-                      <TableCell className="text-center">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setSelectedVisit(v)}
-                          className="hover:bg-blue-500/10 hover:text-blue-500 rounded-full h-8 w-8"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
+                      <TableCell className="text-right pr-6">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setSelectedVisit(v)}
+                            className="hover:bg-blue-500/10 hover:text-blue-500 rounded-full h-8 w-8 text-blue-500"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          {isAdmin && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(v.id)}
+                              className="hover:bg-rose-500/10 hover:text-rose-500 rounded-full h-8 w-8 text-rose-500"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

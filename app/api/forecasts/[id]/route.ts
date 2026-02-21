@@ -1,63 +1,84 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-// GET - โหลดคาดการณ์
-export async function GET(request: NextRequest) {
+import { checkIsAdmin } from '@/lib/auth';
+import { renderError } from '@/lib/rendererror';
+
+/* =========================
+   GET - ดูคาดการณ์เดียว
+========================= */
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const { searchParams } = new URL(request.url);
-    const weekStart = searchParams.get('weekStart');
-
-    let where: any = {};
-
-    if (weekStart) {
-      const start = new Date(weekStart);
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-
-      where.weekStart = {
-        gte: start,
-        lte: end,
-      };
-    }
-
-    const forecasts = await prisma.forecast.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        store: true,
-      },
+    const { id } = await context.params;
+    const forecast = await prisma.forecast.findUnique({
+      where: { id },
+      include: { store: true }
     });
 
-    return NextResponse.json(forecasts);
+    if (!forecast) {
+      return NextResponse.json({ error: 'Forecast not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(forecast);
   } catch (error) {
-    console.error('GET /api/forecasts error:', error);
-    return NextResponse.json({ error: 'Failed to fetch forecasts' }, { status: 500 });
+    return renderError(error);
   }
 }
 
-// POST - สร้างคาดการณ์
-export async function POST(request: NextRequest) {
+/* =========================
+   PUT - แก้ไขคาดการณ์
+========================= */
+export async function PUT(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  if (!await checkIsAdmin()) {
+    return NextResponse.json({ error: 'Unauthorized: Admin only' }, { status: 403 });
+  }
   try {
+    const { id } = await context.params;
     const body = await request.json();
 
-    const forecast = await prisma.forecast.create({
+    const forecast = await prisma.forecast.update({
+      where: { id },
       data: {
-        masterId: body.masterId,
         product: body.product,
-        targetWeek: parseFloat(body.targetWeek),
-        targetMonth: parseFloat(body.targetMonth),
-        forecast: body.forecast ? parseFloat(body.forecast) : null,
-        actual: body.actual ? parseFloat(body.actual) : null,
-        notes: body.notes || null,
-        weekStart: new Date(body.weekStart),
-      },
-      include: {
-        store: true,
+        targetWeek: body.targetWeek ? parseFloat(body.targetWeek) : undefined,
+        targetMonth: body.targetMonth ? parseFloat(body.targetMonth) : undefined,
+        forecast: body.forecast ? parseFloat(body.forecast) : undefined,
+        actual: body.actual ? parseFloat(body.actual) : undefined,
+        notes: body.notes,
+        weekStart: body.weekStart ? new Date(body.weekStart) : undefined,
       },
     });
 
-    return NextResponse.json(forecast, { status: 201 });
+    return NextResponse.json(forecast);
   } catch (error) {
-    console.error('POST /api/forecasts error:', error);
-    return NextResponse.json({ error: 'Failed to create forecast' }, { status: 500 });
+    return renderError(error);
+  }
+}
+
+/* =========================
+   DELETE - ลบคาดการณ์
+========================= */
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  if (!await checkIsAdmin()) {
+    return NextResponse.json({ error: 'Unauthorized: Admin only' }, { status: 403 });
+  }
+  try {
+    const { id } = await context.params;
+
+    await prisma.forecast.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return renderError(error);
   }
 }

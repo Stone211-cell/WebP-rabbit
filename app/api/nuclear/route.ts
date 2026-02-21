@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { renderError } from '@/lib/rendererror';
+import { checkIsAdmin } from '@/lib/auth';
 
 export async function DELETE() {
+    if (!await checkIsAdmin()) {
+        return NextResponse.json({ error: 'Unauthorized: Admin only' }, { status: 403 });
+    }
     try {
         // Nuclear Reset: Delete everything except Profile
         // We do it in an order that respects foreign keys

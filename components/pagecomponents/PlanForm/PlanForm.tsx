@@ -37,7 +37,7 @@ import { useStoreSearch } from "@/components/hooks/useStoreSearch"
 import { VisitTopics } from "@/lib/types/manu"
 
 
-export default function PlanForm({ plans, profiles, onRefresh }: any) {
+export default function PlanForm({ plans, profiles, onRefresh, isAdmin }: any) {
     const [form, setForm] = useState<any>({
         sales: "",
         date: new Date().toLocaleDateString('en-CA'),
@@ -309,23 +309,27 @@ export default function PlanForm({ plans, profiles, onRefresh }: any) {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3">
-                            <ActionButton
-                                onClick={handleClear}
-                                disabled={isClearing}
-                                variant="destructive"
-                                className="bg-red-500 hover:bg-red-600 border-red-600 shadow-lg shadow-red-500/20 rounded-2xl px-6"
-                                icon={<Trash2 className="w-4 h-4 mr-2" />}
-                                label={isClearing ? "กำลังลบ..." : "ล้างข้อมูลทั้งหมด"}
-                            />
+                            {isAdmin && (
+                                <>
+                                    <ActionButton
+                                        onClick={handleClear}
+                                        disabled={isClearing}
+                                        variant="destructive"
+                                        className="bg-red-500 hover:bg-red-600 border-red-600 shadow-lg shadow-red-500/20 rounded-2xl px-6"
+                                        icon={<Trash2 className="w-4 h-4 mr-2" />}
+                                        label={isClearing ? "กำลังลบ..." : "ล้างข้อมูลทั้งหมด"}
+                                    />
 
-                            <input type="file" ref={fileInputRef} onChange={handleImportExcel} className="hidden" accept=".xlsx, .xls" />
-                            <ActionButton
-                                onClick={() => fileInputRef.current?.click()}
-                                variant="outline"
-                                className="bg-white/50 dark:bg-slate-800/50 border-blue-200 dark:border-blue-800 shadow-lg shadow-blue-200/20 dark:shadow-none rounded-2xl px-6"
-                                icon={<Upload className="w-4 h-4 mr-2 text-blue-600" />}
-                                label="นำเข้า Excel"
-                            />
+                                    <input type="file" ref={fileInputRef} onChange={handleImportExcel} className="hidden" accept=".xlsx, .xls" />
+                                    <ActionButton
+                                        onClick={() => fileInputRef.current?.click()}
+                                        variant="outline"
+                                        className="bg-white/50 dark:bg-slate-800/50 border-blue-200 dark:border-blue-800 shadow-lg shadow-blue-200/20 dark:shadow-none rounded-2xl px-6"
+                                        icon={<Upload className="w-4 h-4 mr-2 text-blue-600" />}
+                                        label="นำเข้า Excel"
+                                    />
+                                </>
+                            )}
 
                             <ActionButton
                                 onClick={handleExport}
@@ -348,210 +352,212 @@ export default function PlanForm({ plans, profiles, onRefresh }: any) {
             </div>
 
             {/* FORM CARD */}
-            <Card className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-white/20 dark:border-slate-800/50 rounded-[2.5rem] shadow-2xl overflow-hidden">
-                <CardContent className="p-6 md:p-8 space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        {/* Salesperson */}
-                        <div className="space-y-1.5">
-                            <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">พนักงานขาย (เซลล์) *</Label>
-                            {profiles && profiles.length > 0 ? (
-                                <Select value={form.sales} onValueChange={(v) => setForm({ ...form, sales: v })}>
+            {isAdmin && (
+                <Card className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-white/20 dark:border-slate-800/50 rounded-[2.5rem] shadow-2xl overflow-hidden">
+                    <CardContent className="p-6 md:p-8 space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            {/* Salesperson */}
+                            <div className="space-y-1.5">
+                                <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">พนักงานขาย (เซลล์) *</Label>
+                                {profiles && profiles.length > 0 ? (
+                                    <Select value={form.sales} onValueChange={(v) => setForm({ ...form, sales: v })}>
+                                        <SelectTrigger className="bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl">
+                                            <SelectValue placeholder="เลือกเซลล์" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {profiles.map((p: any) => (
+                                                <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                ) : (
+                                    <Input
+                                        value={form.sales}
+                                        onChange={(e) => setForm({ ...form, sales: e.target.value })}
+                                        placeholder="พิมพ์ชื่อเซลล์..."
+                                        className="bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl"
+                                    />
+                                )}
+                            </div>
+
+                            {/* Date & Order */}
+                            <div className="space-y-1.5">
+                                <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">วันที่ / ลำดับ *</Label>
+                                <div className="flex gap-2">
+                                    <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="flex-1 bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl font-bold" />
+                                    <Input
+                                        type="text"
+                                        value={form.order}
+                                        readOnly
+                                        className="w-20 bg-slate-100/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl font-bold text-center cursor-not-allowed text-slate-500"
+                                        placeholder="ลำดับ"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Category */}
+                            <div className="space-y-1.5">
+                                <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">หัวข้อเข้าพบ *</Label>
+                                <Select value={form.visitCat} onValueChange={(v) => setForm({ ...form, visitCat: v })}>
                                     <SelectTrigger className="bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl">
-                                        <SelectValue placeholder="เลือกเซลล์" />
+                                        <SelectValue placeholder="เลือกหัวข้อ" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {profiles.map((p: any) => (
-                                            <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
+                                        {VisitTopics.map(topic => (
+                                            <SelectItem key={topic} value={topic}>{topic}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
-                            ) : (
-                                <Input
-                                    value={form.sales}
-                                    onChange={(e) => setForm({ ...form, sales: e.target.value })}
-                                    placeholder="พิมพ์ชื่อเซลล์..."
-                                    className="bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl"
-                                />
-                            )}
-                        </div>
+                            </div>
 
-                        {/* Date & Order */}
-                        <div className="space-y-1.5">
-                            <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">วันที่ / ลำดับ *</Label>
-                            <div className="flex gap-2">
-                                <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="flex-1 bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl font-bold" />
-                                <Input
-                                    type="text"
-                                    value={form.order}
-                                    readOnly
-                                    className="w-20 bg-slate-100/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl font-bold text-center cursor-not-allowed text-slate-500"
-                                    placeholder="ลำดับ"
-                                />
+                            {/* Store Search */}
+                            <div className="relative space-y-1.5">
+                                <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">รหัสลูกค้า / ชื่อร้าน *</Label>
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <Input
+                                            placeholder="รหัส หรือ ชื่อร้าน..."
+                                            value={storeSearch}
+                                            onChange={(e) => setStoreSearch(e.target.value)}
+                                            className="bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl font-bold"
+                                        />
+                                        {selectedStore && (
+                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-blue-500 text-white text-[10px] rounded-md pointer-events-none">{selectedStore.name}</div>
+                                        )}
+                                        {storeSearch && <button onClick={clearStore} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">✕</button>}
+                                    </div>
+                                    <Button onClick={handleManualSearch} className="rounded-2xl h-12 px-5 bg-blue-600 text-white">🔍</Button>
+                                </div>
+
+                                {/* Suggestions */}
+                                {showSuggestions && (
+                                    <div className="absolute z-50 w-full mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden">
+                                        {suggestions.map((s) => (
+                                            <button key={s.id} onClick={() => selectStore(s)} className="w-full px-4 py-3 text-left hover:bg-blue-500/10 transition-colors border-b border-slate-100 dark:border-slate-800/50 last:border-0">
+                                                <span className="font-bold text-slate-900 dark:text-white text-sm">{s.name}</span>
+                                                <div className="text-[10px] text-slate-500 italic">{s.code}</div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        {/* Category */}
-                        <div className="space-y-1.5">
-                            <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">หัวข้อเข้าพบ *</Label>
-                            <Select value={form.visitCat} onValueChange={(v) => setForm({ ...form, visitCat: v })}>
-                                <SelectTrigger className="bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl">
-                                    <SelectValue placeholder="เลือกหัวข้อ" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {VisitTopics.map(topic => (
-                                        <SelectItem key={topic} value={topic}>{topic}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {/* Store Search */}
-                        <div className="relative space-y-1.5">
-                            <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">รหัสลูกค้า / ชื่อร้าน *</Label>
-                            <div className="flex gap-2">
-                                <div className="relative flex-1">
-                                    <Input
-                                        placeholder="รหัส หรือ ชื่อร้าน..."
-                                        value={storeSearch}
-                                        onChange={(e) => setStoreSearch(e.target.value)}
-                                        className="bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl font-bold"
-                                    />
-                                    {selectedStore && (
-                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-blue-500 text-white text-[10px] rounded-md pointer-events-none">{selectedStore.name}</div>
-                                    )}
-                                    {storeSearch && <button onClick={clearStore} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">✕</button>}
-                                </div>
-                                <Button onClick={handleManualSearch} className="rounded-2xl h-12 px-5 bg-blue-600 text-white">🔍</Button>
-                            </div>
-
-                            {/* Suggestions */}
-                            {showSuggestions && (
-                                <div className="absolute z-50 w-full mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden">
-                                    {suggestions.map((s) => (
-                                        <button key={s.id} onClick={() => selectStore(s)} className="w-full px-4 py-3 text-left hover:bg-blue-500/10 transition-colors border-b border-slate-100 dark:border-slate-800/50 last:border-0">
-                                            <span className="font-bold text-slate-900 dark:text-white text-sm">{s.name}</span>
-                                            <div className="text-[10px] text-slate-500 italic">{s.code}</div>
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Enhanced Store Profile - Only shown when store selected */}
-                    {selectedStore && (
-                        <div className="animate-in fade-in slide-in-from-top-4 duration-500 mb-6">
-                            <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-[2rem] overflow-hidden shadow-sm">
-                                {/* Profile Header */}
-                                <div className="p-6 bg-gradient-to-r from-blue-600/5 to-indigo-600/5 border-b border-slate-200 dark:border-slate-700/50 flex items-center justify-between text-black">
-                                    <div className="flex items-center gap-4">
-                                        <div className="p-3 bg-blue-600/10 rounded-2xl">
-                                            <Store className="w-6 h-6 text-blue-600" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">{selectedStore.name}</h3>
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                <span className="px-2 py-0 h-4 border border-blue-200 text-blue-600 dark:border-blue-900/50 dark:text-blue-400 text-[10px] font-mono rounded flex items-center italic">#{selectedStore.code}</span>
-                                                <span className="px-2 py-0 h-4 bg-indigo-500 text-white border-none text-[10px] rounded flex items-center font-bold">{selectedStore.customerType || "ทั่วไป"}</span>
+                        {/* Enhanced Store Profile - Only shown when store selected */}
+                        {selectedStore && (
+                            <div className="animate-in fade-in slide-in-from-top-4 duration-500 mb-6">
+                                <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-[2rem] overflow-hidden shadow-sm">
+                                    {/* Profile Header */}
+                                    <div className="p-6 bg-gradient-to-r from-blue-600/5 to-indigo-600/5 border-b border-slate-200 dark:border-slate-700/50 flex items-center justify-between text-black">
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-3 bg-blue-600/10 rounded-2xl">
+                                                <Store className="w-6 h-6 text-blue-600" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">{selectedStore.name}</h3>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <span className="px-2 py-0 h-4 border border-blue-200 text-blue-600 dark:border-blue-900/50 dark:text-blue-400 text-[10px] font-mono rounded flex items-center italic">#{selectedStore.code}</span>
+                                                    <span className="px-2 py-0 h-4 bg-indigo-500 text-white border-none text-[10px] rounded flex items-center font-bold">{selectedStore.customerType || "ทั่วไป"}</span>
+                                                </div>
                                             </div>
                                         </div>
+                                        <div className="hidden md:flex flex-col items-end">
+                                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">เงื่อนไขการชำระ</span>
+                                            <span className="text-sm font-black text-blue-600">{selectedStore.payment || "เงินสด"}</span>
+                                        </div>
                                     </div>
-                                    <div className="hidden md:flex flex-col items-end">
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">เงื่อนไขการชำระ</span>
-                                        <span className="text-sm font-black text-blue-600">{selectedStore.payment || "เงินสด"}</span>
-                                    </div>
-                                </div>
 
-                                {/* Profile Body */}
-                                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-10 text-black">
-                                    {/* Left Column: Core Info */}
-                                    <div className="space-y-6">
-                                        <div className="flex items-start gap-4">
-                                            <div className="p-2 bg-slate-200/50 dark:bg-slate-700/50 rounded-xl mt-0.5">
-                                                <MapPin className="w-4 h-4 text-slate-500" />
+                                    {/* Profile Body */}
+                                    <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-10 text-black">
+                                        {/* Left Column: Core Info */}
+                                        <div className="space-y-6">
+                                            <div className="flex items-start gap-4">
+                                                <div className="p-2 bg-slate-200/50 dark:bg-slate-700/50 rounded-xl mt-0.5">
+                                                    <MapPin className="w-4 h-4 text-slate-500" />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">ที่อยู่ร้านค้า</Label>
+                                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200 leading-relaxed">{selectedStore.address || "ไม่ระบุข้อมูลที่อยู่"}</p>
+                                                </div>
                                             </div>
+
+                                            <div className="grid grid-cols-2 gap-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="p-2 bg-slate-200/50 dark:bg-slate-700/50 rounded-xl">
+                                                        <User className="w-4 h-4 text-slate-500" />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <Label className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">เจ้าของ / ผู้ติดต่อ</Label>
+                                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{selectedStore.owner || "-"}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="p-2 bg-slate-200/50 dark:bg-slate-700/50 rounded-xl">
+                                                        <Phone className="w-4 h-4 text-slate-500" />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <Label className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">เบอร์โทรศัพท์</Label>
+                                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{selectedStore.phone || "-"}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Right Column: Business Insight */}
+                                        <div className="grid grid-cols-2 gap-y-6 gap-6 pt-6 md:pt-0 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-700/50 md:pl-10">
                                             <div className="space-y-1">
-                                                <Label className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">ที่อยู่ร้านค้า</Label>
-                                                <p className="text-sm font-bold text-slate-700 dark:text-slate-200 leading-relaxed">{selectedStore.address || "ไม่ระบุข้อมูลที่อยู่"}</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="p-2 bg-slate-200/50 dark:bg-slate-700/50 rounded-xl">
-                                                    <User className="w-4 h-4 text-slate-500" />
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <Package className="w-3.5 h-3.5 text-indigo-500" />
+                                                    <Label className="text-[10px] text-slate-400 font-black uppercase">สินค้าที่ใช้</Label>
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <Label className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">เจ้าของ / ผู้ติดต่อ</Label>
-                                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{selectedStore.owner || "-"}</p>
+                                                <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">{selectedStore.productUsed || "-"}</p>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <CreditCard className="w-3.5 h-3.5 text-blue-500" />
+                                                    <Label className="text-[10px] text-slate-400 font-black uppercase">ปริมาณ/เดือน</Label>
                                                 </div>
+                                                <p className="text-sm font-black text-blue-600 dark:text-blue-400">{selectedStore.quantity || "-"}</p>
                                             </div>
-                                            <div className="flex items-center gap-4">
-                                                <div className="p-2 bg-slate-200/50 dark:bg-slate-700/50 rounded-xl">
-                                                    <Phone className="w-4 h-4 text-slate-500" />
+
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <Truck className="w-3.5 h-3.5 text-emerald-500" />
+                                                    <Label className="text-[10px] text-slate-400 font-black uppercase">รับของจาก</Label>
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <Label className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">เบอร์โทรศัพท์</Label>
-                                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{selectedStore.phone || "-"}</p>
+                                                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{selectedStore.supplier || "-"}</p>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <Clock className="w-3.5 h-3.5 text-amber-500" />
+                                                    <Label className="text-[10px] text-slate-400 font-black uppercase">ระยะเวลาสั่ง</Label>
                                                 </div>
+                                                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{selectedStore.orderPeriod || "-"}</p>
                                             </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Right Column: Business Insight */}
-                                    <div className="grid grid-cols-2 gap-y-6 gap-6 pt-6 md:pt-0 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-700/50 md:pl-10">
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <Package className="w-3.5 h-3.5 text-indigo-500" />
-                                                <Label className="text-[10px] text-slate-400 font-black uppercase">สินค้าที่ใช้</Label>
-                                            </div>
-                                            <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">{selectedStore.productUsed || "-"}</p>
-                                        </div>
-
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <CreditCard className="w-3.5 h-3.5 text-blue-500" />
-                                                <Label className="text-[10px] text-slate-400 font-black uppercase">ปริมาณ/เดือน</Label>
-                                            </div>
-                                            <p className="text-sm font-black text-blue-600 dark:text-blue-400">{selectedStore.quantity || "-"}</p>
-                                        </div>
-
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <Truck className="w-3.5 h-3.5 text-emerald-500" />
-                                                <Label className="text-[10px] text-slate-400 font-black uppercase">รับของจาก</Label>
-                                            </div>
-                                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{selectedStore.supplier || "-"}</p>
-                                        </div>
-
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <Clock className="w-3.5 h-3.5 text-amber-500" />
-                                                <Label className="text-[10px] text-slate-400 font-black uppercase">ระยะเวลาสั่ง</Label>
-                                            </div>
-                                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{selectedStore.orderPeriod || "-"}</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                        )}
+
+                        <Textarea placeholder="บันทึกรายละเอียด..." value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 rounded-2xl min-h-[100px]" />
+
+                        <div className="flex gap-4">
+                            <Button onClick={handleSubmit} disabled={isSubmitting} className={cn(
+                                "flex-1 text-white font-black text-lg py-7 rounded-3xl shadow-xl transition-all",
+                                editingPlan ? "bg-amber-500 hover:bg-amber-600" : "bg-gradient-to-r from-blue-600 to-indigo-600"
+                            )}>
+                                {isSubmitting ? "กำลังบันทึก..." : editingPlan ? "⚡ บันทึกการแก้ไข" : "เพิ่มแผนงานสัปดาห์"}
+                            </Button>
+                            <Button onClick={editingPlan ? handleCancelEdit : () => { setForm({ sales: "", date: new Date().toLocaleDateString('en-CA'), visitCat: "ตรวจเยี่ยมประจำเดือน", notes: "", order: "1" }); clearStore(); }} variant="outline" className="md:w-48 py-7 rounded-3xl font-bold">
+                                {editingPlan ? "ยกเลิก" : "ล้างฟอร์ม"}
+                            </Button>
                         </div>
-                    )}
-
-                    <Textarea placeholder="บันทึกรายละเอียด..." value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 rounded-2xl min-h-[100px]" />
-
-                    <div className="flex gap-4">
-                        <Button onClick={handleSubmit} disabled={isSubmitting} className={cn(
-                            "flex-1 text-white font-black text-lg py-7 rounded-3xl shadow-xl transition-all",
-                            editingPlan ? "bg-amber-500 hover:bg-amber-600" : "bg-gradient-to-r from-blue-600 to-indigo-600"
-                        )}>
-                            {isSubmitting ? "กำลังบันทึก..." : editingPlan ? "⚡ บันทึกการแก้ไข" : "เพิ่มแผนงานสัปดาห์"}
-                        </Button>
-                        <Button onClick={editingPlan ? handleCancelEdit : () => { setForm({ sales: "", date: new Date().toLocaleDateString('en-CA'), visitCat: "ตรวจเยี่ยมประจำเดือน", notes: "", order: "1" }); clearStore(); }} variant="outline" className="md:w-48 py-7 rounded-3xl font-bold">
-                            {editingPlan ? "ยกเลิก" : "ล้างฟอร์ม"}
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* MAIN PLAN LIST (Always Visible, matching reference) */}
             <div className="space-y-4 pt-8 animate-in fade-in duration-500">
@@ -563,20 +569,24 @@ export default function PlanForm({ plans, profiles, onRefresh }: any) {
                         </h3>
                     </div>
                     <div className="flex items-center gap-2">
-                        <input
-                            type="file"
-                            accept=".xlsx, .xls"
-                            className="hidden"
-                            ref={fileInputRef}
-                            onChange={handleImportExcel}
-                        />
-                        <Button
-                            variant="outline"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="font-black px-4 py-2 rounded-xl shadow-sm transition-all active:scale-95 bg-white/50 border-amber-200 text-amber-600 hover:bg-amber-50 dark:bg-slate-800/50 dark:border-amber-800/50 dark:text-amber-400 dark:hover:bg-amber-900/50"
-                        >
-                            <Upload className="w-5 h-5 mr-2" /> นำเข้า Excel
-                        </Button>
+                        {isAdmin && (
+                            <>
+                                <input
+                                    type="file"
+                                    accept=".xlsx, .xls"
+                                    className="hidden"
+                                    ref={fileInputRef}
+                                    onChange={handleImportExcel}
+                                />
+                                <Button
+                                    variant="outline"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="font-black px-4 py-2 rounded-xl shadow-sm transition-all active:scale-95 bg-white/50 border-amber-200 text-amber-600 hover:bg-amber-50 dark:bg-slate-800/50 dark:border-amber-800/50 dark:text-amber-400 dark:hover:bg-amber-900/50"
+                                >
+                                    <Upload className="w-5 h-5 mr-2" /> นำเข้า Excel
+                                </Button>
+                            </>
+                        )}
                         <Button
                             variant="outline"
                             onClick={handleExport}
@@ -628,13 +638,17 @@ export default function PlanForm({ plans, profiles, onRefresh }: any) {
                                             </TableCell>
                                             <TableCell className="text-slate-400 text-xs">{p.notes || "-"}</TableCell>
                                             <TableCell className="text-right pr-6">
-                                                <ActionButton
-                                                    label="ลบ"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => handleDelete(p.id)}
-                                                    className="h-7 px-3 text-[10px] bg-slate-800/50 text-slate-400 border border-slate-700 rounded hover:bg-slate-700 hover:text-white transition-all"
-                                                />
+                                                {isAdmin ? (
+                                                    <ActionButton
+                                                        label="ลบ"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => handleDelete(p.id)}
+                                                        className="h-7 px-3 text-[10px] bg-slate-800/50 text-slate-400 border border-slate-700 rounded hover:bg-slate-700 hover:text-white transition-all"
+                                                    />
+                                                ) : (
+                                                    <span className="text-[10px] text-slate-400 italic">View Only</span>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -649,6 +663,6 @@ export default function PlanForm({ plans, profiles, onRefresh }: any) {
                     </Table>
                 </div>
             </div>
-        </div>
+        </div >
     )
 }

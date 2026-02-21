@@ -40,7 +40,7 @@ import { Separator } from "@/components/ui/separator"
 
 import { useStoreSearch } from "@/components/hooks/useStoreSearch"
 
-export default function FAQ({ issues, profiles, onRefresh, onCreate, onUpdate, onDelete }: any) {
+export default function FAQ({ issues, profiles, onRefresh, onCreate, onUpdate, onDelete, isAdmin }: any) {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -227,12 +227,14 @@ export default function FAQ({ issues, profiles, onRefresh, onCreate, onUpdate, o
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium ml-12 italic">บันทึกและติดตามข้อร้องเรียนหรือปัญหาจากลูกค้า</p>
         </div>
 
-        <Button
-          onClick={() => { resetForm(); setIsCreateOpen(true); }}
-          className="rounded-2xl h-12 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-lg hover:shadow-blue-500/20 transition-all font-bold"
-        >
-          + เพิ่มรายการ FAQ / ปัญหา
-        </Button>
+        {isAdmin && (
+          <Button
+            onClick={() => { resetForm(); setIsCreateOpen(true); }}
+            className="rounded-2xl h-12 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-lg hover:shadow-blue-500/20 transition-all font-bold"
+          >
+            + เพิ่มรายการ FAQ / ปัญหา
+          </Button>
+        )}
       </div>
 
       {/* TABLE SECTION */}
@@ -250,20 +252,24 @@ export default function FAQ({ issues, profiles, onRefresh, onCreate, onUpdate, o
               className="w-64 h-10 rounded-xl bg-white/40 border-slate-200"
             />
             <div className="flex items-center gap-2">
-              <input
-                type="file"
-                accept=".xlsx, .xls"
-                className="hidden"
-                ref={fileInputRef}
-                onChange={handleImportExcel}
-              />
-              <Button
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                className="font-black px-4 h-10 rounded-xl shadow-sm transition-all active:scale-95 bg-white/50 border-amber-200 text-amber-600 hover:bg-amber-50 dark:bg-slate-800/50 dark:border-amber-800/50 dark:text-amber-400 dark:hover:bg-amber-900/50"
-              >
-                <Upload className="w-5 h-5 mr-2" /> นำเข้า Excel
-              </Button>
+              {isAdmin && (
+                <>
+                  <input
+                    type="file"
+                    accept=".xlsx, .xls"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleImportExcel}
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="font-black px-4 h-10 rounded-xl shadow-sm transition-all active:scale-95 bg-white/50 border-amber-200 text-amber-600 hover:bg-amber-50 dark:bg-slate-800/50 dark:border-amber-800/50 dark:text-amber-400 dark:hover:bg-amber-900/50"
+                  >
+                    <Upload className="w-5 h-5 mr-2" /> นำเข้า Excel
+                  </Button>
+                </>
+              )}
               <Button
                 variant="outline"
                 onClick={handleExport}
@@ -317,10 +323,14 @@ export default function FAQ({ issues, profiles, onRefresh, onCreate, onUpdate, o
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right pr-8">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" onClick={() => startEdit(item)} className="h-8 w-8 text-blue-600 hover:bg-blue-500/10 rounded-lg">✏️</Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} className="h-8 w-8 text-rose-500 hover:bg-rose-500/10 rounded-lg">🗑️</Button>
-                      </div>
+                      {isAdmin ? (
+                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" onClick={() => startEdit(item)} className="h-8 w-8 text-blue-600 hover:bg-blue-500/10 rounded-lg">✏️</Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} className="h-8 w-8 text-rose-500 hover:bg-rose-500/10 rounded-lg">🗑️</Button>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 italic opacity-0 group-hover:opacity-100 transition-opacity">View Only</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { RouteParams } from '@/lib/types/typehelper';
+import { checkIsAdmin } from '@/lib/auth';
 
 
 // DELETE - ลบการเข้าพบ
@@ -8,6 +9,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: RouteParams
 ) {
+  if (!await checkIsAdmin()) {
+    return NextResponse.json({ error: 'Unauthorized: Admin only' }, { status: 403 });
+  }
   const { id } = await params;
 
   try {

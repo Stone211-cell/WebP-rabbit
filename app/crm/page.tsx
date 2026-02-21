@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { useCRM } from '@/components/hooks/useCRM';
+import { useUser } from '@clerk/nextjs';
 import { axiosInstance } from '@/lib/axios';
 import './crm.css';
 
@@ -30,6 +31,12 @@ export default function CRMPage() {
     fetchStores, fetchVisits, fetchPlans, fetchForecasts, fetchIssues,
     createIssue, updateIssue, deleteIssue
   } = useCRM();
+  const { user, isLoaded } = useUser();
+
+  // Determine permissions
+  const isAdmin = user?.publicMetadata?.role === 'admin';
+  const hasProfile = profiles.some(p => p.clerkId === user?.id);
+
   const [storageInfo, setStorageInfo] = useState<any>({ usedMB: 0, maxMB: 500, percentage: 0 });
 
 
@@ -215,7 +222,13 @@ export default function CRMPage() {
 
             {/* Pages will be rendered here                 */}
             <div id="dashboard" className="page active w-full" style={{ display: activePage === 'dashboard' ? 'block' : 'none' }}>
-              <Dashboard stores={stores} visits={visits} summary={plans} profiles={profiles} />
+              <Dashboard
+                stores={stores}
+                visits={visits}
+                summary={plans}
+                profiles={profiles}
+                isAdmin={isAdmin}
+              />
             </div>
 
             {/* ข้อมูลร้านค้า */}
@@ -223,6 +236,7 @@ export default function CRMPage() {
               <StoreInformation
                 stores={stores}
                 onRefresh={fetchStores}
+                isAdmin={isAdmin}
               />
             </div>
 
@@ -233,6 +247,8 @@ export default function CRMPage() {
                 visits={visits}
                 profiles={profiles}
                 onRefresh={fetchVisits}
+                isAdmin={isAdmin}
+                hasProfile={hasProfile}
               />
             </div>
 
@@ -243,6 +259,7 @@ export default function CRMPage() {
                 plans={plans}
                 profiles={profiles}
                 onRefresh={fetchPlans}
+                isAdmin={isAdmin}
               />
             </div>
 
@@ -252,6 +269,7 @@ export default function CRMPage() {
                 stores={stores}
                 forecasts={forecasts}
                 onRefresh={fetchForecasts}
+                isAdmin={isAdmin}
               />
             </div>
 
@@ -280,6 +298,7 @@ export default function CRMPage() {
                 onCreate={createIssue}
                 onUpdate={updateIssue}
                 onDelete={deleteIssue}
+                isAdmin={isAdmin}
               />
             </div>
 

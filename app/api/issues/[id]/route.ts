@@ -2,8 +2,12 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { renderError } from "@/lib/rendererror"
 import { issueSchema } from "@/lib/validate/Zod"
+import { checkIsAdmin } from "@/lib/auth"
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+    if (!await checkIsAdmin()) {
+        return NextResponse.json({ error: "Unauthorized: Admin only" }, { status: 403 });
+    }
     try {
         const { id } = await params
         const body = await req.json()
@@ -27,6 +31,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+    if (!await checkIsAdmin()) {
+        return NextResponse.json({ error: "Unauthorized: Admin only" }, { status: 403 });
+    }
     try {
         const { id } = await params
         await prisma.issue.delete({

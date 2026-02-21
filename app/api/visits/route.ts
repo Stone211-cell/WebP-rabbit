@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { visitSchema } from '@/lib/validate/Zod';
 import { renderError } from '@/lib/rendererror';
+import { checkIsAdmin, checkHasProfile } from '@/lib/auth';
 
 // GET - โหลดทั้งหมด
 export async function GET(request: NextRequest) {
@@ -51,6 +52,10 @@ export async function GET(request: NextRequest) {
 
 // POST - เพิ่มการเข้าพบ
 export async function POST(request: NextRequest) {
+  // Allow if admin OR has profile
+  if (!await checkIsAdmin() && !await checkHasProfile()) {
+    return NextResponse.json({ error: 'Unauthorized: Profile required to record visits' }, { status: 403 });
+  }
   try {
     const body = await request.json();
     const validatedData = visitSchema.parse(body);
@@ -70,6 +75,9 @@ export async function POST(request: NextRequest) {
 
 // DELETE - ลบการเข้าพบทั้งหมด (bulk clear)
 export async function DELETE() {
+  if (!await checkIsAdmin()) {
+    return NextResponse.json({ error: 'Unauthorized: Admin only' }, { status: 403 });
+  }
   try {
     const result = await prisma.visit.deleteMany({});
     return NextResponse.json({

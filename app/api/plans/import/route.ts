@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { checkIsAdmin } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
+    if (!await checkIsAdmin()) {
+        return NextResponse.json({ error: "Unauthorized: Admin only" }, { status: 403 });
+    }
     try {
         const body = await request.json();
         const data = body.plans;

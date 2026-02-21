@@ -199,7 +199,7 @@ function CalendarDayButton({ day, modifiers, getPlansForDate, getVisitsForDate, 
   )
 }
 
-export default function Dashboard({ stores: initialStores, visits: initialVisits, summary, profiles: propProfiles }: any) {
+export default function Dashboard({ stores: initialStores, visits: initialVisits, summary, profiles: propProfiles, isAdmin }: any) {
   // --- REAL DATA INTEGRATION ---
   const { stores, visits, setVisits, plans, issues, profiles: crmProfiles, fetchVisits, fetchPlans, fetchStores, loading } = useCRM()
 
@@ -1057,20 +1057,24 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
             <ActionButton onClick={handleExportPlans} label="Export แผน" icon={<FileSpreadsheet className="w-4 h-4 mr-2 text-blue-600" />} />
             <ActionButton onClick={handleExportAll} label="Export ทั้งหมด" icon={<Database className="w-4 h-4 mr-2 text-purple-600" />} />
             <ActionButton onClick={() => { fetchVisits(); fetchPlans(); toast.success("รีเฟรชข้อมูลล่าสุดแล้ว") }} label="รีเฟรช" icon={<Zap className="w-4 h-4 mr-2 text-amber-500" />} />
-            <div className="relative">
-              <input type="file" ref={fileInputRef} onChange={handleImportExcel} className="hidden" accept=".xlsx, .xls" />
-              <ActionButton onClick={() => fileInputRef.current?.click()} label="Import Excel" icon={<Upload className="w-4 h-4 mr-2" />} />
-            </div>
+            {isAdmin && (
+              <div className="relative">
+                <input type="file" ref={fileInputRef} onChange={handleImportExcel} className="hidden" accept=".xlsx, .xls" />
+                <ActionButton onClick={() => fileInputRef.current?.click()} label="Import Excel" icon={<Upload className="w-4 h-4 mr-2" />} />
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
-            <ActionButton
-              onClick={handleClearAll}
-              disabled={isClearing}
-              label={isClearing ? 'กำลังลบ...' : 'ล้างข้อมูล'}
-              className="bg-red-500 hover:bg-red-600 text-white border-red-600 dark:bg-red-600 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              icon={<Trash2 className="w-4 h-4 mr-2 text-white" />}
-              variant="default"
-            />
+            {isAdmin && (
+              <ActionButton
+                onClick={handleClearAll}
+                disabled={isClearing}
+                label={isClearing ? 'กำลังลบ...' : 'ล้างข้อมูล'}
+                className="bg-red-500 hover:bg-red-600 text-white border-red-600 dark:bg-red-600 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                icon={<Trash2 className="w-4 h-4 mr-2 text-white" />}
+                variant="default"
+              />
+            )}
           </div>
         </div>
       </div>

@@ -61,7 +61,7 @@ const safeFloat = (val: any) => {
     return isNaN(parsed) ? 0 : parsed
 }
 
-export default function ForecastForm({ forecasts, onRefresh }: any) {
+export default function ForecastForm({ forecasts, onRefresh, isAdmin }: any) {
     const [date, setDate] = useState<Date>(new Date())
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [showDialog, setShowDialog] = useState(false)
@@ -320,12 +320,14 @@ export default function ForecastForm({ forecasts, onRefresh }: any) {
                     </div>
 
                     {/* Add Button */}
-                    <Button
-                        onClick={() => setShowDialog(true)}
-                        className="bg-white dark:bg-white text-slate-900 font-bold rounded-full dark:text-black  px-6 shadow-lg hover:shadow-xl hover:bg-slate-50 transition-all active:scale-95"
-                    >
-                        <Plus size={18} className="text-blue-500" />เพิ่มคาดการณ์
-                    </Button>
+                    {isAdmin && (
+                        <Button
+                            onClick={() => setShowDialog(true)}
+                            className="bg-white dark:bg-white text-slate-900 font-bold rounded-full dark:text-black  px-6 shadow-lg hover:shadow-xl hover:bg-slate-50 transition-all active:scale-95"
+                        >
+                            <Plus size={18} className="text-blue-500" />เพิ่มคาดการณ์
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -459,13 +461,15 @@ export default function ForecastForm({ forecasts, onRefresh }: any) {
                                             </div>
                                         </div>
                                     </div>
-                                    <Button
-                                        onClick={() => handleAddProduct(group.store)}
-                                        size="sm"
-                                        className="bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white font-bold rounded-full px-5 shadow-sm hover:shadow-md transition-all border border-indigo-100 dark:border-indigo-500"
-                                    >
-                                        <Plus size={16} className="mr-1" /> เพิ่มสินค้า
-                                    </Button>
+                                    {isAdmin && (
+                                        <Button
+                                            onClick={() => handleAddProduct(group.store)}
+                                            size="sm"
+                                            className="bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white font-bold rounded-full px-5 shadow-sm hover:shadow-md transition-all border border-indigo-100 dark:border-indigo-500"
+                                        >
+                                            <Plus size={16} className="mr-1" /> เพิ่มสินค้า
+                                        </Button>
+                                    )}
                                 </div>
 
                                 {/* Items Grid */}
@@ -485,14 +489,18 @@ export default function ForecastForm({ forecasts, onRefresh }: any) {
                                                                 {f.product}
                                                             </h4>
                                                         </div>
-                                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <Button size="sm" variant="outline" className="h-8 rounded-lg" onClick={() => handleEdit(f)}>
-                                                                แก้ไข
-                                                            </Button>
-                                                            <Button size="sm" variant="ghost" className="h-8 w-8 text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg" onClick={() => handleDelete(f.id)}>
-                                                                ลบ
-                                                            </Button>
-                                                        </div>
+                                                        {isAdmin ? (
+                                                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <Button size="sm" variant="outline" className="h-8 rounded-lg" onClick={() => handleEdit(f)}>
+                                                                    แก้ไข
+                                                                </Button>
+                                                                <Button size="sm" variant="ghost" className="h-8 w-8 text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg" onClick={() => handleDelete(f.id)}>
+                                                                    ลบ
+                                                                </Button>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[10px] text-slate-400 italic opacity-0 group-hover:opacity-100 transition-opacity">View Only</span>
+                                                        )}
                                                     </div>
 
                                                     {/* Progress Bars Row */}

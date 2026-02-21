@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { renderError } from "@/lib/rendererror"
 import { issueSchema } from "@/lib/validate/Zod"
+import { checkIsAdmin } from "@/lib/auth"
 
 export async function GET(req: Request) {
     try {
@@ -42,6 +43,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+    if (!await checkIsAdmin()) {
+        return NextResponse.json({ error: "Unauthorized: Admin only" }, { status: 403 });
+    }
     try {
         const body = await req.json()
         const validatedData = issueSchema.parse(body)
