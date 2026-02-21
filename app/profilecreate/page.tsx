@@ -14,14 +14,7 @@ export default function ProfileCreatePage() {
   const [form, setForm] = useState({ name: "", phone: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!user) return;
-
-    // เช็คว่ามี profile แล้วหรือยัง ถ้ามีแล้วให้ redirect
-    if (user.publicMetadata?.profileCreated || user.publicMetadata?.hasProfile) {
-      router.replace("/");
-    }
-  }, [user, router]);
+  // Redirect logic is now handled globally by `<ProfileCheck />` in `app/layout.tsx`
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -68,7 +61,7 @@ export default function ProfileCreatePage() {
                 สมัครสมาชิก
               </h1>
               <p className="text-gray-600 dark:text-gray-300 text-sm">
-                สร้างโปรไฟล์ของคุณเพื่อเริ่มต้นใช้งาน
+                กรุณาสร้างโปรไฟล์ ข้อมูลชื่อของคุณจะถูกใช้เป็น <span className="font-semibold text-purple-600 dark:text-purple-400">ชื่อเซลล์</span> ในระบบ
               </p>
             </div>
 
@@ -80,7 +73,7 @@ export default function ProfileCreatePage() {
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="ชื่อ – นามสกุล"
+                  placeholder="ชื่อ-นามสกุล (จะถูกบันทึกเป็นชื่อเซลล์)"
                   className="w-full px-4 py-3 bg-white/50 dark:bg-gray-700/50 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition-all duration-300 outline-none"
                   required
                 />

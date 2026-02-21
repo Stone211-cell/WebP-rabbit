@@ -18,7 +18,7 @@ import OrderTracking from '@/components/pagecomponents/OrderTracking/OrderTracki
 import FAQ from '@/components/pagecomponents/FAQ/FAQ';
 import Fine from '@/components/pagecomponents/Fine/Fine';
 
-// import ProductManagement from '@/components/pagecomponents/ProductManagement';
+
 
 import StoreInformation from '@/components/pagecomponents/StoreInformation/StoreInformation';
 
@@ -26,22 +26,25 @@ import StoreInformation from '@/components/pagecomponents/StoreInformation/Store
 
 export default function CRMPage() {
   const {
-    stores, visits, plans, forecasts, issues,
+    stores, visits, plans, forecasts, issues, profiles,
     fetchStores, fetchVisits, fetchPlans, fetchForecasts, fetchIssues,
     createIssue, updateIssue, deleteIssue
   } = useCRM();
-  const [profiles, setProfiles] = useState<any[]>([]);
+  const [storageInfo, setStorageInfo] = useState<any>({ usedMB: 0, maxMB: 500, percentage: 0 });
 
+
+  // Fetch storage usage from Supabase
   useEffect(() => {
-    const loadProfiles = async () => {
+    const loadStorage = async () => {
       try {
-        const res = await axiosInstance.get('/profile');
-        setProfiles(res.data);
+        const res = await fetch('/api/storage-usage');
+        const data = await res.json();
+        setStorageInfo(data);
       } catch (e) {
-        console.error("Failed to load profiles", e);
+        console.error('Failed to load storage info', e);
       }
     };
-    loadProfiles();
+    loadStorage();
   }, []);
 
   const [activePage, setActivePage] = useState(() => {
@@ -145,7 +148,7 @@ export default function CRMPage() {
               className={`nav-tab ${activePage === 'faq' ? 'active' : ''}`}
               onClick={() => setActivePage('faq')}
             >
-              ❓ คำถามที่พบบ่อย
+              ❓ FAQ
             </button>
             <button
               className={`nav-tab ${activePage === 'fine' ? 'active' : ''}`}
@@ -155,12 +158,7 @@ export default function CRMPage() {
             </button>
 
 
-            {/* <button
-              className={`nav-tab ${activePage === 'products' ? 'active' : ''}`}
-              onClick={() => setActivePage('products')}
-            >
-              🛍️ จัดการสินค้า
-            </button> */}
+
 
 
           </div>
@@ -168,9 +166,21 @@ export default function CRMPage() {
             <div className="storage-status dark:bg-[#0f172a] dark:text-white dark:border-gray-700" id="storageStatus">
               <div className="storage-label">💾 พื้นที่จัดเก็บ</div>
               <div className="storage-bar">
-                <div className="storage-fill" id="storageFill"></div>
+                <div
+                  className="storage-fill"
+                  id="storageFill"
+                  style={{
+                    width: `${Math.min(storageInfo.percentage || 0, 100)}%`,
+                    backgroundColor: (storageInfo.percentage || 0) > 80 ? '#ef4444' : (storageInfo.percentage || 0) > 50 ? '#f59e0b' : '#22c55e',
+                    transition: 'width 0.5s ease, background-color 0.5s ease'
+                  }}
+                ></div>
               </div>
-              <div className="storage-text" id="storageText">ดึงข้อมูล...</div>
+              <div className="storage-text" id="storageText">
+                {storageInfo.usedMB > 0
+                  ? `${storageInfo.usedMB} MB / ${storageInfo.maxMB} MB (${storageInfo.percentage}%)`
+                  : 'กำลังโหลด...'}
+              </div>
             </div>
             {/*  */}
             <button className="dark-toggle dark:bg-[#0f172a]" onClick={toggleTheme}>
@@ -192,9 +202,8 @@ export default function CRMPage() {
               {activePage === 'alerts' && 'แจ้งเตือนนัดหมาย'}
               {activePage === 'ordertracking' && 'ติดตามคำสั่งซื้อ'}
               {activePage === 'faq' && 'คำถามที่พบบ่อย'}
-              {activePage === 'faq' && 'คำถามที่พบบ่อย'}
               {activePage === 'fine' && 'ค่าปรับการเข้าพบ'}
-              {activePage === 'products' && 'จัดการสินค้า'}
+
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '.75rem', color: 'var(--t3)' }}>
               <span style={{ color: 'var(--green)' }}>●</span> Auto-save เปิดอยู่
@@ -206,7 +215,7 @@ export default function CRMPage() {
 
             {/* Pages will be rendered here                 */}
             <div id="dashboard" className="page active w-full" style={{ display: activePage === 'dashboard' ? 'block' : 'none' }}>
-              <Dashboard stores={stores} visits={visits} summary={plans} />
+              <Dashboard stores={stores} visits={visits} summary={plans} profiles={profiles} />
             </div>
 
             {/* ข้อมูลร้านค้า */}

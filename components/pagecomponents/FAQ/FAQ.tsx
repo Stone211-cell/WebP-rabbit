@@ -5,6 +5,7 @@ import { axiosInstance } from "@/lib/axios"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { exportToExcel } from "@/lib/export"
 
 import {
   Dialog,
@@ -16,6 +17,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
+import { Upload } from "lucide-react"
+import * as React from "react"
 import {
   Select,
   SelectTrigger,
@@ -42,6 +45,7 @@ export default function FAQ({ issues, profiles, onRefresh, onCreate, onUpdate, o
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const initialForm = {
     date: new Date().toLocaleDateString('en-CA'),
@@ -155,6 +159,62 @@ export default function FAQ({ issues, profiles, onRefresh, onCreate, onUpdate, o
     }
   }
 
+  const handleExport = () => {
+    const dataToExport = filteredIssues.map((item: any, index: number) => ({
+      "ลำดับ": index + 1,
+      "วันที่": new Date(item.date).toLocaleDateString('th-TH'),
+      "ร้านค้า": item.store?.name || "-",
+      "รหัสร้านค้า": item.store?.code || "-",
+      "ประเภท": item.type || "-",
+      "รายละเอียด": item.detail || "-",
+      "ผู้บันทึก": item.recorder || "-",
+      "สถานะ": getStatusText(item.status) || "-"
+    }));
+    exportToExcel(dataToExport, "FAQ_Issues");
+  }
+
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    toast.loading('กำลังโหลดข้อมูลร้องเรียน...', { id: 'import-faq' });
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        try {
+          const bstr = evt.target?.result;
+          const XLSX = await import("xlsx");
+          const wb = XLSX.read(bstr, { type: 'array', cellDates: true });
+          const wsname = wb.SheetNames.find(n => n.includes('FAQ') || n.includes('Issue')) || wb.SheetNames[0];
+          const data = XLSX.utils.sheet_to_json(wb.Sheets[wsname]);
+
+          const res = await fetch("/api/issues/import", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+          });
+          const info = await res.json();
+          if (res.ok) {
+            toast.success(info.message || "นำเข้าข้อมูลสำเร็จ", { id: 'import-faq' });
+            if (onRefresh) onRefresh();
+          } else {
+            toast.error(info.error || "เกิดข้อผิดพลาดในการนำเข้า", { id: 'import-faq' });
+          }
+        } catch (err) {
+          toast.error("รูปแบบไฟล์ไม่ถูกต้อง", { id: 'import-faq' });
+        }
+      }
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      handleApiError(error);
+      toast.dismiss('import-faq');
+    }
+  }
+
   return (
     <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-700">
       {/* HEADER */}
@@ -189,13 +249,37 @@ export default function FAQ({ issues, profiles, onRefresh, onCreate, onUpdate, o
               onChange={(e) => setSearch(e.target.value)}
               className="w-64 h-10 rounded-xl bg-white/40 border-slate-200"
             />
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                accept=".xlsx, .xls"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleImportExcel}
+              />
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                className="font-black px-4 h-10 rounded-xl shadow-sm transition-all active:scale-95 bg-white/50 border-amber-200 text-amber-600 hover:bg-amber-50 dark:bg-slate-800/50 dark:border-amber-800/50 dark:text-amber-400 dark:hover:bg-amber-900/50"
+              >
+                <Upload className="w-5 h-5 mr-2" /> นำเข้า Excel
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleExport}
+                className="font-black h-10 px-4 rounded-xl shadow-sm transition-all active:scale-95 bg-white/50 border-emerald-200 text-emerald-600 hover:bg-emerald-50 dark:bg-slate-800/50 dark:border-emerald-800/50 dark:text-emerald-400 dark:hover:bg-emerald-900/50"
+              >
+                <span className="text-lg mr-2">📥</span> Export
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader className="bg-slate-50/50 dark:bg-slate-800/50">
               <TableRow className="border-slate-100 dark:border-slate-800">
-                <TableHead className="py-4 font-black uppercase text-[10px] pl-8">วันที่</TableHead>
+                <TableHead className="py-4 font-black uppercase text-[10px] pl-8 text-center w-16">ลำดับ</TableHead>
+                <TableHead className="py-4 font-black uppercase text-[10px]">วันที่</TableHead>
                 <TableHead className="py-4 font-black uppercase text-[10px]">ร้านค้า</TableHead>
                 <TableHead className="py-4 font-black uppercase text-[10px]">ประเภท</TableHead>
                 <TableHead className="py-4 font-black uppercase text-[10px]">รายละเอียด</TableHead>
@@ -207,14 +291,15 @@ export default function FAQ({ issues, profiles, onRefresh, onCreate, onUpdate, o
             <TableBody>
               {filteredIssues.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-40 text-center text-slate-400 italic">
+                  <TableCell colSpan={8} className="h-40 text-center text-slate-400 italic">
                     ไม่พบข้อมูลรายการ...
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredIssues.map((item: any) => (
+                filteredIssues.map((item: any, index: number) => (
                   <TableRow key={item.id} className="border-slate-50 dark:border-slate-800/50 hover:bg-blue-500/5 transition-colors group">
-                    <TableCell className="py-5 pl-8 text-xs font-bold text-slate-500">{new Date(item.date).toLocaleDateString('th-TH')}</TableCell>
+                    <TableCell className="text-center font-bold text-slate-500 text-xs pl-8">{index + 1}</TableCell>
+                    <TableCell className="py-5 font-bold text-slate-500 text-xs">{new Date(item.date).toLocaleDateString('th-TH')}</TableCell>
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="font-black text-slate-900 dark:text-white text-xs">{item.store?.name}</span>

@@ -5,9 +5,9 @@ import { axiosInstance } from "@/lib/axios"
 import { createForecast, updateForecast, deleteForecast } from "@/lib/api/forecasts"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
-import { addWeeks, subWeeks, format, startOfWeek, endOfWeek, isSameWeek } from "date-fns"
+import { addWeeks, subWeeks, startOfWeek, endOfWeek } from "date-fns"
 import { th } from "date-fns/locale"
-import { cn } from "@/lib/utils"
+import { cn, formatThaiDate } from "@/lib/utils"
 import { useCRM } from "@/components/hooks/useCRM"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -307,7 +307,7 @@ export default function ForecastForm({ forecasts, onRefresh }: any) {
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button variant="ghost" className="px-4 h-8 text-xs font-bold rounded-full">
-                                    {format(weekStart, "d MMM", { locale: th })} - {format(weekEnd, "d MMM yyyy", { locale: th })}
+                                    {formatThaiDate(weekStart, "d MMM")} - {formatThaiDate(weekEnd, "d MMM yyyy")}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="p-0 bg-slate-900 border-slate-800">

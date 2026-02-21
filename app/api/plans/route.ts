@@ -27,7 +27,9 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(plans);
+    return NextResponse.json(plans, {
+      headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
+    });
   } catch (error) {
     return renderError(error);
   }
@@ -40,13 +42,26 @@ export async function POST(request: NextRequest) {
     const validatedData = planSchema.parse(body);
 
     const plan = await prisma.plan.create({
-      data: validatedData, // Date is already a Date object from Zod
+      data: validatedData,
       include: {
         store: true,
       },
     });
 
     return NextResponse.json(plan, { status: 201 });
+  } catch (error) {
+    return renderError(error);
+  }
+}
+
+// DELETE - ลบแผนงานทั้งหมด (bulk clear)
+export async function DELETE() {
+  try {
+    const result = await prisma.plan.deleteMany({});
+    return NextResponse.json({
+      deleted: result.count,
+      message: `ลบแผนงานทั้งหมด ${result.count} รายการเรียบร้อยแล้ว`
+    });
   } catch (error) {
     return renderError(error);
   }

@@ -27,7 +27,8 @@ export function ActionButton({
     className,
     variant = "outline",
     size = "default",
-    type = "button"
+    type = "button",
+    disabled = false
 }: {
     label?: string | React.ReactNode,
     icon?: React.ReactNode,
@@ -35,7 +36,8 @@ export function ActionButton({
     className?: string,
     variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link",
     size?: "default" | "sm" | "lg" | "icon",
-    type?: "button" | "submit" | "reset"
+    type?: "button" | "submit" | "reset",
+    disabled?: boolean
 }) {
     return (
         <Button
@@ -43,6 +45,7 @@ export function ActionButton({
             onClick={onClick}
             variant={variant}
             size={size}
+            disabled={disabled}
             className={cn(
                 variant === "outline" ? "bg-white dark:bg-[#1e293b] text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800" : "",
                 "transition-colors",

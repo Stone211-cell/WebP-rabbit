@@ -2,7 +2,7 @@ import React from 'react';
 import { X, CheckCircle2 } from "lucide-react"
 import { format } from "date-fns"
 import { th } from "date-fns/locale"
-import { cn } from "@/lib/utils"
+import { cn, formatThaiDate } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
 interface VisitDetailModalProps {
@@ -14,7 +14,7 @@ export function VisitDetailModal({ visit, onClose }: VisitDetailModalProps) {
     if (!visit) return null
 
     // Format Date
-    const dateStr = visit.date ? format(new Date(visit.date), "d/M/yyyy", { locale: th }) : "-"
+    const dateStr = formatThaiDate(visit.date, "d/MM/yyyy")
 
     // Status Color
     const isClosed = visit.dealStatus === "ปิดการขาย"

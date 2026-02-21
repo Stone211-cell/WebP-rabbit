@@ -104,32 +104,32 @@ export default function ChartCard({
 
     // Determine keys for rendering bars
     // If 'stacked', config keys are used. If 'bar', dataKey is used.
-    const barKeys = type === 'stacked' ? Object.keys(config) : [dataKey]
+    const barKeys = (type === 'stacked' || type === 'grouped') ? Object.keys(config) : [dataKey]
 
     return (
         <Card className="shadow-lg flex flex-col h-full border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1e293b]">
             <CardHeader className="pb-2">
-                <CardTitle className="text-base text-slate-900 dark:text-white flex items-center gap-2">
+                <CardTitle className="text-lg text-slate-900 dark:text-white flex items-center gap-2">
                     {title}
                 </CardTitle>
-                <CardDescription className="text-slate-600 dark:text-slate-400 text-xs">
+                <CardDescription className="text-slate-600 dark:text-slate-400 text-sm">
                     {detail}
                 </CardDescription>
 
-                {/* Custom Legend for Stacked Chart */}
-                {type === 'stacked' && (
+                {/* Custom Legend for Stacked/Grouped Chart */}
+                {(type === 'stacked' || type === 'grouped') && (
                     <div className="flex flex-wrap gap-2 mt-2">
                         {Object.entries(config).map(([key, conf]: any) => (
                             <div key={key} className="flex items-center gap-1.5 min-w-max">
-                                <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: conf.color }}></div>
-                                <span className="text-[10px] text-slate-500 dark:text-slate-400">{conf.label}</span>
+                                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: conf.color }}></div>
+                                <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{conf.label}</span>
                             </div>
                         ))}
                     </div>
                 )}
             </CardHeader>
 
-            <CardContent className="flex-1 min-h-[250px] p-2">
+            <CardContent className="flex-1 min-h-[400px] p-4">
                 <ChartContainer
                     config={config}
                     className="h-full w-full aspect-auto"
@@ -146,16 +146,16 @@ export default function ChartCard({
                             tickLine={false}
                             axisLine={false}
                             tickMargin={10}
-                            className="text-xs text-slate-600 dark:text-slate-400 font-medium"
-                            tick={{ fill: 'currentColor', opacity: 0.8, fontSize: 11 }}
+                            className="text-sm text-slate-600 dark:text-slate-400 font-medium"
+                            tick={{ fill: 'currentColor', opacity: 0.8, fontSize: 13 }}
                         />
 
                         <YAxis
                             tickLine={false}
                             axisLine={false}
-                            className="text-xs text-slate-600 dark:text-slate-400"
-                            tick={{ fill: 'currentColor', opacity: 0.8, fontSize: 10 }}
-                            width={25}
+                            className="text-sm text-slate-600 dark:text-slate-400"
+                            tick={{ fill: 'currentColor', opacity: 0.8, fontSize: 13 }}
+                            width={35}
                         />
 
                         <ChartTooltip
@@ -173,14 +173,14 @@ export default function ChartCard({
                                         <p className="text-sm font-bold text-slate-900 dark:text-white mb-2">{label}</p>
                                         <div className="space-y-1">
                                             {payload.map((entry: any, index: number) => (
-                                                <div key={index} className="flex items-center gap-2 text-xs">
-                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></div>
-                                                    <span className="text-slate-500 dark:text-slate-400">{entry.name}:</span>
-                                                    <span className="font-medium text-slate-900 dark:text-slate-200">{entry.value}</span>
+                                                <div key={index} className="flex items-center gap-2 text-sm">
+                                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></div>
+                                                    <span className="text-slate-600 dark:text-slate-400">{entry.name}:</span>
+                                                    <span className="font-bold text-slate-900 dark:text-slate-100">{entry.value}</span>
                                                 </div>
                                             ))}
-                                            {type === 'stacked' && (
-                                                <div className="pt-2 mt-2 border-t border-slate-100 dark:border-slate-700 flex justify-between gap-4 font-bold text-xs text-slate-700 dark:text-slate-300">
+                                            {(type === 'stacked' || type === 'grouped') && (
+                                                <div className="pt-2 mt-2 border-t border-slate-100 dark:border-slate-700 flex justify-between gap-4 font-black text-sm text-slate-800 dark:text-slate-200">
                                                     <span>รวม</span>
                                                     <span>{payload.reduce((sum: number, entry: any) => sum + (Number(entry.value) || 0), 0)}</span>
                                                 </div>
@@ -196,10 +196,11 @@ export default function ChartCard({
                             <Bar
                                 key={key}
                                 dataKey={key}
+                                name={config[key]?.label || key}
                                 stackId={type === 'stacked' ? "a" : undefined}
                                 fill={config[key]?.color || "#60a5fa"}
                                 radius={
-                                    type === 'stacked'
+                                    (type === 'stacked' || type === 'grouped')
                                         ? [0, 0, 0, 0] // Stacked middle bars usually square
                                         : [4, 4, 0, 0] // Regular bars rounded top
                                 }

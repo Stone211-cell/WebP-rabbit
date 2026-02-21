@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const data = profileSchema.parse(body);
 
-        await prisma.profile.create({
+        const newProfile = await prisma.profile.create({
             data: {
                 clerkId: user.id,
                 email: user.emailAddresses[0].emailAddress ?? "",
@@ -35,13 +35,45 @@ export async function POST(request: NextRequest) {
             },
         });
 
+        // Auto-merge: Transfer data from any variations of this name (including "(ยังไม่ลงทะเบียน)")
+        if (data.name) {
+            const { normalizeName } = await import('@/lib/utils');
+            const targetNorm = normalizeName(data.name);
+
+            // Find all unique sales names in Visits and Plans
+            const [uniqueVisitSales, uniquePlanSales] = await Promise.all([
+                prisma.visit.findMany({ select: { sales: true }, distinct: ['sales'] }),
+                prisma.plan.findMany({ select: { sales: true }, distinct: ['sales'] })
+            ]);
+
+            const allUniqueNames = new Set([
+                ...uniqueVisitSales.map(v => v.sales),
+                ...uniquePlanSales.map(p => p.sales)
+            ].filter(Boolean) as string[]);
+
+            // Find names that normalize to the same string as the new profile
+            const matchingNames = Array.from(allUniqueNames).filter(name => normalizeName(name) === targetNorm);
+
+            if (matchingNames.length > 0) {
+                await Promise.all([
+                    prisma.visit.updateMany({
+                        where: { sales: { in: matchingNames } },
+                        data: { sales: data.name }
+                    }),
+                    prisma.plan.updateMany({
+                        where: { sales: { in: matchingNames } },
+                        data: { sales: data.name }
+                    })
+                ]);
+            }
+        }
+
         const client = await clerkClient();
         await client.users.updateUserMetadata(user.id, {
-            publicMetadata: { profileCreated: true },
             privateMetadata: { hasProfile: true },
         });
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, profile: newProfile });
     } catch (error) {
         return renderError(error);
     }

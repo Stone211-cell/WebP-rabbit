@@ -41,7 +41,9 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(visits);
+    return NextResponse.json(visits, {
+      headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
+    });
   } catch (error) {
     return renderError(error);
   }
@@ -54,13 +56,26 @@ export async function POST(request: NextRequest) {
     const validatedData = visitSchema.parse(body);
 
     const visit = await prisma.visit.create({
-      data: validatedData, // Date is already a Date object from Zod
+      data: validatedData,
       include: {
         store: true,
       },
     });
 
     return NextResponse.json(visit, { status: 201 });
+  } catch (error) {
+    return renderError(error);
+  }
+}
+
+// DELETE - ลบการเข้าพบทั้งหมด (bulk clear)
+export async function DELETE() {
+  try {
+    const result = await prisma.visit.deleteMany({});
+    return NextResponse.json({
+      deleted: result.count,
+      message: `ลบการเข้าพบทั้งหมด ${result.count} รายการเรียบร้อยแล้ว`
+    });
   } catch (error) {
     return renderError(error);
   }

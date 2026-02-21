@@ -1,11 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { axiosInstance } from "@/lib/axios"
+import * as XLSX from "xlsx"
 import { createVisit } from "@/lib/api/visits"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { exportToExcel } from "@/lib/export"
+import { getExcelValue, parseExcelDate } from "@/lib/excel"
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -33,8 +36,9 @@ import { Separator } from "@/components/ui/separator"
 
 import { useStoreSearch } from "@/components/hooks/useStoreSearch"
 import { VisitTopics, VisitTypes, DealStatuses } from "@/lib/types/manu"
+import { ActionButton } from "@/components/crmhelper/helper"
 import { VisitDetailModal } from "./VisitDetailModal"
-import { Eye } from "lucide-react"
+import { Eye, Trash2, Upload, FileSpreadsheet, MapPin, Phone, CreditCard, Package, Clock, Truck, User, Store } from "lucide-react"
 
 export default function
   VisitForm({ visits, profiles, onRefresh }: any) {
@@ -51,6 +55,10 @@ export default function
   const [salesFilter, setSalesFilter] = useState("all")
   const [historySearch, setHistorySearch] = useState("")
   const [selectedVisit, setSelectedVisit] = useState<any>(null)
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isImporting, setIsImporting] = useState(false)
+  const [isClearing, setIsClearing] = useState(false)
 
   // 💡 ใช้ Hook จัดการค้นหาร้านค้า
   const {
@@ -116,6 +124,22 @@ export default function
     }
   }
 
+  const handleClear = async () => {
+    if (!confirm("⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบ \"ข้อมูลการเข้าพบทั้งหมด\" ในระบบ?\n\n- ร้านค้าและแผนงานจะไม่ถูกลบ\n- การดำเนินการนี้ไม่สามารถย้อนกลับได้")) return
+    setIsClearing(true)
+    const toastId = toast.loading("กำลังลบข้อมูลการเข้าพบ...")
+    try {
+      const res = await axiosInstance.delete('/visits')
+      toast.success(res.data.message || "ลบข้อมูลการเข้าพบเรียบร้อยแล้ว")
+      if (onRefresh) onRefresh()
+    } catch (error) {
+      handleApiError(error)
+    } finally {
+      setIsClearing(false)
+      toast.dismiss(toastId)
+    }
+  }
+
   const filteredVisits = (visits || []).filter((v: any) => {
     const sMatch = !historySearch ||
       v.store?.name?.toLowerCase().includes(historySearch.toLowerCase()) ||
@@ -123,6 +147,102 @@ export default function
     const salesMatch = salesFilter === "all" || v.sales === salesFilter
     return sMatch && salesMatch
   })
+
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsImporting(true)
+    const toastId = toast.loading("กำลังนำเข้าข้อมูลการเข้าพบและร้านค้า...")
+
+    try {
+      const data = await file.arrayBuffer()
+      const workbook = XLSX.read(data)
+      // Target specific sheet name, fallback to first sheet
+      const targetSheetName = workbook.SheetNames.find(n => n.includes('เข้าพบ') || n.includes('Visit')) || workbook.SheetNames[0]
+      const worksheet = workbook.Sheets[targetSheetName]
+      const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[]
+
+      const visitsToImport = jsonData.map((row) => {
+        let phone = getExcelValue(row, ['เบอร์โทร', 'phone', 'tel']) || '';
+        if (phone && phone.length === 9 && !phone.startsWith('0')) phone = '0' + phone;
+        phone = phone.replace(/[^0-9]/g, '');
+
+        const dateRaw = getExcelValue(row, ['วันที่', 'date']);
+        const finalDate = parseExcelDate(dateRaw);
+
+        return {
+          date: finalDate,
+          sales: getExcelValue(row, ['เซลล์', 'sales', 'sale']) || '',
+          storeCode: getExcelValue(row, ['รหัสลูกค้า', 'รหัส', 'store_code']) || '-',
+          storeName: getExcelValue(row, ['ชื่อร้าน', 'name']) || '',
+          customerType: getExcelValue(row, ['ประเภทลูกค้า', 'customer_type']) || '',
+          owner: getExcelValue(row, ['เจ้าของ', 'owner']) || '',
+          phone,
+          storeType: getExcelValue(row, ['ประเภทร้าน', 'ประเภท', 'store_type']) || '',
+          address: getExcelValue(row, ['ที่อยู่', 'address']) || '',
+          productUsed: getExcelValue(row, ['สินค้าที่ใช้', 'สินค้า', 'product_used']) || '',
+          quantity: getExcelValue(row, ['ปริมาณ', 'quantity']) || '',
+          orderPeriod: getExcelValue(row, ['ระยะเวลาสั่ง', 'order_period', 'รอบสั่ง']) || '',
+          supplier: getExcelValue(row, ['รับของเดิมจาก', 'รับของจาก', 'supplier']) || '',
+          payment: getExcelValue(row, ['เงื่อนไขชำระ', 'payment']) || '',
+          visitCat: getExcelValue(row, ['หัวข้อเข้าพบ', 'visit_cat']) || '',
+          visitType: getExcelValue(row, ['ประเภทเข้าพบ', 'visit_type', 'ประเภท']) || '',
+          status: getExcelValue(row, ['สถานะ', 'status']) || '',
+          closeReason: getExcelValue(row, ['เหตุผลปิดการขาย', 'close_reason']) || '',
+          notes: getExcelValue(row, ['บันทึกเข้าพบ', 'notes', 'บันทึก']) || '',
+        }
+      }).filter(v => v.storeName || v.storeCode)
+
+      if (visitsToImport.length === 0) {
+        toast.dismiss(toastId)
+        toast.error('ไม่พบข้อมูลในไฟล์ Excel (ต้องมีคอลัมน์ชื่อร้าน หรือรหัสลูกค้า)')
+        return
+      }
+
+      const res = await axiosInstance.post('/visits/import', { visits: visitsToImport })
+
+      toast.dismiss(toastId)
+      if (res.data.success > 0) {
+        toast.success(`นำเข้าข้อมูลสำเร็จ ${res.data.success} รายการ, ล้มเหลว ${res.data.failed} รายการ`)
+        if (onRefresh) onRefresh()
+      } else {
+        toast.error(`ไม่สามารถนำเข้าข้อมูลได้ ล้มเหลว ${res.data.failed} รายการ`)
+      }
+    } catch (error) {
+      toast.dismiss(toastId)
+      handleApiError(error)
+    } finally {
+      setIsImporting(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handleExport = () => {
+    const dataToExport = filteredVisits.map((v: any, index: number) => ({
+      "ลำดับ": index + 1,
+      "วันที่": v.date ? new Date(v.date).toLocaleDateString('th-TH') : "-",
+      "เซลล์": v.sales || "-",
+      "รหัสลูกค้า": v.store?.code || "-",      // matches import 'รหัสลูกค้า'
+      "ชื่อร้าน": v.store?.name || "-",         // matches import 'ชื่อร้าน'
+      "ประเภทลูกค้า": v.store?.customerType || "-",
+      "เจ้าของ": v.store?.owner || "-",
+      "เบอร์โทร": v.store?.phone || "-",
+      "ประเภทร้าน": v.store?.type || "-",        // matches import 'ประเภทร้าน'
+      "ที่อยู่": v.store?.address || "-",
+      "สินค้าที่ใช้": v.store?.productUsed || "-",   // matches import 'สินค้าที่ใช้'
+      "ปริมาณ": v.store?.quantity || "-",
+      "ระยะเวลาสั่ง": v.store?.orderPeriod || "-",
+      "รับของเดิมจาก": v.store?.supplier || "-",    // matches import 'รับของเดิมจาก'
+      "เงื่อนไขชำระ": v.store?.payment || "-",
+      "หัวข้อเข้าพบ": v.visitCat || "-",
+      "ประเภทเข้าพบ": v.visitType || "-",
+      "สถานะ": v.dealStatus || "-",
+      "เหตุผลปิดการขาย": v.closeReason || "-",
+      "บันทึกเข้าพบ": v.notes?.text || (typeof v.notes === 'object' ? Object.values(v.notes).join(' \n') : v.notes) || "-",
+    }));
+    exportToExcel(dataToExport, "VisitHistory");
+  }
 
   return (
     <div className="p-6 space-y-6 dark:bg-[#0f172a] min-h-screen text-black">
@@ -141,16 +261,25 @@ export default function
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="space-y-1.5">
               <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 flex items-center gap-2 text-xs">👤 พนักงานขาย *</Label>
-              <Select value={form.sales} onValueChange={(v) => handleChange("sales", v)}>
-                <SelectTrigger className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl">
-                  <SelectValue placeholder="เลือกรายชื่อ" />
-                </SelectTrigger>
-                <SelectContent>
-                  {profiles?.map((p: any) => (
-                    <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {profiles && profiles.length > 0 ? (
+                <Select value={form.sales} onValueChange={(v) => handleChange("sales", v)}>
+                  <SelectTrigger className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl">
+                    <SelectValue placeholder="เลือกรายชื่อ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {profiles.map((p: any) => (
+                      <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  value={form.sales}
+                  onChange={(e) => handleChange("sales", e.target.value)}
+                  placeholder="พิมพ์ชื่อเซลล์..."
+                  className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl"
+                />
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -244,12 +373,102 @@ export default function
             </div>
           </div>
 
-          {/* Store Insight - Only shown when store selected */}
+          {/* Enhanced Store Profile - Only shown when store selected */}
           {selectedStore && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-blue-500/5 p-6 rounded-3xl border border-blue-500/10">
-              <div className="space-y-1 md:col-span-2"><Label className="text-[10px] text-slate-400 font-bold">ที่อยู่</Label><p className="text-xs font-bold text-slate-600 dark:text-slate-300">{selectedStore.address || "-"}</p></div>
-              <div className="space-y-1"><Label className="text-[10px] text-slate-400 font-bold">เบอร์โทร</Label><p className="text-xs font-bold text-slate-600 dark:text-slate-300">{selectedStore.phone || "-"}</p></div>
-              <div className="space-y-1"><Label className="text-[10px] text-slate-400 font-bold">เงื่อนไขชำระ</Label><p className="text-xs font-bold text-blue-600">{selectedStore.payment || "เงินสด"}</p></div>
+            <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+              <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-[2rem] overflow-hidden shadow-sm">
+                {/* Profile Header */}
+                <div className="p-6 bg-gradient-to-r from-blue-600/5 to-indigo-600/5 border-b border-slate-200 dark:border-slate-700/50 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-600/10 rounded-2xl">
+                      <Store className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">{selectedStore.name}</h3>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <Badge variant="outline" className="text-[10px] font-mono py-0 h-4 border-blue-200 text-blue-600 dark:border-blue-900/50 dark:text-blue-400">#{selectedStore.code}</Badge>
+                        <Badge className="text-[10px] py-0 h-4 bg-indigo-500 text-white border-none">{selectedStore.customerType || "ทั่วไป"}</Badge>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="hidden md:flex flex-col items-end">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">เงื่อนไขการชำระ</span>
+                    <span className="text-sm font-black text-blue-600">{selectedStore.payment || "เงินสด"}</span>
+                  </div>
+                </div>
+
+                {/* Profile Body */}
+                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-10">
+                  {/* Left Column: Core Info */}
+                  <div className="space-y-6">
+                    <div className="flex items-start gap-4">
+                      <div className="p-2 bg-slate-200/50 dark:bg-slate-700/50 rounded-xl mt-0.5">
+                        <MapPin className="w-4 h-4 text-slate-500" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">ที่อยู่ร้านค้า</Label>
+                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200 leading-relaxed">{selectedStore.address || "ไม่ระบุข้อมูลที่อยู่"}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-slate-200/50 dark:bg-slate-700/50 rounded-xl">
+                          <User className="w-4 h-4 text-slate-500" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">เจ้าของ / ผู้ติดต่อ</Label>
+                          <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{selectedStore.owner || "-"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-slate-200/50 dark:bg-slate-700/50 rounded-xl">
+                          <Phone className="w-4 h-4 text-slate-500" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">เบอร์โทรศัพท์</Label>
+                          <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{selectedStore.phone || "-"}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Business Insight */}
+                  <div className="grid grid-cols-2 gap-y-6 gap-6 pt-6 md:pt-0 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-700/50 md:pl-10">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Package className="w-3.5 h-3.5 text-indigo-500" />
+                        <Label className="text-[10px] text-slate-400 font-black uppercase">สินค้าที่ใช้</Label>
+                      </div>
+                      <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">{selectedStore.productUsed || "-"}</p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CreditCard className="w-3.5 h-3.5 text-blue-500" />
+                        <Label className="text-[10px] text-slate-400 font-black uppercase">ปริมาณ/เดือน</Label>
+                      </div>
+                      <p className="text-sm font-black text-blue-600 dark:text-blue-400">{selectedStore.quantity || "-"}</p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Truck className="w-3.5 h-3.5 text-emerald-500" />
+                        <Label className="text-[10px] text-slate-400 font-black uppercase">รับของจาก</Label>
+                      </div>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{selectedStore.supplier || "-"}</p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Clock className="w-3.5 h-3.5 text-amber-500" />
+                        <Label className="text-[10px] text-slate-400 font-black uppercase">ระยะเวลาสั่ง</Label>
+                      </div>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{selectedStore.orderPeriod || "-"}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -299,12 +518,47 @@ export default function
       <Separator className="my-10" />
 
       {/* ================= HISTORY TABLE ================= */}
-      <Card className="shadow-2xl border-white/10 dark:border-white/5 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-indigo-600/10 to-purple-600/10 border-b p-8">
-          <CardTitle className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-            <span className="p-2.5 bg-indigo-500/10 rounded-2xl">📊</span>
-            ประวัติการเข้าพบ
+      <Card className="border-none bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl shadow-2xl rounded-[2.5rem] overflow-hidden">
+        <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-4 p-8 bg-gradient-to-r from-orange-600/5 to-amber-600/5 border-b border-white/10">
+          <CardTitle className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+            <span className="p-2.5 bg-orange-500/10 rounded-2xl">📝</span>
+            บันทึก <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-600 dark:from-orange-400 dark:to-amber-400">การเข้าพบ</span>
           </CardTitle>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <ActionButton
+              onClick={handleClear}
+              disabled={isClearing || isImporting}
+              variant="destructive"
+              className="bg-red-500 hover:bg-red-600 border-red-600 shadow-lg shadow-red-500/20 rounded-2xl px-6"
+              icon={<Trash2 className="w-4 h-4 mr-2" />}
+              label={isClearing ? "กำลังลบ..." : "ล้างข้อมูลทั้งหมด"}
+            />
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImportExcel}
+              className="hidden"
+              accept=".xlsx, .xls"
+            />
+            <ActionButton
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isImporting}
+              variant="outline"
+              className="bg-white/50 dark:bg-slate-800/50 border-orange-200 dark:border-orange-800 shadow-lg shadow-orange-200/20 dark:shadow-none rounded-2xl px-6"
+              icon={<Upload className="w-4 h-4 mr-2 text-orange-600" />}
+              label={isImporting ? "กำลังนำเข้า..." : "นำเข้า Excel"}
+            />
+
+            <ActionButton
+              onClick={handleExport}
+              variant="outline"
+              className="bg-white/50 dark:bg-slate-800/50 border-orange-200 dark:border-orange-800 shadow-lg shadow-orange-200/20 dark:shadow-none rounded-2xl px-6"
+              icon={<FileSpreadsheet className="w-4 h-4 mr-2 text-green-600" />}
+              label="ส่งออก Excel"
+            />
+          </div>
         </CardHeader>
 
         <CardContent className="p-8 space-y-8">
@@ -339,7 +593,8 @@ export default function
             <Table>
               <TableHeader className="bg-slate-100/50 dark:bg-slate-800/50">
                 <TableRow className="border-b dark:border-slate-800">
-                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 pl-6">วันที่</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 pl-6 text-center w-16">ลำดับ</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">วันที่</TableHead>
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">ร้านค้า</TableHead>
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">พนักงานขาย</TableHead>
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">สรุปการเข้าพบ</TableHead>
@@ -349,11 +604,12 @@ export default function
               </TableHeader>
               <TableBody>
                 {filteredVisits.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="h-32 text-center text-slate-400 italic text-xs">ไม่พบข้อมูลประวัติ</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="h-32 text-center text-slate-400 italic text-xs">ไม่พบข้อมูลประวัติ</TableCell></TableRow>
                 ) : (
-                  filteredVisits.map((v: any) => (
+                  filteredVisits.map((v: any, index: number) => (
                     <TableRow key={v.id} className="hover:bg-blue-500/5 transition-colors border-b dark:border-slate-800/50">
-                      <TableCell className="py-5 pl-6 font-bold text-xs">{new Date(v.date).toLocaleDateString('th-TH')}</TableCell>
+                      <TableCell className="text-center font-bold text-slate-500 text-xs pl-6">{index + 1}</TableCell>
+                      <TableCell className="py-5 font-bold text-xs">{new Date(v.date).toLocaleDateString('th-TH')}</TableCell>
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-black text-slate-900 dark:text-white text-xs">{v.store?.name || "-"}</span>

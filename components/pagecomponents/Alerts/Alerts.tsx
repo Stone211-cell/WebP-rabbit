@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { endOfMonth, differenceInDays, format, startOfMonth, isWithinInterval } from "date-fns"
 import { th } from "date-fns/locale"
-import { cn } from "@/lib/utils"
+import { cn, formatThaiDate } from "@/lib/utils"
 import axios from "axios"
 
 export default function Alerts({ stores, visits, forecasts }: any) {
@@ -101,7 +101,7 @@ export default function Alerts({ stores, visits, forecasts }: any) {
               Monthly Summary & Product Highlights
             </div>
             <h1 className="text-4xl md:text-6xl font-black tracking-tighter">
-              {format(currentTime, "MMMM yyyy", { locale: th })}
+              {formatThaiDate(currentTime, "MMMM yyyy")}
             </h1>
             <p className="text-orange-100/70 text-sm font-bold italic">เหลือเวลาอีก {daysLeft} วัน สำหรับเป้าหมายเดือนนี้</p>
           </div>
