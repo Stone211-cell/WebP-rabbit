@@ -18,7 +18,7 @@ export function useStoreSearch(initialStoreRef = '') {
                 setShowSuggestions(true);
                 try {
                     const res = await axiosInstance.get(`/stores?search=${storeSearch}`);
-                    setSuggestions(res.data.slice(0, 10));
+                    setSuggestions(res.data);
                 } catch (err) {
                     console.error('Store Search failed:', err);
                     setSuggestions([]);
@@ -54,7 +54,7 @@ export function useStoreSearch(initialStoreRef = '') {
         setShowSuggestions(true);
         try {
             const res = await axiosInstance.get(`/stores?search=${storeSearch}`);
-            setSuggestions(res.data.slice(0, 10));
+            setSuggestions(res.data);
         } catch (err) {
             console.error('Manual store search failed:', err);
             setSuggestions([]);

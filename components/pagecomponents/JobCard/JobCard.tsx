@@ -226,7 +226,7 @@ export default function JobCard({ plans, visits }: any) {
                 </div>
 
                 {/* PLAN CARDS GRID */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 2xl:grid-cols-4 gap-3 lg:gap-5">
                   {salesPlans.length > 0 ? salesPlans.map((p: any, pIdx: number) => {
                     const isCompleted = (visits || []).some((v: any) =>
                       (v.masterId === p.masterId || (v.store?.code && v.store.code === p.storeCode)) &&
@@ -237,20 +237,20 @@ export default function JobCard({ plans, visits }: any) {
                       <Card key={p.id} className="bg-white/90 dark:bg-slate-900/40 backdrop-blur-xl border-white/20 dark:border-slate-800/50 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all group relative">
                         {/* Left Accent Bar */}
                         <div className={cn(
-                          "absolute left-0 top-0 bottom-0 w-1.5",
+                          "absolute left-0 top-0 bottom-0 w-1",
                           pIdx % 2 === 0 ? "bg-orange-500" : "bg-blue-500"
                         )} />
 
-                        <CardContent className="p-6 space-y-4">
+                        <CardContent className="p-4 lg:p-6 space-y-4">
                           <div className="flex justify-between items-start">
-                            <div className="space-y-0.5">
-                              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">ตามแผนลำดับที่ {pIdx + 1}</span>
-                              <h3 className="text-lg font-black text-slate-800 dark:text-white truncate max-w-[180px] group-hover:text-blue-500 transition-colors">
+                            <div className="space-y-0.5 overflow-hidden">
+                              <span className="text-[9px] lg:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">ลำดับ {pIdx + 1}</span>
+                              <h3 className="text-sm lg:text-lg font-black text-slate-800 dark:text-white truncate group-hover:text-blue-500 transition-colors">
                                 {p.store?.name || p.storeName || "Unknown Store"}
                               </h3>
                             </div>
                             <div className={cn(
-                              "w-2.5 h-2.5 rounded-full shadow-[0_0_10px]",
+                              "w-2.5 h-2.5 rounded-full shadow-[0_0_10px] flex-shrink-0 mt-2",
                               isCompleted ? "bg-emerald-500 shadow-emerald-500/50" : "bg-rose-500 shadow-rose-500/50 animate-pulse"
                             )} />
                           </div>

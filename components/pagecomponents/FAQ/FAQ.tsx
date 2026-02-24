@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { axiosInstance } from "@/lib/axios"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn, formatThaiDate, confirmDelete } from "@/lib/utils"
 import { exportToExcel } from "@/lib/export"
 
 import {
@@ -39,12 +39,14 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 
 import { useStoreSearch } from "@/components/hooks/useStoreSearch"
+import { StoreSearchBox } from "@/components/crmhelper/StoreSearchBox"
+import { SalesPersonSelect } from "@/components/crmhelper/SalesPersonSelect"
+import { useSearch } from "@/components/hooks/useSearch"
 
-export default function FAQ({ issues, profiles, onRefresh, onCreate, onUpdate, onDelete, isAdmin }: any) {
+export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onUpdate, onDelete, isAdmin, currentUserProfile }: any) {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [search, setSearch] = useState("")
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const initialForm = {
@@ -103,8 +105,8 @@ export default function FAQ({ issues, profiles, onRefresh, onCreate, onUpdate, o
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?")) return
+  const handleDelete = async (id: string, name?: string) => {
+    if (!confirmDelete(name || "รายการนี้")) return
     try {
       await onDelete(id)
       toast.success("ลบรายการเรียบร้อยแล้ว")
@@ -129,16 +131,23 @@ export default function FAQ({ issues, profiles, onRefresh, onCreate, onUpdate, o
     setIsCreateOpen(true)
   }
 
+  // บังคับชื่อผู้บันทึกเป็นผู้ใช้งานปัจจุบันถ้าไม่ใช่แอดมิน
+  useEffect(() => {
+    if (!isAdmin && currentUserProfile && isCreateOpen) {
+      setForm(prev => ({ ...prev, recorder: currentUserProfile.name }));
+    }
+  }, [isAdmin, currentUserProfile, isCreateOpen]);
+
   const resetForm = () => {
     setForm(initialForm)
     setEditingId(null)
     clearStore()
   }
 
-  const filteredIssues = (issues || []).filter((i: any) =>
-    i.detail?.toLowerCase().includes(search.toLowerCase()) ||
-    i.store?.name?.toLowerCase().includes(search.toLowerCase()) ||
-    i.recorder?.toLowerCase().includes(search.toLowerCase())
+  // 🔍 ใช้ shared useSearch hook
+  const { search, setSearch, filtered: filteredIssues } = useSearch(
+    issues,
+    ['detail', 'store.name', 'recorder', 'type']
   )
 
   const getStatusColor = (status: string) => {
@@ -162,7 +171,7 @@ export default function FAQ({ issues, profiles, onRefresh, onCreate, onUpdate, o
   const handleExport = () => {
     const dataToExport = filteredIssues.map((item: any, index: number) => ({
       "ลำดับ": index + 1,
-      "วันที่": new Date(item.date).toLocaleDateString('th-TH'),
+      "วันที่": formatThaiDate(item.date, 'dd/MM/yyyy'),
       "ร้านค้า": item.store?.name || "-",
       "รหัสร้านค้า": item.store?.code || "-",
       "ประเภท": item.type || "-",
@@ -281,17 +290,17 @@ export default function FAQ({ issues, profiles, onRefresh, onCreate, onUpdate, o
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
+          <Table style={{ tableLayout: 'fixed', width: '100%' }}>
             <TableHeader className="bg-slate-50/50 dark:bg-slate-800/50">
               <TableRow className="border-slate-100 dark:border-slate-800">
-                <TableHead className="py-4 font-black uppercase text-[10px] pl-8 text-center w-16">ลำดับ</TableHead>
-                <TableHead className="py-4 font-black uppercase text-[10px]">วันที่</TableHead>
-                <TableHead className="py-4 font-black uppercase text-[10px]">ร้านค้า</TableHead>
-                <TableHead className="py-4 font-black uppercase text-[10px]">ประเภท</TableHead>
-                <TableHead className="py-4 font-black uppercase text-[10px]">รายละเอียด</TableHead>
-                <TableHead className="py-4 font-black uppercase text-[10px]">ผู้บันทึก</TableHead>
-                <TableHead className="py-4 font-black uppercase text-[10px] text-center">สถานะ</TableHead>
-                <TableHead className="py-4 font-black uppercase text-[10px] text-right pr-8">จัดการ</TableHead>
+                <TableHead className="py-4 font-black uppercase text-[10px] pl-6 text-center w-[60px] hidden md:table-cell">ลำดับ</TableHead>
+                <TableHead className="py-4 font-black uppercase text-[10px] w-[80px] hidden sm:table-cell">วันที่</TableHead>
+                <TableHead className="py-4 font-black uppercase text-[10px] min-w-[150px]">ร้านค้า</TableHead>
+                <TableHead className="py-4 font-black uppercase text-[10px] w-[100px] hidden md:table-cell">ประเภท</TableHead>
+                <TableHead className="py-4 font-black uppercase text-[10px] min-w-[200px]">รายละเอียด</TableHead>
+                <TableHead className="py-4 font-black uppercase text-[10px] w-[100px] hidden lg:table-cell">ผู้บันทึก</TableHead>
+                <TableHead className="py-4 font-black uppercase text-[10px] w-[100px] text-center hidden sm:table-cell">สถานะ</TableHead>
+                <TableHead className="py-4 font-black uppercase text-[10px] w-[100px] text-right pr-6">จัดการ</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -304,29 +313,31 @@ export default function FAQ({ issues, profiles, onRefresh, onCreate, onUpdate, o
               ) : (
                 filteredIssues.map((item: any, index: number) => (
                   <TableRow key={item.id} className="border-slate-50 dark:border-slate-800/50 hover:bg-blue-500/5 transition-colors group">
-                    <TableCell className="text-center font-bold text-slate-500 text-xs pl-8">{index + 1}</TableCell>
-                    <TableCell className="py-5 font-bold text-slate-500 text-xs">{new Date(item.date).toLocaleDateString('th-TH')}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-black text-slate-900 dark:text-white text-xs">{item.store?.name}</span>
-                        <span className="text-[10px] font-mono text-slate-400 uppercase">{item.store?.code}</span>
+                    <TableCell className="w-[60px] text-center font-bold text-slate-500 text-xs pl-6 hidden md:table-cell">{index + 1}</TableCell>
+                    <TableCell className="w-[80px] py-5 font-bold text-slate-500 text-xs hidden sm:table-cell">{new Date(item.date).toLocaleDateString('th-TH')}</TableCell>
+                    <TableCell className="min-w-[150px] break-words whitespace-normal py-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-black text-slate-900 dark:text-white text-xs line-clamp-2">{item.store?.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono text-slate-400 uppercase bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{item.store?.code}</span>
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="w-[100px] hidden md:table-cell break-words whitespace-normal">
                       <Badge variant="secondary" className="rounded-lg text-[9px] font-bold bg-amber-500/10 text-amber-600 border-amber-500/20">{item.type}</Badge>
                     </TableCell>
-                    <TableCell className="max-w-[200px] truncate text-xs font-medium text-slate-600 dark:text-slate-400">{item.detail}</TableCell>
-                    <TableCell className="text-xs font-bold text-indigo-500 italic">👤 {item.recorder}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge className={cn("rounded-full text-[9px] font-black px-3 py-1", getStatusColor(item.status))}>
+                    <TableCell className="min-w-[200px] text-xs font-medium text-slate-600 dark:text-slate-400 break-words whitespace-normal py-4">{item.detail}</TableCell>
+                    <TableCell className="w-[100px] text-xs font-bold text-indigo-500 italic hidden lg:table-cell break-words whitespace-normal">👤 {item.recorder}</TableCell>
+                    <TableCell className="w-[100px] text-center hidden sm:table-cell">
+                      <Badge className={cn("rounded-full text-[9px] font-black px-3 py-1 whitespace-nowrap", getStatusColor(item.status))}>
                         {getStatusText(item.status)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right pr-8">
+                    <TableCell className="text-right pr-6 align-middle">
                       {isAdmin ? (
-                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex justify-end gap-2 sm:gap-3 items-center md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                           <Button variant="ghost" size="icon" onClick={() => startEdit(item)} className="h-8 w-8 text-blue-600 hover:bg-blue-500/10 rounded-lg">✏️</Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} className="h-8 w-8 text-rose-500 hover:bg-rose-500/10 rounded-lg">🗑️</Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id, item.store?.name)} className="h-8 w-8 text-rose-500 hover:bg-rose-500/10 rounded-lg">🗑️</Button>
                         </div>
                       ) : (
                         <span className="text-[10px] text-slate-400 italic opacity-0 group-hover:opacity-100 transition-opacity">View Only</span>
@@ -355,31 +366,19 @@ export default function FAQ({ issues, profiles, onRefresh, onCreate, onUpdate, o
               {/* Store Search */}
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">เลือกร้านค้า *</Label>
-                <div className="relative">
-                  <Input
-                    placeholder="ค้นหารหัส หรือ ชื่อร้าน..."
-                    value={storeSearch}
-                    onChange={(e) => setStoreSearch(e.target.value)}
-                    className="h-12 bg-slate-900/50 border-slate-800 rounded-2xl focus:ring-amber-500/20 pr-10"
-                  />
-                  {selectedStore && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-amber-500 text-slate-950 text-[10px] font-black rounded-lg pointer-events-none">
-                      {selectedStore.code}
-                    </div>
-                  )}
-                  {storeSearch && <button onClick={clearStore} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors text-sm">✕</button>}
-
-                  {showSuggestions && (
-                    <div className="absolute z-50 w-full mt-2 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
-                      {suggestions.map((s) => (
-                        <button key={s.id} onClick={() => selectStore(s)} className="w-full px-4 py-3 text-left hover:bg-amber-500/10 transition-colors border-b border-slate-800/50 last:border-0">
-                          <div className="font-bold text-sm text-white">{s.name}</div>
-                          <div className="text-[10px] text-slate-500 font-mono tracking-tighter uppercase">{s.code}</div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <StoreSearchBox
+                  storeSearch={storeSearch}
+                  setStoreSearch={setStoreSearch}
+                  suggestions={suggestions}
+                  showSuggestions={showSuggestions}
+                  selectedStore={selectedStore}
+                  selectStore={selectStore}
+                  clearStore={clearStore}
+                  handleManualSearch={handleManualSearch}
+                  isSearching={isSearching}
+                  placeholder="ค้นหารหัส หรือ ชื่อร้าน..."
+                  variant="dark"
+                />
               </div>
 
               {/* Date */}
@@ -439,19 +438,17 @@ export default function FAQ({ issues, profiles, onRefresh, onCreate, onUpdate, o
               </div>
 
               {/* Recorder */}
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">ผู้บันทึก *</Label>
-                <Select value={form.recorder} onValueChange={(v) => setForm({ ...form, recorder: v })}>
-                  <SelectTrigger className="h-12 bg-slate-900/50 border-slate-800 rounded-2xl">
-                    <SelectValue placeholder="เลือกผู้บันทึก" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800 text-white rounded-2xl overflow-hidden">
-                    {profiles?.map((p: any) => (
-                      <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <SalesPersonSelect
+                profiles={profiles}
+                value={form.recorder}
+                onValueChange={(v) => setForm({ ...form, recorder: v })}
+                isAdmin={isAdmin}
+                currentUserProfile={currentUserProfile}
+                label="ผู้บันทึก *"
+                placeholder="เลือกผู้บันทึก"
+                variant="dark"
+                className="space-y-2"
+              />
             </div>
 
             {/* Notes */}

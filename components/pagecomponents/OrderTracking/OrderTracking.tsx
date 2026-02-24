@@ -148,15 +148,15 @@ export default function OrderTracking({ stores, visits }: any) {
                 </Select>
             </div>
 
-            <Table className="bg-white dark:bg-[#1e293b] rounded-lg overflow-hidden border dark:border-slate-800">
+            <Table style={{ tableLayout: 'fixed', width: '100%' }} className="bg-white dark:bg-[#1e293b] rounded-lg overflow-hidden border dark:border-slate-800">
                 <TableHeader className="bg-slate-50 dark:bg-[#0f172a]">
                     <TableRow className="border-b dark:border-slate-700 hover:bg-transparent">
-                        <TableHead className="dark:text-slate-300 text-center w-16">ลำดับ</TableHead>
-                        <TableHead className="dark:text-slate-300">รอบบิล</TableHead>
-                        <TableHead className="dark:text-slate-300">วันที่</TableHead>
-                        <TableHead className="dark:text-slate-300">ชื่อร้าน</TableHead>
-                        <TableHead className="dark:text-slate-300">สถานะ</TableHead>
-                        <TableHead className="dark:text-slate-300">ยอดซื้อ</TableHead>
+                        <TableHead className="dark:text-slate-300 text-center w-[80px] hidden md:table-cell">ลำดับ</TableHead>
+                        <TableHead className="dark:text-slate-300 w-[120px] hidden sm:table-cell">รอบบิล</TableHead>
+                        <TableHead className="dark:text-slate-300 w-[120px] hidden md:table-cell">วันที่</TableHead>
+                        <TableHead className="dark:text-slate-300 min-w-[150px]">ชื่อร้าน</TableHead>
+                        <TableHead className="dark:text-slate-300 w-[120px] hidden sm:table-cell">สถานะ</TableHead>
+                        <TableHead className="dark:text-slate-300 w-[100px] text-right pr-4">ยอดซื้อ</TableHead>
                     </TableRow>
                 </TableHeader>
 
@@ -169,16 +169,24 @@ export default function OrderTracking({ stores, visits }: any) {
                         </TableRow>
                     ) : (
                         posts.map((post: any, index: number) => (
-                            <tr key={post.id} className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                                <TableCell className="dark:text-slate-500 text-center font-bold">{index + 1}</TableCell>
-                                <TableCell className="dark:text-slate-200">{post.round}</TableCell>
-                                <TableCell className="dark:text-slate-200">
+                            <TableRow key={post.id} className="border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                <TableCell className="dark:text-slate-500 text-center font-bold hidden md:table-cell w-[80px]">{index + 1}</TableCell>
+                                <TableCell className="dark:text-slate-200 hidden sm:table-cell w-[120px] break-words whitespace-normal">{post.round}</TableCell>
+                                <TableCell className="dark:text-slate-200 hidden md:table-cell w-[120px]">
                                     {post.date ? formatThaiDate(post.date, "dd/MM/yyyy") : "-"}
                                 </TableCell>
-                                <TableCell className="dark:text-slate-200">
-                                    {stores?.find((s: any) => s.id === post.storeId)?.name || "ไม่พบชื่อร้าน"}
+                                <TableCell className="dark:text-slate-200 min-w-[150px] break-words whitespace-normal">
+                                    <div className="line-clamp-2">
+                                        {stores?.find((s: any) => s.id === post.storeId)?.name || "ไม่พบชื่อร้าน"}
+                                    </div>
+                                    {/* Mobile info (status & date) fallback */}
+                                    <div className="sm:hidden mt-2 text-xs flex items-center justify-between">
+                                        <span className={post.status === "paid" ? "text-emerald-500" : "text-amber-500"}>
+                                            {post.status === "paid" ? "✅ ซื้อแล้ว" : "⌛ ยังไม่ซื้อ"}
+                                        </span>
+                                    </div>
                                 </TableCell>
-                                <TableCell className="dark:text-slate-200 px-4">
+                                <TableCell className="dark:text-slate-200 px-4 w-[120px] hidden sm:table-cell">
                                     <div className={`
                                         inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border
                                         ${post.status === "paid"
@@ -188,10 +196,10 @@ export default function OrderTracking({ stores, visits }: any) {
                                         {post.status === "paid" ? "✅ ซื้อแล้ว" : "⌛ ยังไม่ซื้อ"}
                                     </div>
                                 </TableCell>
-                                <TableCell className="dark:text-slate-200 font-bold">
-                                    ฿{(post.amount || 0).toLocaleString()}
+                                <TableCell className="dark:text-slate-200 w-[100px] text-right font-mono text-xs pr-4">
+                                    {post.amount ? post.amount.toLocaleString() : "-"}
                                 </TableCell>
-                            </tr>
+                            </TableRow>
                         ))
                     )}
                 </TableBody>

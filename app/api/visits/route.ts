@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     const visits = await prisma.visit.findMany({
       where,
-      orderBy: { date: 'desc' },
+      orderBy: [{ store: { code: 'asc' } }, { date: 'asc' }],
       include: {
         store: true,
       },

@@ -277,9 +277,9 @@ export default function ForecastForm({ forecasts, onRefresh, isAdmin }: any) {
             groups[sid].items.push(f)
         })
 
-        // Sort by store name
+        // Sort by store code
         return Object.values(groups).sort((a: any, b: any) =>
-            (a.store?.name || "").localeCompare(b.store?.name || "")
+            (a.store?.code || "").localeCompare(b.store?.code || "")
         )
     }, [forecasts])
 

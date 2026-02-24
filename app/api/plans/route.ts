@@ -20,15 +20,15 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    const plans = await prisma.plan.findMany({
+    const data = await prisma.plan.findMany({
       where,
-      orderBy: { date: 'asc' },
       include: {
-        store: true,
+        store: true, // Join with store table
       },
+      orderBy: [{ store: { code: "asc" } }, { date: "asc" }],
     });
 
-    return NextResponse.json(plans, {
+    return NextResponse.json(data, {
       headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
     });
   } catch (error) {

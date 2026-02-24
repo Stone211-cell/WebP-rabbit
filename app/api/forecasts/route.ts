@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     const forecasts = await prisma.forecast.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ store: { code: 'asc' } }, { weekStart: 'asc' }],
       include: {
         store: true,
       },

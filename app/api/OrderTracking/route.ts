@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
         const data = await prisma.purchase.findMany({
             where,
-            orderBy: { date: "desc" },
+            orderBy: { date: "asc" },
         })
         return NextResponse.json(data)
     } catch (error) {

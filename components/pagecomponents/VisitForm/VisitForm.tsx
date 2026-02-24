@@ -3,10 +3,10 @@
 import { useState, useEffect, useRef } from "react"
 import { axiosInstance } from "@/lib/axios"
 import * as XLSX from "xlsx"
-import { createVisit } from "@/lib/api/visits"
+import { createVisit, updateVisit } from "@/lib/api/visits"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn, formatThaiDate, confirmDelete, confirmClearAll } from "@/lib/utils"
 import { exportToExcel } from "@/lib/export"
 import { getExcelValue, parseExcelDate } from "@/lib/excel"
 
@@ -35,15 +35,18 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 
 import { useStoreSearch } from "@/components/hooks/useStoreSearch"
+import { useSearch } from "@/components/hooks/useSearch"
 import { VisitTopics, VisitTypes, DealStatuses } from "@/lib/types/manu"
-import { ActionButton } from "@/components/crmhelper/helper"
+import { ActionButton, FilterButton } from "@/components/crmhelper/helper"
+import { StoreSearchBox } from "@/components/crmhelper/StoreSearchBox"
+import { SalesPersonSelect } from "@/components/crmhelper/SalesPersonSelect"
 import { VisitDetailModal } from "./VisitDetailModal"
-import { Eye, Trash2, Upload, FileSpreadsheet, MapPin, Phone, CreditCard, Package, Clock, Truck, User, Store } from "lucide-react"
+import { Eye, Trash2, Upload, FileSpreadsheet, MapPin, Phone, CreditCard, Package, Clock, Truck, User, Store, Pencil } from "lucide-react"
 
 export default function
-  VisitForm({ visits, profiles, onRefresh, isAdmin, hasProfile }: any) {
+  VisitForm({ visits, profiles, onRefresh, isAdmin, hasProfile, currentUserProfile }: any) {
   const [form, setForm] = useState<any>({
-    sales: "",
+    sales: !isAdmin && currentUserProfile ? currentUserProfile.name : "",
     date: new Date().toLocaleDateString('en-CA'),
     visitType: "new",
     dealStatus: "เปิดการขาย",
@@ -53,8 +56,10 @@ export default function
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [salesFilter, setSalesFilter] = useState("all")
-  const [historySearch, setHistorySearch] = useState("")
   const [selectedVisit, setSelectedVisit] = useState<any>(null)
+
+  // New state for Edit Mode
+  const [editingVisitId, setEditingVisitId] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isImporting, setIsImporting] = useState(false)
@@ -84,6 +89,8 @@ export default function
     }
   }, [selectedStore])
 
+
+
   const handleChange = (name: string, value: any) => {
     setForm(prev => ({ ...prev, [name]: value }))
   }
@@ -97,16 +104,24 @@ export default function
 
     setIsSubmitting(true)
     try {
-      await createVisit({
+      const payload = {
         ...form,
         masterId: selectedStore.id,
         date: new Date(form.date).toISOString()
-      })
-      toast.success("บันทึกการเข้าพบเรียบร้อยแล้ว!")
+      }
+
+      if (editingVisitId) {
+        await updateVisit(editingVisitId, payload)
+        toast.success("แก้ไขการเข้าพบเรียบร้อยแล้ว!")
+      } else {
+        await createVisit(payload)
+        toast.success("บันทึกการเข้าพบเรียบร้อยแล้ว!")
+      }
 
       // ล้างฟอร์ม
       setForm({
         ...form,
+        sales: !isAdmin && currentUserProfile ? currentUserProfile.name : "",
         date: new Date().toLocaleDateString('en-CA'),
         visitType: "new",
         dealStatus: "เปิดการขาย",
@@ -115,6 +130,7 @@ export default function
         notes: {}
       })
       clearStore()
+      setEditingVisitId(null)
 
       if (onRefresh) onRefresh()
     } catch (error) {
@@ -124,8 +140,41 @@ export default function
     }
   }
 
+  const startEdit = (visit: any) => {
+    setEditingVisitId(visit.id)
+    setForm({
+      sales: visit.sales || "",
+      date: new Date(visit.date).toLocaleDateString('en-CA'),
+      visitType: visit.visitType || "new",
+      dealStatus: visit.dealStatus || "เปิดการขาย",
+      closeReason: visit.closeReason || "",
+      visitCat: visit.visitCat || "ตรวจเยี่ยมประจำเดือน",
+      notes: visit.notes || {}
+    })
+
+    // Automatically select the store for the form
+    selectStore(visit.store)
+
+    // Scroll to top to bring form into view
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  const cancelEdit = () => {
+    setEditingVisitId(null)
+    setForm({
+      sales: !isAdmin && currentUserProfile ? currentUserProfile.name : "",
+      date: new Date().toLocaleDateString('en-CA'),
+      visitType: "new",
+      dealStatus: "เปิดการขาย",
+      closeReason: "",
+      visitCat: "ตรวจเยี่ยมประจำเดือน",
+      notes: {}
+    })
+    clearStore()
+  }
+
   const handleClear = async () => {
-    if (!confirm("⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบ \"ข้อมูลการเข้าพบทั้งหมด\" ในระบบ?\n\n- ร้านค้าและแผนงานจะไม่ถูกลบ\n- การดำเนินการนี้ไม่สามารถย้อนกลับได้")) return
+    if (!confirmClearAll("ข้อมูลการเข้าพบทั้งหมด")) return
     setIsClearing(true)
     const toastId = toast.loading("กำลังลบข้อมูลการเข้าพบ...")
     try {
@@ -140,8 +189,8 @@ export default function
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลการเข้าพบนี้?")) return
+  const handleDelete = async (id: string, name?: string) => {
+    if (!confirmDelete(name || "การเข้าพบนี้")) return
     const toastId = toast.loading("กำลังลบข้อมูล...")
     try {
       await axiosInstance.delete(`/visits/${id}`)
@@ -250,6 +299,13 @@ export default function
     exportToExcel(dataToExport, "VisitHistory");
   }
 
+  // 🔍 ใช้ shared useSearch hook — แทน filteredVisits inline
+  const { search: historySearch, setSearch: setHistorySearch, filtered: filteredVisits } = useSearch(
+    visits,
+    ['store.name', 'store.code'],
+    salesFilter === 'all' ? undefined : (v: any) => v.sales === salesFilter
+  )
+
   // Handle case where user has no profile
   if (!isAdmin && !hasProfile) {
     return (
@@ -268,14 +324,6 @@ export default function
     )
   }
 
-  const filteredVisits = (visits || []).filter((v: any) => {
-    const sMatch = !historySearch ||
-      v.store?.name?.toLowerCase().includes(historySearch.toLowerCase()) ||
-      v.store?.code?.toLowerCase().includes(historySearch.toLowerCase())
-    const salesMatch = salesFilter === "all" || v.sales === salesFilter
-    return sMatch && salesMatch
-  })
-
   return (
     <div className="p-6 space-y-6 dark:bg-[#0f172a] min-h-screen">
 
@@ -283,35 +331,26 @@ export default function
       <Card className="shadow-2xl border-white/10 dark:border-white/5 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-blue-600/10 to-indigo-600/10 border-b border-white/10 dark:border-white/5 py-8">
           <CardTitle className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-400">
-            บันทึกการเข้าพบลูกค้า
+            {editingVisitId ? "📝 แก้ไขบันทึกการเข้าพบลูกค้า" : "บันทึกการเข้าพบลูกค้า"}
           </CardTitle>
-          <p className="text-slate-500 dark:text-slate-400 text-xs mt-1 font-bold italic">กรอกข้อมูลการเยี่ยมเยียนและสถานะการขายล่าสุด</p>
+          <p className="text-slate-500 dark:text-slate-400 text-xs mt-1 font-bold italic">
+            {editingVisitId ? "แก้ไขข้อมูลการเยี่ยมเยียนที่มีอยู่แล้ว" : "กรอกข้อมูลการเยี่ยมเยียนและสถานะการขายล่าสุด"}
+          </p>
         </CardHeader>
 
         <CardContent className="p-8 space-y-8">
           {/* Main Controls */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="space-y-1.5">
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 flex items-center gap-2 text-xs">👤 พนักงานขาย *</Label>
-              {profiles && profiles.length > 0 ? (
-                <Select value={form.sales} onValueChange={(v) => handleChange("sales", v)}>
-                  <SelectTrigger className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl text-black dark:text-white">
-                    <SelectValue placeholder="เลือกรายชื่อ" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {profiles.map((p: any) => (
-                      <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  value={form.sales}
-                  onChange={(e) => handleChange("sales", e.target.value)}
-                  placeholder="พิมพ์ชื่อเซลล์..."
-                  className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl"
-                />
-              )}
+              <SalesPersonSelect
+                profiles={profiles}
+                value={form.sales}
+                onValueChange={(v) => handleChange("sales", v)}
+                isAdmin={isAdmin}
+                currentUserProfile={currentUserProfile}
+                label="👤 พนักงานขาย *"
+                placeholder="เลือกรายชื่อ"
+              />
             </div>
 
             <div className="space-y-1.5">
@@ -324,34 +363,20 @@ export default function
               <Input value="1" readOnly className="bg-slate-100/30 dark:bg-slate-800/20 h-12 rounded-2xl text-center cursor-not-allowed" />
             </div>
 
-            <div className="md:col-span-2 lg:col-span-3 relative space-y-1.5">
+            <div className="md:col-span-2 lg:col-span-3 space-y-1.5">
               <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">รหัสลูกค้า / ชื่อร้าน *</Label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Input
-                    placeholder="รหัส หรือ ชื่อร้าน..."
-                    value={storeSearch}
-                    onChange={(e) => setStoreSearch(e.target.value)}
-                    className="bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl font-bold pr-10 text-black dark:text-white"
-                  />
-                  {selectedStore && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-blue-500 text-white text-[10px] rounded-md pointer-events-none">{selectedStore.name}</div>
-                  )}
-                  {storeSearch && <button onClick={clearStore} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">✕</button>}
-                </div>
-                <Button onClick={handleManualSearch} disabled={isSearching} className="rounded-2xl h-12 px-5 bg-blue-600">🔍</Button>
+              <div className={editingVisitId ? "opacity-60 pointer-events-none" : ""}>
+                <StoreSearchBox
+                  storeSearch={storeSearch}
+                  setStoreSearch={setStoreSearch}
+                  suggestions={suggestions}
+                  showSuggestions={showSuggestions}
+                  selectedStore={selectedStore}
+                  selectStore={selectStore}
+                  clearStore={clearStore}
+                  handleManualSearch={handleManualSearch}
+                />
               </div>
-
-              {showSuggestions && (
-                <div className="absolute z-50 w-full mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden max-h-[300px] overflow-y-auto">
-                  {suggestions.map((s) => (
-                    <button key={s.id} onClick={() => selectStore(s)} className="w-full px-4 py-3 text-left hover:bg-blue-500/10 border-b last:border-0">
-                      <span className="font-bold text-sm text-slate-900 dark:text-white">{s.name}</span>
-                      <div className="text-[10px] text-slate-500 italic">{s.code}</div>
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
@@ -540,9 +565,13 @@ export default function
 
           <div className="flex gap-4 pt-4">
             <Button onClick={handleSubmit} disabled={isSubmitting} className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black text-lg py-8 rounded-[2rem] shadow-xl transition-all active:scale-95">
-              {isSubmitting ? "กำลังบันทึก..." : "💾 บันทึกการเข้าพบลูกค้า"}
+              {isSubmitting ? "กำลังบันทึก..." : (editingVisitId ? "💾 บันทึกการแก้ไข" : "💾 บันทึกการเข้าพบลูกค้า")}
             </Button>
-            <Button variant="outline" onClick={clearStore} className="md:w-64 py-8 rounded-[2rem] font-bold border-slate-200">ล้างข้อมูล</Button>
+            {editingVisitId ? (
+              <Button variant="outline" onClick={cancelEdit} className="md:w-64 py-8 rounded-[2rem] font-bold border-slate-200">ยกเลิกการแก้ไข</Button>
+            ) : (
+              <Button variant="outline" onClick={clearStore} className="md:w-64 py-8 rounded-[2rem] font-bold border-slate-200">ล้างข้อมูล</Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -626,16 +655,16 @@ export default function
           </div>
 
           <div className="rounded-[2rem] border border-slate-200/50 dark:border-slate-800/50 overflow-hidden shadow-inner bg-white/20">
-            <Table>
+            <Table style={{ tableLayout: 'fixed', width: '100%' }}>
               <TableHeader className="bg-slate-100/50 dark:bg-slate-800/50">
                 <TableRow className="border-b dark:border-slate-800">
-                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 pl-6 text-center w-16">ลำดับ</TableHead>
-                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">วันที่</TableHead>
-                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">ร้านค้า</TableHead>
-                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">พนักงานขาย</TableHead>
-                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">สรุปการเข้าพบ</TableHead>
-                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-center">สถานะ</TableHead>
-                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-right pr-6">จัดการ</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 pl-6 text-center w-16 hidden md:table-cell">ลำดับ</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 w-24">วันที่</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 min-w-[150px]">ร้านค้า</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 hidden xl:table-cell w-32">พนักงานขาย</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 hidden lg:table-cell min-w-[180px]">สรุปการเข้าพบ</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-center hidden sm:table-cell w-28">สถานะ</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-right pr-6 w-36">จัดการ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -644,33 +673,37 @@ export default function
                 ) : (
                   filteredVisits.map((v: any, index: number) => (
                     <TableRow key={v.id} className="hover:bg-blue-500/5 transition-colors border-b dark:border-slate-800/50">
-                      <TableCell className="text-center font-bold text-slate-500 text-xs pl-6">{index + 1}</TableCell>
-                      <TableCell className="py-5 font-bold text-xs text-black dark:text-white">{new Date(v.date).toLocaleDateString('th-TH')}</TableCell>
-                      <TableCell>
+                      <TableCell className="w-[80px] text-center font-bold text-slate-500 text-xs pl-6 hidden md:table-cell">{index + 1}</TableCell>
+                      <TableCell className="py-5 font-bold text-xs text-black dark:text-white">
                         <div className="flex flex-col">
-                          <span className="font-black text-slate-900 dark:text-white text-xs">{v.store?.name || "-"}</span>
-                          <span className="text-[10px] font-mono text-slate-400">{v.store?.code || "-"}</span>
+                          <span className="whitespace-nowrap">{new Date(v.date).toLocaleDateString('th-TH')}</span>
                         </div>
                       </TableCell>
-                      <TableCell><Badge variant="outline" className="font-bold text-blue-600 border-blue-200 rounded-lg text-[10px]">{v.sales}</Badge></TableCell>
-                      <TableCell className="max-w-xs">
+                      <TableCell className="min-w-[150px] break-words whitespace-normal">
                         <div className="flex flex-col">
-                          <span className="font-bold text-xs text-slate-700 dark:text-slate-300">{v.visitCat || "-"}</span>
+                          <span className="font-black text-slate-900 dark:text-white text-xs line-clamp-2">{v.store?.name || "-"}</span>
+                          <span className="text-[10px] font-mono text-slate-400 mt-1 line-clamp-1">{v.store?.code || "-"}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="w-[120px] hidden xl:table-cell"><Badge variant="outline" className="font-bold text-blue-600 border-blue-200 rounded-lg text-[10px] break-words whitespace-normal text-center">{v.sales}</Badge></TableCell>
+                      <TableCell className="w-[180px] hidden lg:table-cell break-words whitespace-normal">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-xs text-slate-700 dark:text-slate-300 line-clamp-2">{v.visitCat || "-"}</span>
                           {Object.keys(v.notes || {}).length > 0 && (
                             <span className="text-[10px] text-indigo-500 font-bold mt-1">📝 บันทึก {Object.keys(v.notes).length} ครั้ง</span>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="w-[120px] text-center hidden sm:table-cell">
                         <span className={cn(
-                          "px-2.5 py-1 rounded-full text-[10px] font-black shadow-sm",
+                          "px-2.5 py-1 rounded-full text-[10px] font-black shadow-sm whitespace-nowrap",
                           v.dealStatus === "เปิดการขาย" ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-rose-500/10 text-rose-600 border border-rose-500/20"
                         )}>
                           {v.dealStatus}
                         </span>
                       </TableCell>
-                      <TableCell className="text-right pr-6">
-                        <div className="flex justify-end gap-2">
+                      <TableCell className="text-right pr-6 align-middle">
+                        <div className="flex justify-end gap-2 sm:gap-3 items-center">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -680,14 +713,24 @@ export default function
                             <Eye className="w-4 h-4" />
                           </Button>
                           {isAdmin && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDelete(v.id)}
-                              className="hover:bg-rose-500/10 hover:text-rose-500 rounded-full h-8 w-8 text-rose-500"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => startEdit(v)}
+                                className="hover:bg-amber-500/10 hover:text-amber-500 rounded-full h-8 w-8 text-amber-500"
+                              >
+                                ✏️
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(v.id)}
+                                className="hover:bg-rose-500/10 hover:text-rose-500 rounded-full h-8 w-8 text-rose-500"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
                           )}
                         </div>
                       </TableCell>

@@ -36,7 +36,8 @@ export default function CRMPage() {
 
   // Determine permissions
   const [isAdmin, setIsAdmin] = useState(false);
-  const hasProfile = profiles.some(p => p.clerkId === user?.id);
+  const currentUserProfile = profiles.find(p => p.clerkId === user?.id);
+  const hasProfile = !!currentUserProfile;
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -65,16 +66,20 @@ export default function CRMPage() {
     loadStorage();
   }, []);
 
-  const [activePage, setActivePage] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('crm_active_page') || 'dashboard';
-    }
-    return 'dashboard';
-  });
+  const [activePage, setActivePage] = useState('dashboard');
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('crm_active_page', activePage);
-  }, [activePage]);
+    setIsMounted(true);
+    const saved = localStorage.getItem('crm_active_page');
+    if (saved) setActivePage(saved);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem('crm_active_page', activePage);
+    }
+  }, [activePage, isMounted]);
 
   const { theme, setTheme } = useTheme();
 
@@ -246,6 +251,8 @@ export default function CRMPage() {
             <div id="masterdb" className="page" style={{ display: activePage === 'masterdb' ? 'block' : 'none' }}>
               <StoreInformation
                 stores={stores}
+                visits={visits}
+                issues={issues}
                 onRefresh={fetchStores}
                 isAdmin={isAdmin}
               />
@@ -260,6 +267,7 @@ export default function CRMPage() {
                 onRefresh={fetchVisits}
                 isAdmin={isAdmin}
                 hasProfile={hasProfile}
+                currentUserProfile={currentUserProfile}
               />
             </div>
 
@@ -271,6 +279,7 @@ export default function CRMPage() {
                 profiles={profiles}
                 onRefresh={fetchPlans}
                 isAdmin={isAdmin}
+                currentUserProfile={currentUserProfile}
               />
             </div>
 
@@ -310,6 +319,7 @@ export default function CRMPage() {
                 onUpdate={updateIssue}
                 onDelete={deleteIssue}
                 isAdmin={isAdmin}
+                currentUserProfile={currentUserProfile}
               />
             </div>
 

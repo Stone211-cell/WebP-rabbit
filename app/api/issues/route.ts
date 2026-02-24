@@ -30,7 +30,7 @@ export async function GET(req: Request) {
                 store: true
             },
             orderBy: {
-                date: "desc"
+                date: "asc"
             }
         })
 

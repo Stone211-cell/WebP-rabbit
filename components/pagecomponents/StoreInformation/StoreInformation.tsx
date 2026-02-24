@@ -4,7 +4,7 @@ import { axiosInstance } from "@/lib/axios"
 import { createStore, updateStore, deleteStore } from "@/lib/api/stores"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn, confirmDelete, confirmClearAll } from "@/lib/utils"
 import * as XLSX from "xlsx"
 import { exportToExcel } from "@/lib/export"
 import { getExcelValue } from "@/lib/excel"
@@ -33,12 +33,15 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { Textarea } from "@/components/ui/textarea"
 import { StoreTypes, CreditRatings, OrderPeriods, CustomerGroups } from "@/lib/types/manu"
 import { ActionButton } from "@/components/crmhelper/helper"
+import { StoreDetailModal } from "./StoreDetailModal"
+import { Eye } from "lucide-react"
+import { useSearch } from "@/components/hooks/useSearch"
 
-export default function StoreInformation({ stores, onRefresh, isAdmin }: { stores: any, onRefresh?: () => void, isAdmin?: boolean }) {
+export default function StoreInformation({ stores, visits = [], issues = [], onRefresh, isAdmin }: { stores: any, visits?: any[], issues?: any[], onRefresh?: () => void, isAdmin?: boolean }) {
   const [open, setOpen] = useState(false)
+  const [viewingStore, setViewingStore] = useState<any>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [search, setSearch] = useState("")
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isImporting, setIsImporting] = useState(false)
@@ -218,17 +221,16 @@ export default function StoreInformation({ stores, onRefresh, isAdmin }: { store
     }
   }
 
-  const filteredStores = (stores || []).filter((s: any) => {
-    const matchSearch = !search ||
-      s.name?.toLowerCase().includes(search.toLowerCase()) ||
-      s.code?.toLowerCase().includes(search.toLowerCase()) ||
-      s.owner?.toLowerCase().includes(search.toLowerCase())
-
-    const matchType = filterType === "all" || s.type === filterType
-    const matchRating = filterRating === "all" || String(s.paymentScore) === filterRating
-
-    return matchSearch && matchType && matchRating
-  })
+  // 🔍 ใช้ shared useSearch hook — รวม search + filterType + filterRating
+  const { search, setSearch, filtered: filteredStores } = useSearch(
+    stores,
+    ['name', 'code', 'owner'],
+    (s: any) => {
+      const matchType = filterType === "all" || s.type === filterType
+      const matchRating = filterRating === "all" || String(s.paymentScore) === filterRating
+      return matchType && matchRating
+    }
+  )
 
   const handleExport = () => {
     const dataToExport = filteredStores.map((s: any, index: number) => ({
@@ -476,17 +478,17 @@ export default function StoreInformation({ stores, onRefresh, isAdmin }: { store
           </div>
 
           <div className="rounded-[2rem] border border-slate-200/50 dark:border-slate-800/50 overflow-hidden shadow-inner bg-white/20">
-            <Table>
+            <Table style={{ tableLayout: 'fixed', width: '100%' }}>
               <TableHeader className="bg-slate-100/50 dark:bg-slate-800/50">
                 <TableRow className="border-b dark:border-slate-800">
-                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 pl-8 text-center w-16">ลำดับ</TableHead>
-                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">รหัส</TableHead>
-                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">ชื่อสถานประกอบการ</TableHead>
-                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">ประเภทร้าน</TableHead>
-                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400">เจ้าของ</TableHead>
-                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-center">เครดิต</TableHead>
-                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-center">สถานะ</TableHead>
-                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-right pr-8">จัดการ</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 pl-6 text-center w-16 hidden lg:table-cell">ลำดับ</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 hidden lg:table-cell w-24">รหัส</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 min-w-[150px]">ชื่อสถานประกอบการ</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 hidden md:table-cell w-32">ประเภทร้าน</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 hidden xl:table-cell w-40">เจ้าของ</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-center hidden md:table-cell w-24">เครดิต</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-center hidden sm:table-cell w-28">สถานะ</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-right pr-6 w-36">จัดการ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -495,37 +497,43 @@ export default function StoreInformation({ stores, onRefresh, isAdmin }: { store
                 ) : (
                   filteredStores.map((s: any, index: number) => (
                     <TableRow key={s.id} className="hover:bg-blue-500/5 transition-colors border-b dark:border-slate-800/50">
-                      <TableCell className="text-center font-bold text-slate-400 text-xs pl-8">{index + 1}</TableCell>
-                      <TableCell className="py-6 font-mono text-xs font-bold text-slate-400">{s.code || "-"}</TableCell>
-                      <TableCell className="font-black text-slate-900 dark:text-white">
-                        {s.name}
-                        <div className="text-[10px] font-normal text-slate-500 mt-1">{s.customerType}</div>
+                      <TableCell className="w-[80px] text-center font-bold text-slate-400 text-xs pl-6 hidden lg:table-cell">{index + 1}</TableCell>
+                      <TableCell className="w-[120px] py-6 font-mono text-xs font-bold text-slate-400 hidden lg:table-cell">{s.code || "-"}</TableCell>
+                      <TableCell className="py-4 font-black text-slate-900 dark:text-white break-words whitespace-normal">
+                        <div className="flex items-center gap-2 mb-1 lg:hidden">
+                          <span className="text-[10px] font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-500">{s.code || "-"}</span>
+                        </div>
+                        <div className="line-clamp-2 text-sm">{s.name}</div>
+                        <div className="text-[10px] font-normal text-slate-500 mt-1 line-clamp-1">{s.customerType}</div>
                       </TableCell>
-                      <TableCell className="text-xs font-bold text-slate-600 dark:text-slate-300">{s.type || "-"}</TableCell>
-                      <TableCell className="text-sm font-bold text-slate-500">
-                        <div>{s.owner || "-"}</div>
+                      <TableCell className="w-[150px] text-xs font-bold text-slate-600 dark:text-slate-300 hidden md:table-cell break-words whitespace-normal">{s.type || "-"}</TableCell>
+                      <TableCell className="w-[150px] text-sm font-bold text-slate-500 hidden xl:table-cell break-words whitespace-normal">
+                        <div className="line-clamp-1">{s.owner || "-"}</div>
                         <div className="text-[10px] font-mono opacity-70">{s.phone}</div>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center hidden md:table-cell">
                         {s.paymentScore ? (
                           <span className="text-yellow-500 text-xs">{"⭐".repeat(parseInt(s.paymentScore) || 0)}</span>
                         ) : <span className="text-slate-300">-</span>}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="w-[120px] text-center hidden sm:table-cell">
                         <span className={cn(
-                          "px-3 py-1 rounded-full text-[10px] font-black shadow-sm",
+                          "px-3 py-1 rounded-full text-[10px] font-black shadow-sm whitespace-nowrap",
                           s.status === "เปิดการขาย" ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-rose-500/10 text-rose-600 border border-rose-500/20"
                         )}>{s.status}</span>
                       </TableCell>
-                      <TableCell className="text-right pr-8">
-                        {isAdmin ? (
-                          <div className="flex justify-end gap-2">
-                            <ActionButton variant="ghost" size="icon" onClick={() => startEdit(s)} className="h-10 w-10 text-blue-600 hover:bg-blue-500/10 rounded-xl" label="✏️" />
-                            <ActionButton variant="ghost" size="icon" onClick={() => handleDelete(s.id, s.name)} className="h-10 w-10 text-rose-500 hover:bg-rose-500/10 rounded-xl" label="🗑️" />
-                          </div>
-                        ) : (
-                          <div className="text-xs text-slate-400 italic">View Only</div>
-                        )}
+                      <TableCell className="text-right pr-4 md:pr-6 align-middle">
+                        <div className="flex justify-end gap-2 sm:gap-3 items-center">
+                          <ActionButton variant="ghost" size="icon" onClick={() => setViewingStore(s)} className="h-10 w-10 text-emerald-600 hover:bg-emerald-500/10 rounded-xl" label={<Eye className="w-5 h-5" />} />
+                          {isAdmin ? (
+                            <>
+                              <ActionButton variant="ghost" size="icon" onClick={() => startEdit(s)} className="h-10 w-10 text-blue-600 hover:bg-blue-500/10 rounded-xl" label="✏️" />
+                              <ActionButton variant="ghost" size="icon" onClick={() => handleDelete(s.id, s.name)} className="h-10 w-10 text-rose-500 hover:bg-rose-500/10 rounded-xl" label="🗑️" />
+                            </>
+                          ) : (
+                            <div className="text-[10px] text-slate-400 italic">View Only</div>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -535,6 +543,16 @@ export default function StoreInformation({ stores, onRefresh, isAdmin }: { store
           </div>
         </CardContent>
       </Card>
+
+      {/* Show the Store Details Modal */}
+      {viewingStore && (
+        <StoreDetailModal
+          store={viewingStore}
+          visits={visits}
+          issues={issues}
+          onClose={() => setViewingStore(null)}
+        />
+      )}
     </div>
   )
 }

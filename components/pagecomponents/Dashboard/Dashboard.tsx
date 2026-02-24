@@ -1387,16 +1387,16 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
             <Table className="dark:text-slate-300">
               <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
                 <TableRow className="dark:border-slate-800 border-slate-100">
-                  <TableHead className="dark:text-slate-400 font-semibold text-center w-16">ลำดับ</TableHead>
-                  <TableHead className="dark:text-slate-400 font-semibold">เซลล์</TableHead>
-                  <TableHead className="dark:text-slate-400 font-semibold text-center">เข้าพบทั้งหมด</TableHead>
-                  <TableHead className="dark:text-slate-400 font-semibold text-center text-blue-500">ร้านใหม่ N</TableHead>
-                  <TableHead className="dark:text-slate-400 font-semibold text-center">ร้านเดิม A</TableHead>
-                  <TableHead className="dark:text-slate-400 font-semibold text-center">ร้านเดิม B</TableHead>
-                  <TableHead className="dark:text-slate-400 font-semibold text-center">พัฒนาออเดอร์ T</TableHead>
-                  <TableHead className="dark:text-slate-400 font-semibold text-center">ตัวแทนจำหน่าย D</TableHead>
+                  <TableHead className="dark:text-slate-400 font-semibold text-center w-16 hidden lg:table-cell">ลำดับ</TableHead>
+                  <TableHead className="dark:text-slate-400 font-semibold min-w-[120px]">เซลล์</TableHead>
+                  <TableHead className="dark:text-slate-400 font-semibold text-center hidden sm:table-cell">เข้าพบทั้งหมด</TableHead>
+                  <TableHead className="dark:text-slate-400 font-semibold text-center text-blue-500 hidden md:table-cell">ร้านใหม่ N</TableHead>
+                  <TableHead className="dark:text-slate-400 font-semibold text-center hidden md:table-cell">ร้านเดิม A</TableHead>
+                  <TableHead className="dark:text-slate-400 font-semibold text-center hidden md:table-cell">ร้านเดิม B</TableHead>
+                  <TableHead className="dark:text-slate-400 font-semibold text-center hidden lg:table-cell">พัฒนาออเดอร์ T</TableHead>
+                  <TableHead className="dark:text-slate-400 font-semibold text-center hidden lg:table-cell">ตัวแทนจำหน่าย D</TableHead>
                   <TableHead className="dark:text-slate-400 font-semibold text-center text-emerald-500">ปิดการขาย</TableHead>
-                  <TableHead className="dark:text-slate-400 font-semibold text-right">% สำเร็จ</TableHead>
+                  <TableHead className="dark:text-slate-400 font-semibold text-right hidden sm:table-cell">% สำเร็จ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1404,16 +1404,16 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
                   <>
                     {salesPerformance.map((row: any, i: number) => (
                       <TableRow key={i} className="dark:border-slate-800 border-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                        <TableCell className="text-center font-bold text-slate-500">{i + 1}</TableCell>
-                        <TableCell className="font-medium dark:text-indigo-200 text-indigo-700">{row.name}</TableCell>
-                        <TableCell className="text-center font-bold">{row.total}</TableCell>
-                        <TableCell className="text-center text-blue-500 dark:text-blue-400">{row.new}</TableCell>
-                        <TableCell className="text-center">{row.typeA}</TableCell>
-                        <TableCell className="text-center">{row.typeB}</TableCell>
-                        <TableCell className="text-center">{row.typeT}</TableCell>
-                        <TableCell className="text-center">{row.typeD}</TableCell>
-                        <TableCell className="text-center text-emerald-500 dark:text-emerald-400 font-bold">{row.closed}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="w-[60px] text-center font-bold text-slate-500 hidden lg:table-cell">{i + 1}</TableCell>
+                        <TableCell className="min-w-[120px] font-bold dark:text-indigo-200 text-indigo-700 break-words whitespace-normal">{row.name}</TableCell>
+                        <TableCell className="w-[80px] text-center font-bold text-slate-600 dark:text-slate-300 hidden sm:table-cell">{row.total}</TableCell>
+                        <TableCell className="w-[80px] text-center text-blue-500 dark:text-blue-400 font-bold hidden md:table-cell">{row.new}</TableCell>
+                        <TableCell className="w-[80px] text-center text-slate-600 dark:text-slate-400 font-medium hidden md:table-cell">{row.typeA}</TableCell>
+                        <TableCell className="w-[80px] text-center text-slate-600 dark:text-slate-400 font-medium hidden md:table-cell">{row.typeB}</TableCell>
+                        <TableCell className="w-[80px] text-center text-slate-600 dark:text-slate-400 font-medium hidden lg:table-cell">{row.typeT}</TableCell>
+                        <TableCell className="w-[80px] text-center text-slate-600 dark:text-slate-400 font-medium hidden lg:table-cell">{row.typeD}</TableCell>
+                        <TableCell className="w-[80px] text-center text-emerald-500 dark:text-emerald-400 font-bold">{row.closed}</TableCell>
+                        <TableCell className="w-[90px] text-right hidden sm:table-cell">
                           <span className={`px-2 py-1 rounded-full text-xs font-bold ${Number(row.percent) >= 50
                             ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                             : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
@@ -1425,15 +1425,16 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
                     ))}
                     {/* Grand Total Row */}
                     <TableRow className="bg-slate-100 dark:bg-slate-800/80 font-black border-t-2 dark:border-slate-700">
-                      <TableCell className="text-center" colSpan={2}>รวมทั้งหมด</TableCell>
-                      <TableCell className="text-center">{performanceTotals.total}</TableCell>
-                      <TableCell className="text-center text-blue-600">{performanceTotals.new}</TableCell>
-                      <TableCell className="text-center">{performanceTotals.typeA}</TableCell>
-                      <TableCell className="text-center">{performanceTotals.typeB}</TableCell>
-                      <TableCell className="text-center">{performanceTotals.typeT}</TableCell>
-                      <TableCell className="text-center">{performanceTotals.typeD}</TableCell>
+                      <TableCell className="text-center hidden lg:table-cell"></TableCell>
+                      <TableCell className="text-left font-black pr-2">รวมทั้งหมด</TableCell>
+                      <TableCell className="text-center hidden sm:table-cell">{performanceTotals.total}</TableCell>
+                      <TableCell className="text-center text-blue-600 hidden md:table-cell">{performanceTotals.new}</TableCell>
+                      <TableCell className="text-center hidden md:table-cell">{performanceTotals.typeA}</TableCell>
+                      <TableCell className="text-center hidden md:table-cell">{performanceTotals.typeB}</TableCell>
+                      <TableCell className="text-center hidden lg:table-cell">{performanceTotals.typeT}</TableCell>
+                      <TableCell className="text-center hidden lg:table-cell">{performanceTotals.typeD}</TableCell>
                       <TableCell className="text-center text-emerald-600">{performanceTotals.closed}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right hidden sm:table-cell">
                         <span className={`px-2 py-1 rounded-full text-xs font-black ${totalPercent >= 50
                           ? 'bg-emerald-200 text-emerald-800 dark:bg-emerald-500 dark:text-white'
                           : 'bg-amber-200 text-amber-800 dark:bg-amber-500 dark:text-white'
@@ -1454,189 +1455,190 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
             </Table>
           </CardContent>
         </Card>
-
-        {/* Table 2: Store Type Summary */}
-        <Card className="dark:bg-[#1e293b] dark:border-slate-800 border-l-4 border-l-orange-500 shadow-md">
-          <CardHeader className="py-4 border-b dark:border-slate-800 flex flex-row items-center justify-between">
-            <div className="flex items-center gap-2">
-              <LayoutGrid className="w-5 h-5 text-orange-400" />
-              <CardTitle className="text-lg dark:text-orange-100 text-slate-800">📈 สรุปตามประเภทร้าน</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table className="dark:text-slate-300">
-              <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
-                <TableRow className="dark:border-slate-800 border-slate-100">
-                  <TableHead className="dark:text-slate-400 font-semibold text-center w-16">ลำดับ</TableHead>
-                  <TableHead className="dark:text-slate-400 font-semibold">ประเภทร้าน</TableHead>
-                  <TableHead className="dark:text-slate-400 font-semibold text-center">จำนวนเข้าพบ</TableHead>
-                  <TableHead className="dark:text-slate-400 font-semibold text-center text-blue-500">ร้านใหม่ N</TableHead>
-                  <TableHead className="dark:text-slate-400 font-semibold text-center text-emerald-500">ปิดการขาย</TableHead>
-                  <TableHead className="dark:text-slate-400 font-semibold text-right">% ปิดการขาย</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {storeTypePerformance.filter((row: any) => row.totalVisits > 0).length > 0 ? (
-                  storeTypePerformance.filter((row: any) => row.totalVisits > 0).map((row: any, i: number) => (
-                    <TableRow key={i} className="dark:border-slate-800 border-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                      <TableCell className="text-center font-bold text-slate-500">{i + 1}</TableCell>
-                      <TableCell className="font-bold dark:text-orange-200 text-orange-700">{row.type}</TableCell>
-                      <TableCell className="text-center font-bold text-slate-600 dark:text-slate-300">{row.totalVisits}</TableCell>
-                      <TableCell className="text-center text-blue-500 dark:text-blue-400 font-bold">{row.newVisits}</TableCell>
-                      <TableCell className="text-center text-emerald-500 dark:text-emerald-400 font-bold">{row.closed}</TableCell>
-                      <TableCell className="text-right">
-                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${row.percent >= 50
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                          : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                          }`}>
-                          {row.percent}%
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center h-24 text-slate-500">
-                      ไม่มีข้อมูลสำหรับช่วงเวลานี้
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
       </div>
 
-      {/* ================== CALENDAR POPUP (Split Plans & Visits) ================== */}
-      {showVisitPopup && popupDate && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all"
-          onClick={() => setShowVisitPopup(false)}
-        >
-          <Card
-            className="dark:bg-[#1e293b] dark:border-slate-700 border-slate-200 shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <CardHeader className="py-4 px-6 border-b dark:border-slate-700 bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-800/50 flex-shrink-0">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-xl font-black dark:text-white flex items-center gap-2">
-                    <CalendarIcon className="w-5 h-5 text-indigo-500" />
-                    รายละเอียดข้อมูลประจำวัน
-                  </CardTitle>
-                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-                    {formatThaiDate(popupDate, 'PPPP')}
-                  </p>
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => setShowVisitPopup(false)} className="hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors">
-                  <X className="w-5 h-5" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0 overflow-hidden flex-1 flex flex-col md:flex-row">
-              {/* Left Column: PLANS */}
-              <div className="flex-1 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-700 flex flex-col bg-slate-50/50 dark:bg-slate-900/20">
-                <div className="p-4 bg-blue-50/50 dark:bg-blue-900/10 font-bold text-blue-700 dark:text-blue-400 flex justify-between items-center border-b border-blue-100 dark:border-blue-900/30">
-                  <span className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
-                    แผนงานที่ตั้งไว้
-                  </span>
-                  <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-2.5 py-0.5 rounded-full text-xs box-content">
-                    {selectedDatePlans.length} รายการ
-                  </span>
-                </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                  {selectedDatePlans.length > 0 ? selectedDatePlans.map((plan: any, idx: number) => (
-                    <div key={`plan-${idx}`} className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h4 className="font-bold text-slate-800 dark:text-slate-200">
-                            {plan.store?.name || plan.storeName || plan.storeCode || "ไม่ระบุร้าน"}
-                          </h4>
-                          {plan.storeCode && <p className="text-xs text-slate-500 font-mono">#{plan.storeCode}</p>}
-                        </div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800 rounded-md whitespace-nowrap">
-                          {plan.visitCat || 'ลูกค้าทั่วไป'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-3 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 rounded-lg border border-slate-100 dark:border-slate-800">
-                        <User className="w-3.5 h-3.5 text-blue-400" /> เซลล์: <span className="font-medium text-slate-700 dark:text-slate-300">{plan.sales || '-'}</span>
-                      </div>
-                      {plan.notes && (
-                        <div className="mt-3 text-sm text-slate-600 dark:text-slate-400 border-l-2 border-blue-400 pl-3 italic bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-900/10 py-1">
-                          "{plan.notes}"
-                        </div>
-                      )}
-                    </div>
-                  )) : (
-                    <div className="flex flex-col items-center justify-center h-full text-slate-400 py-10 opacity-70">
-                      <Target className="w-12 h-12 mb-2 text-slate-300 dark:text-slate-600" />
-                      <p>ไม่มีการวางแผนในวันนี้</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+      {/* Table 2: Store Type Summary */}
+      <Card className="dark:bg-[#1e293b] dark:border-slate-800 border-l-4 border-l-orange-500 shadow-md">
+        <CardHeader className="py-4 border-b dark:border-slate-800 flex flex-row items-center justify-between">
+          <div className="flex items-center gap-2">
+            <LayoutGrid className="w-5 h-5 text-orange-400" />
+            <CardTitle className="text-lg dark:text-orange-100 text-slate-800">📈 สรุปตามประเภทร้าน</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table style={{ tableLayout: 'fixed', width: '100%' }} className="dark:text-slate-300">
+            <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
+              <TableRow className="dark:border-slate-800 border-slate-100">
+                <TableHead className="dark:text-slate-400 font-semibold text-center w-16 hidden md:table-cell">ลำดับ</TableHead>
+                <TableHead className="dark:text-slate-400 font-semibold min-w-[120px]">ประเภทร้าน</TableHead>
+                <TableHead className="dark:text-slate-400 font-semibold text-center">จำนวนเข้าพบ</TableHead>
+                <TableHead className="dark:text-slate-400 font-semibold text-center text-blue-500 hidden sm:table-cell">ร้านใหม่ N</TableHead>
+                <TableHead className="dark:text-slate-400 font-semibold text-center text-emerald-500">ปิดการขาย</TableHead>
+                <TableHead className="dark:text-slate-400 font-semibold text-right hidden sm:table-cell">% ปิดการขาย</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {storeTypePerformance.filter((row: any) => row.totalVisits > 0).length > 0 ? (
+                storeTypePerformance.filter((row: any) => row.totalVisits > 0).map((row: any, i: number) => (
+                  <TableRow key={i} className="dark:border-slate-800 border-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <TableCell className="w-[60px] text-center font-bold text-slate-500 hidden md:table-cell">{i + 1}</TableCell>
+                    <TableCell className="min-w-[120px] font-bold dark:text-orange-200 text-orange-700 break-words whitespace-normal">{row.type}</TableCell>
+                    <TableCell className="w-[100px] text-center font-bold text-slate-600 dark:text-slate-300">{row.totalVisits}</TableCell>
+                    <TableCell className="w-[100px] text-center text-blue-500 dark:text-blue-400 font-bold hidden sm:table-cell">{row.newVisits}</TableCell>
+                    <TableCell className="w-[100px] text-center text-emerald-500 dark:text-emerald-400 font-bold">{row.closed}</TableCell>
+                    <TableCell className="w-[120px] text-right hidden sm:table-cell">
+                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${row.percent >= 50
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                        }`}>
+                        {row.percent}%
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center h-24 text-slate-500">
+                    ไม่มีข้อมูลสำหรับช่วงเวลานี้
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-              {/* Right Column: VISITS */}
-              <div className="flex-1 flex flex-col bg-white dark:bg-[#1e293b]">
-                <div className="p-4 bg-orange-50/50 dark:bg-orange-900/10 font-bold text-orange-600 dark:text-orange-400 flex justify-between items-center border-b border-orange-100 dark:border-orange-900/30">
-                  <span className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
-                    การเข้าพบจริง
-                  </span>
-                  <span className="bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 px-2.5 py-0.5 rounded-full text-xs box-content">
-                    {selectedDateVisits.length} ร้าน
-                  </span>
+      {/* ================== CALENDAR POPUP (Split Plans & Visits) ================== */}
+      {
+        showVisitPopup && popupDate && (
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all"
+            onClick={() => setShowVisitPopup(false)}
+          >
+            <Card
+              className="dark:bg-[#1e293b] dark:border-slate-700 border-slate-200 shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <CardHeader className="py-4 px-6 border-b dark:border-slate-700 bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-800/50 flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl font-black dark:text-white flex items-center gap-2">
+                      <CalendarIcon className="w-5 h-5 text-indigo-500" />
+                      รายละเอียดข้อมูลประจำวัน
+                    </CardTitle>
+                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
+                      {formatThaiDate(popupDate, 'PPPP')}
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => setShowVisitPopup(false)} className="hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors">
+                    <X className="w-5 h-5" />
+                  </Button>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                  {selectedDateVisits.length > 0 ? selectedDateVisits.map((visit: any, idx: number) => (
-                    <div key={`visit-${idx}`} className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow ring-1 ring-inset ring-slate-100 dark:ring-white/5">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <div className="flex items-center gap-2">
+              </CardHeader>
+              <CardContent className="p-0 overflow-hidden flex-1 flex flex-col md:flex-row">
+                {/* Left Column: PLANS */}
+                <div className="flex-1 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-700 flex flex-col bg-slate-50/50 dark:bg-slate-900/20">
+                  <div className="p-4 bg-blue-50/50 dark:bg-blue-900/10 font-bold text-blue-700 dark:text-blue-400 flex justify-between items-center border-b border-blue-100 dark:border-blue-900/30">
+                    <span className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+                      แผนงานที่ตั้งไว้
+                    </span>
+                    <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-2.5 py-0.5 rounded-full text-xs box-content">
+                      {selectedDatePlans.length} รายการ
+                    </span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                    {selectedDatePlans.length > 0 ? selectedDatePlans.map((plan: any, idx: number) => (
+                      <div key={`plan-${idx}`} className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
                             <h4 className="font-bold text-slate-800 dark:text-slate-200">
-                              {visit.store?.name || visit.storeRef || "ไม่ระบุร้าน"}
+                              {plan.store?.name || plan.storeName || plan.storeCode || "ไม่ระบุร้าน"}
                             </h4>
-                            {visit.dealStatus === 'ปิดการขาย' || visit.dealStatus === 'closed' ? (
-                              <span className="px-2 py-1 rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wider border border-emerald-200 dark:border-emerald-800">
-                                ปิดการขาย
-                              </span>
-                            ) : (
-                              <span className="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-bold uppercase tracking-wider border border-slate-200 dark:border-slate-600">
-                                {visit.dealStatus}
-                              </span>
+                            {plan.storeCode && <p className="text-xs text-slate-500 font-mono">#{plan.storeCode}</p>}
+                          </div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800 rounded-md whitespace-nowrap">
+                            {plan.visitCat || 'ลูกค้าทั่วไป'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-3 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 rounded-lg border border-slate-100 dark:border-slate-800">
+                          <User className="w-3.5 h-3.5 text-blue-400" /> เซลล์: <span className="font-medium text-slate-700 dark:text-slate-300">{plan.sales || '-'}</span>
+                        </div>
+                        {plan.notes && (
+                          <div className="mt-3 text-sm text-slate-600 dark:text-slate-400 border-l-2 border-blue-400 pl-3 italic bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-900/10 py-1">
+                            "{plan.notes}"
+                          </div>
+                        )}
+                      </div>
+                    )) : (
+                      <div className="flex flex-col items-center justify-center h-full text-slate-400 py-10 opacity-70">
+                        <Target className="w-12 h-12 mb-2 text-slate-300 dark:text-slate-600" />
+                        <p>ไม่มีการวางแผนในวันนี้</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Column: VISITS */}
+                <div className="flex-1 flex flex-col bg-white dark:bg-[#1e293b]">
+                  <div className="p-4 bg-orange-50/50 dark:bg-orange-900/10 font-bold text-orange-600 dark:text-orange-400 flex justify-between items-center border-b border-orange-100 dark:border-orange-900/30">
+                    <span className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+                      การเข้าพบจริง
+                    </span>
+                    <span className="bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 px-2.5 py-0.5 rounded-full text-xs box-content">
+                      {selectedDateVisits.length} ร้าน
+                    </span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                    {selectedDateVisits.length > 0 ? selectedDateVisits.map((visit: any, idx: number) => (
+                      <div key={`visit-${idx}`} className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow ring-1 ring-inset ring-slate-100 dark:ring-white/5">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-slate-800 dark:text-slate-200">
+                                {visit.store?.name || visit.storeRef || "ไม่ระบุร้าน"}
+                              </h4>
+                              {visit.dealStatus === 'ปิดการขาย' || visit.dealStatus === 'closed' ? (
+                                <span className="px-2 py-1 rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wider border border-emerald-200 dark:border-emerald-800">
+                                  ปิดการขาย
+                                </span>
+                              ) : (
+                                <span className="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-bold uppercase tracking-wider border border-slate-200 dark:border-slate-600">
+                                  {visit.dealStatus}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex gap-2 mt-3 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
+                              <div className="flex-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                <User className="w-3.5 h-3.5 text-orange-400" /> <span className="truncate">{visit.sales || '-'}</span>
+                              </div>
+                              <div className="flex-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                <MapPin className="w-3.5 h-3.5 text-orange-400" /> <span className="truncate">{visit.visitType || '-'}</span>
+                              </div>
+                            </div>
+
+                            {(visit.notes?.text || visit.notes?.voice) && (
+                              <div className="mt-3 text-sm text-slate-600 dark:text-slate-400 border-l-2 border-orange-400 pl-3 py-1 bg-gradient-to-r from-orange-50/50 to-transparent dark:from-orange-900/10">
+                                {visit.notes?.text && <p className="italic">"{visit.notes.text}"</p>}
+                                {visit.notes?.voice && <p className="text-xs text-orange-500 mt-1 flex items-center gap-1 font-medium"><Zap className="w-3 h-3" /> แนบไฟล์เสียง</p>}
+                              </div>
                             )}
                           </div>
-                          <div className="flex gap-2 mt-3 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
-                            <div className="flex-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                              <User className="w-3.5 h-3.5 text-orange-400" /> <span className="truncate">{visit.sales || '-'}</span>
-                            </div>
-                            <div className="flex-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                              <MapPin className="w-3.5 h-3.5 text-orange-400" /> <span className="truncate">{visit.visitType || '-'}</span>
-                            </div>
-                          </div>
-
-                          {(visit.notes?.text || visit.notes?.voice) && (
-                            <div className="mt-3 text-sm text-slate-600 dark:text-slate-400 border-l-2 border-orange-400 pl-3 py-1 bg-gradient-to-r from-orange-50/50 to-transparent dark:from-orange-900/10">
-                              {visit.notes?.text && <p className="italic">"{visit.notes.text}"</p>}
-                              {visit.notes?.voice && <p className="text-xs text-orange-500 mt-1 flex items-center gap-1 font-medium"><Zap className="w-3 h-3" /> แนบไฟล์เสียง</p>}
-                            </div>
-                          )}
                         </div>
                       </div>
-                    </div>
-                  )) : (
-                    <div className="flex flex-col items-center justify-center h-full text-slate-400 py-10 opacity-70">
-                      <MapPin className="w-12 h-12 mb-2 text-slate-300 dark:text-slate-600" />
-                      <p>ไม่มีข้อมูลเข้าพบในวันนี้</p>
-                    </div>
-                  )}
+                    )) : (
+                      <div className="flex flex-col items-center justify-center h-full text-slate-400 py-10 opacity-70">
+                        <MapPin className="w-12 h-12 mb-2 text-slate-300 dark:text-slate-600" />
+                        <p>ไม่มีข้อมูลเข้าพบในวันนี้</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
     </div >
   )
 }

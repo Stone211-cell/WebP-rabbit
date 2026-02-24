@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const type = searchParams.get('type') || '';
     const status = searchParams.get('status') || '';
+    const limit = searchParams.get('limit') || '';
 
     let where: any = {};
 
@@ -30,9 +31,12 @@ export async function GET(request: NextRequest) {
       where.status = status;
     }
 
+    const limitInt = limit ? parseInt(limit) : undefined;
+
     const stores = await prisma.store.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { code: 'asc' },
+      take: limitInt,
     });
 
     return NextResponse.json(stores, {
