@@ -125,7 +125,7 @@ export default function JobCard({ plans, visits }: any) {
           <div className="flex items-baseline justify-center gap-2">
             <span className="text-3xl md:text-5xl font-black tracking-tighter">{timeLeft.d} วัน {timeLeft.h} ชั่วโมง</span>
           </div>
-          <p className="text-indigo-100/60 text-xs font-bold italic tracking-tight uppercase">ทุกศุกร์ เวลา 22:00 น.</p>
+          <p className="text-white/80 text-xs font-bold italic tracking-tight uppercase">ทุกศุกร์ เวลา 22:00 น.</p>
         </div>
       </div>
 
@@ -182,15 +182,15 @@ export default function JobCard({ plans, visits }: any) {
           <div className="flex justify-center flex-wrap gap-6 pt-6 border-t border-slate-200 dark:border-white/5">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-blue-600 shadow-sm" />
-              <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">วันนี้</span>
+              <span className="text-[15px] font-black uppercase text-slate-500 dark:text-slate-400">วันนี้</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-emerald-500 shadow-sm" />
-              <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">มีแผน</span>
+              <span className="text-[15px] font-black uppercase text-slate-500 dark:text-slate-400">มีแผน</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-rose-500 shadow-sm" />
-              <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">ศุกร์</span>
+              <span className="text-[15px] font-black uppercase text-slate-500 dark:text-slate-400">ศุกร์</span>
             </div>
           </div>
         </CardContent>

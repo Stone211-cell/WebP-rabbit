@@ -229,8 +229,8 @@ export default function Alerts({ stores, visits, forecasts }: any) {
             <div className="col-span-full py-24 text-center space-y-5 bg-white/20 dark:bg-white/5 backdrop-blur-sm rounded-[3rem] border border-white/10 italic animate-pulse">
               <div className="text-7xl grayscale opacity-20">📊</div>
               <div className="space-y-2">
-                <div className="text-slate-400 dark:text-slate-500 font-black uppercase tracking-[0.4em] text-xs">ไม่พบเป้าหมายประจำเดือน</div>
-                <p className="text-[10px] text-slate-400 dark:text-slate-600 font-medium">กรุณากำหนดเป้าหมายในส่วน 'คาดการณ์รายตัวสัปดาห์' เพื่อดึงข้อมูลมาแสดงผลที่นี่</p>
+                <div className="text-black dark:text-slate-500 font-black uppercase tracking-[0.4em] text-xs">ไม่พบเป้าหมายประจำเดือน</div>
+                <p className="text-[20px] text-black dark:text-slate-600 font-medium">กรุณากำหนดเป้าหมายในส่วน 'คาดการณ์รายตัวสัปดาห์' เพื่อดึงข้อมูลมาแสดงผลที่นี่</p>
 
               </div>
             </div>
