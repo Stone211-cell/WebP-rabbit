@@ -308,7 +308,7 @@ export default function PlanForm({ plans, profiles, onRefresh, isAdmin }: any) {
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex flex-wrap items-center justify-end   gap-8">
                             {isAdmin && (
                                 <>
                                     <ActionButton
@@ -644,7 +644,7 @@ export default function PlanForm({ plans, profiles, onRefresh, isAdmin }: any) {
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => handleDelete(p.id)}
-                                                        className="h-7 px-3 text-[10px] bg-slate-800/50 text-slate-400 border border-slate-700 rounded hover:bg-slate-700 hover:text-white transition-all"
+                                                        className="h-7 px-3 text-[10px] bg-red-700 text-white border border-slate-700 rounded hover:bg-red-500 hover:text-white transition-all"
                                                     />
                                                 ) : (
                                                     <span className="text-[10px] text-slate-400 italic">View Only</span>

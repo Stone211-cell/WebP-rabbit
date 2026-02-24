@@ -21,8 +21,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <ProfileCheck />
             <header className="flex justify-end items-center p-4 gap-4 h-16 dark:bg-[#1b2433] dark:text-white">
               <SignedOut>
-                <SignInButton />
-                <SignUpButton>
+                <SignInButton forceRedirectUrl="/">
+                  <button className="bg-white text-black border border-slate-200 dark:border-slate-800 rounded-full font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5">
+                    Sign In
+                  </button>
+                </SignInButton>
+                <SignUpButton forceRedirectUrl="/" >
                   <button className="bg-[#6c47ff] text-white rounded-full font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5">
                     Sign Up
                   </button>

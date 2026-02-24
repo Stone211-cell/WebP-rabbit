@@ -21,6 +21,20 @@ table td,
 }
 
 /* =========================
+   TEXT CONTRAST (LIGHT THEME)
+   Make faded text globally darker in light mode
+========================= */
+html:not(.dark) .text-slate-400 {
+  color: #475569 !important;
+  /* text-slate-600 equivalent */
+}
+
+html:not(.dark) .text-slate-500 {
+  color: #334155 !important;
+  /* text-slate-700 equivalent */
+}
+
+/* =========================
    CSS VARIABLES
 ========================= */
 
@@ -37,7 +51,7 @@ table td,
   --secondary-foreground: 33 33 33;
 
   --muted: 245 245 245;
-  --muted-foreground: 120 120 120;
+  --muted-foreground: 82 82 82;
 
   --accent: 245 245 245;
   --accent-foreground: 33 33 33;

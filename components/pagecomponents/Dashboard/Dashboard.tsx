@@ -1027,7 +1027,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
       <div className="flex flex-col gap-4">
         {/* Navigation & Filters Row */}
         {/* Navigation & Filters Row */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 bg-[#0f172a] p-3 rounded-2xl shadow-sm border border-slate-800">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 bg-slate-100 dark:bg-[#0f172a] p-3 rounded-2xl shadow-sm border border-slate-800">
           {['day', 'week', 'month', 'quarter', 'year'].map(p => (
             <button
               key={p}
@@ -1041,7 +1041,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
                 "flex items-center justify-center gap-2 py-3 px-4 text-sm font-bold rounded-xl transition-all border",
                 period === p
                   ? "bg-blue-600 text-white border-blue-600 shadow-md"
-                  : "bg-transparent text-slate-300 border-slate-700 hover:bg-slate-800"
+                  : "bg-white text-black dark:bg-transparent text-slate-300 border-slate-700 dark:hover:bg-slate-800 hover:bg-blue-200 dark:text-white text-black"
               )}
             >
               <CalendarIcon className="w-4 h-4 opacity-70" />

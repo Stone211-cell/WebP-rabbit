@@ -5,6 +5,7 @@ import { useTheme } from 'next-themes';
 import { useCRM } from '@/components/hooks/useCRM';
 import { useUser } from '@clerk/nextjs';
 import { axiosInstance } from '@/lib/axios';
+import { getIsAdminAction } from '@/lib/auth';
 import './crm.css';
 
 import Dashboard from '@/components/pagecomponents/Dashboard/Dashboard';
@@ -34,8 +35,18 @@ export default function CRMPage() {
   const { user, isLoaded } = useUser();
 
   // Determine permissions
-  const isAdmin = user?.publicMetadata?.role === 'admin';
+  const [isAdmin, setIsAdmin] = useState(false);
   const hasProfile = profiles.some(p => p.clerkId === user?.id);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (user) {
+        const adminStatus = await getIsAdminAction();
+        setIsAdmin(adminStatus);
+      }
+    };
+    checkAdmin();
+  }, [user]);
 
   const [storageInfo, setStorageInfo] = useState<any>({ usedMB: 0, maxMB: 500, percentage: 0 });
 

@@ -1,4 +1,5 @@
-import { auth } from '@clerk/nextjs/server';
+'use server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 
 /**
  * Checks if the current user has the 'admin' role.
@@ -6,12 +7,12 @@ import { auth } from '@clerk/nextjs/server';
  */
 export async function checkIsAdmin() {
     try {
-        const { sessionClaims } = await auth();
-        // Assuming role is stored in publicMetadata of the user, 
-        // which is available in sessionClaims if configured in Clerk Dashboard.
-        // If not, we might need to fetch the user object.
-        const role = (sessionClaims?.metadata as any)?.role;
-        return role === 'admin';
+        const user = await currentUser();
+        // รองรับทั้งแบบที่กำหนดเป็น IsAdmin: true หรือ role: "admin"
+        if (user?.privateMetadata?.role === 'admin') {
+            return true;
+        }
+        return false;
     } catch (e) {
         return false;
     }
@@ -28,4 +29,10 @@ export async function checkHasProfile() {
     } catch (e) {
         return false;
     }
+}
+/**
+ * Server Action for client components to check admin status
+ */
+export async function getIsAdminAction() {
+    return await checkIsAdmin();
 }

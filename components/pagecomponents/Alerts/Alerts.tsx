@@ -112,7 +112,7 @@ export default function Alerts({ stores, visits, forecasts }: any) {
               <span className="text-2xl font-black">{progressPercent}%</span>
             </div>
             <Progress value={progressPercent} className="h-3 bg-black/20" />
-            <p className="text-[10px] text-orange-200/60 font-medium italic text-right">ข้อมูลอัปเดตแบบเรียลไทม์</p>
+            <p className="text-[15px] text-green-400 font-medium italic text-right">ข้อมูลอัปเดตแบบเรียลไทม์</p>
           </div>
         </div>
       </div>
