@@ -97,7 +97,6 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
       }
       setIsCreateOpen(false)
       resetForm()
-      if (onRefresh) onRefresh()
     } catch (error) {
       handleApiError(error)
     } finally {
@@ -110,7 +109,6 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
     try {
       await onDelete(id)
       toast.success("ลบรายการเรียบร้อยแล้ว")
-      if (onRefresh) onRefresh()
     } catch (error) {
       handleApiError(error)
     }
@@ -335,12 +333,12 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
                     </TableCell>
                     <TableCell className="text-right pr-6 align-middle">
                       {isAdmin ? (
-                        <div className="flex justify-end gap-2 sm:gap-3 items-center md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="icon" onClick={() => startEdit(item)} className="h-8 w-8 text-blue-600 hover:bg-blue-500/10 rounded-lg">✏️</Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id, item.store?.name)} className="h-8 w-8 text-rose-500 hover:bg-rose-500/10 rounded-lg">🗑️</Button>
+                        <div className="flex justify-end gap-2 sm:gap-3 items-center">
+                          <Button variant="ghost" size="icon" onClick={() => startEdit(item)} className="h-8 w-8 text-blue-600 hover:bg-blue-500/10 rounded-lg" title="แก้ไข">✏️</Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id, item.store?.name)} className="h-8 w-8 text-rose-500 hover:bg-rose-500/10 rounded-lg" title="ลบ">🗑️</Button>
                         </div>
                       ) : (
-                        <span className="text-[10px] text-slate-400 italic opacity-0 group-hover:opacity-100 transition-opacity">View Only</span>
+                        <span className="text-[10px] text-slate-400 italic">View Only</span>
                       )}
                     </TableCell>
                   </TableRow>

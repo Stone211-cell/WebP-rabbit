@@ -86,7 +86,7 @@ export function useCRM(filters?: {
     mutate(KEYS.forecasts(weekStart || forecastWeekStart)), [forecastWeekStart]);
 
   const fetchIssues = useCallback((search?: string, type?: string, status?: string) =>
-    mutate(KEYS.issues(search || issueSearch, type || issueStatus, status || issueStatus)), [issueSearch, issueStatus, issueStatus]);
+    mutate(KEYS.issues(search || issueSearch, type || issueType, status || issueStatus)), [issueSearch, issueType, issueStatus]);
 
   const fetchProfiles = useCallback(() => mutate(KEYS.profiles()), []);
 

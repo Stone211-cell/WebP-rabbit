@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { Trash2, Database, Upload, FileSpreadsheet, Plus } from "lucide-react"
 import { axiosInstance } from "@/lib/axios"
-import { createStore, updateStore, deleteStore } from "@/lib/api/stores"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
 import { cn, confirmDelete, confirmClearAll } from "@/lib/utils"
@@ -37,7 +36,7 @@ import { StoreDetailModal } from "./StoreDetailModal"
 import { Eye } from "lucide-react"
 import { useSearch } from "@/components/hooks/useSearch"
 
-export default function StoreInformation({ stores, visits = [], issues = [], onRefresh, isAdmin }: { stores: any, visits?: any[], issues?: any[], onRefresh?: () => void, isAdmin?: boolean }) {
+export default function StoreInformation({ stores, visits = [], issues = [], onRefresh, onCreate, onUpdate, onDelete, isAdmin }: { stores: any, visits?: any[], issues?: any[], onRefresh?: () => void, onCreate?: any, onUpdate?: any, onDelete?: any, isAdmin?: boolean }) {
   const [open, setOpen] = useState(false)
   const [viewingStore, setViewingStore] = useState<any>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -89,14 +88,13 @@ export default function StoreInformation({ stores, visits = [], issues = [], onR
     setIsSubmitting(true)
     try {
       if (editingId) {
-        await updateStore(editingId, form)
+        if (onUpdate) await onUpdate(editingId, form)
         toast.success("แก้ไขข้อมูลร้านค้าสำเร็จ!")
       } else {
-        await createStore(form)
+        if (onCreate) await onCreate(form)
         toast.success("เพิ่มร้านค้าเรียบร้อยแล้ว!")
       }
       resetForm()
-      if (onRefresh) onRefresh()
       setOpen(false)
     } catch (error) {
       handleApiError(error)
@@ -108,9 +106,8 @@ export default function StoreInformation({ stores, visits = [], issues = [], onR
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบร้านค้า "${name}"?`)) return
     try {
-      await deleteStore(id)
+      if (onDelete) await onDelete(id)
       toast.success("ลบร้านค้าเรียบร้อยแล้ว!")
-      if (onRefresh) onRefresh()
     } catch (error) {
       handleApiError(error)
     }

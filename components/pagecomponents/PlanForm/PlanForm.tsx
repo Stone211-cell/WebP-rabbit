@@ -184,8 +184,6 @@ export default function PlanForm({ plans, profiles, onRefresh, isAdmin, currentU
                 notes: "",
                 order: "1"
             })
-
-            if (onRefresh) onRefresh()
         } catch (error) {
             handleApiError(error)
         } finally {
@@ -199,7 +197,6 @@ export default function PlanForm({ plans, profiles, onRefresh, isAdmin, currentU
         try {
             await deletePlan(id)
             toast.success("ลบแผนงานเรียบร้อยแล้ว")
-            if (onRefresh) onRefresh()
         } catch (error) {
             handleApiError(error)
         } finally {
@@ -236,12 +233,6 @@ export default function PlanForm({ plans, profiles, onRefresh, isAdmin, currentU
         try {
             const res = await axiosInstance.delete('/plans')
             toast.success(res.data.message || "ลบแผนงานเรียบร้อยแล้ว")
-            if (onRefresh) {
-                const endDate = new Date(currentWeekStart)
-                endDate.setDate(currentWeekStart.getDate() + 6)
-                endDate.setHours(23, 59, 59, 999)
-                onRefresh(weekStartIso, endDate.toISOString())
-            }
         } catch (error) {
             handleApiError(error)
         } finally {

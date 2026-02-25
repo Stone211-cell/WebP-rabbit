@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { axiosInstance } from '@/lib/axios';
+import { useDebounce } from './useDebounce';
 
 export function useStoreSearch(initialStoreRef = '') {
     const [storeSearch, setStoreSearch] = useState(initialStoreRef);
@@ -10,29 +11,22 @@ export function useStoreSearch(initialStoreRef = '') {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedStore, setSelectedStore] = useState<any>(null);
 
-    useEffect(() => {
-        const timer = setTimeout(async () => {
-            // Threshold: 1 character or more, and not already selected
-            if (storeSearch?.length > 0 && storeSearch !== selectedStore?.code) {
-                setIsSearching(true);
-                setShowSuggestions(true);
-                try {
-                    const res = await axiosInstance.get(`/stores?search=${storeSearch}`);
-                    setSuggestions(res.data);
-                } catch (err) {
-                    console.error('Store Search failed:', err);
-                    setSuggestions([]);
-                } finally {
-                    setIsSearching(false);
-                }
-            } else {
-                setSuggestions([]);
-                setShowSuggestions(false);
-            }
-        }, 500);
+    // Use shared useDebounce hook instead of manual setTimeout
+    const debouncedSearch = useDebounce(storeSearch, 500);
 
-        return () => clearTimeout(timer);
-    }, [storeSearch, selectedStore?.code]);
+    useEffect(() => {
+        if (debouncedSearch?.length > 0 && debouncedSearch !== selectedStore?.code) {
+            setIsSearching(true);
+            setShowSuggestions(true);
+            axiosInstance.get(`/stores?search=${debouncedSearch}`)
+                .then(res => setSuggestions(res.data))
+                .catch(() => setSuggestions([]))
+                .finally(() => setIsSearching(false));
+        } else {
+            setSuggestions([]);
+            setShowSuggestions(false);
+        }
+    }, [debouncedSearch, selectedStore?.code]);
 
     const selectStore = (store: any) => {
         setSelectedStore(store);
@@ -55,8 +49,7 @@ export function useStoreSearch(initialStoreRef = '') {
         try {
             const res = await axiosInstance.get(`/stores?search=${storeSearch}`);
             setSuggestions(res.data);
-        } catch (err) {
-            console.error('Manual store search failed:', err);
+        } catch {
             setSuggestions([]);
         } finally {
             setIsSearching(false);

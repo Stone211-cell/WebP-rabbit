@@ -166,7 +166,7 @@ export default function Alerts({ stores, visits, forecasts }: any) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-6">
           {monthlyStats.storeActivity.length > 0 ? (
             monthlyStats.storeActivity.map((s: any, idx: number) => (
               <Card key={s.id} className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border-white/20 dark:border-slate-800/50 rounded-[2.5rem] shadow-lg overflow-hidden group hover:shadow-2xl transition-all animate-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: `${idx * 100}ms` }}>

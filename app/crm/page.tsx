@@ -30,7 +30,9 @@ export default function CRMPage() {
   const {
     stores, visits, plans, forecasts, issues, profiles,
     fetchStores, fetchVisits, fetchPlans, fetchForecasts, fetchIssues,
-    createIssue, updateIssue, deleteIssue
+    createIssue, updateIssue, deleteIssue,
+    createStore, updateStore, deleteStore,
+    createForecast, updateForecast, deleteForecast
   } = useCRM();
   const { user, isLoaded } = useUser();
 
@@ -254,6 +256,9 @@ export default function CRMPage() {
                 visits={visits}
                 issues={issues}
                 onRefresh={fetchStores}
+                onCreate={createStore}
+                onUpdate={updateStore}
+                onDelete={deleteStore}
                 isAdmin={isAdmin}
               />
             </div>
@@ -289,6 +294,9 @@ export default function CRMPage() {
                 stores={stores}
                 forecasts={forecasts}
                 onRefresh={fetchForecasts}
+                onCreate={createForecast}
+                onUpdate={updateForecast}
+                onDelete={deleteForecast}
                 isAdmin={isAdmin}
               />
             </div>

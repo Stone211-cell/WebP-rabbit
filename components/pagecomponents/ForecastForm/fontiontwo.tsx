@@ -1,13 +1,11 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { axiosInstance } from "@/lib/axios"
-import { handleApiError } from "@/lib/handleError"
+import { useMeatPartSearch } from "@/components/hooks/useMeatPartSearch"
 import { toast } from "sonner"
 import { addWeeks, subWeeks, startOfWeek, endOfWeek } from "date-fns"
 import { th } from "date-fns/locale"
 import { cn, formatThaiDate } from "@/lib/utils"
-import { useCRM } from "@/components/hooks/useCRM"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -37,7 +35,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-// ... (imports) ...
+
 import {
     CalendarIcon,
     Trash2,
@@ -49,11 +47,84 @@ import {
     ShoppingBag,
     Edit2,
     CheckCircle2,
-    AlertCircle
+    AlertCircle,
+    ChevronDown,
+    Search
 } from "lucide-react"
 
-import { useStoreSearch } from "@/components/hooks/useStoreSearch"
-import FontionTwo from "./fontiontwo"
+// Types & Mocks
+const MEAT_CATEGORIES = [
+    { id: 'เศษ', label: '🟢 เศษ' },
+    { id: 'เนื้อแดง', label: '🥩 เนื้อแดง' },
+    { id: 'เครื่องใน', label: '💜 เครื่องใน' },
+    { id: 'อะไหล่', label: '🔵 อะไหล่' },
+]
+
+type MeatPartItem = { id: string; name: string; category: string; sortOrder?: number }
+
+// Default data - shows immediately (DB data will override once loaded)
+const DEFAULT_MEAT_PARTS: MeatPartItem[] = [
+    // 🥩 เนื้อแดง
+    { id: 'd-101', name: 'สันนอก', category: 'เนื้อแดง', sortOrder: 1 },
+    { id: 'd-102', name: 'สันมัน', category: 'เนื้อแดง', sortOrder: 2 },
+    { id: 'd-103', name: 'ริบอาย', category: 'เนื้อแดง', sortOrder: 3 },
+    { id: 'd-104', name: 'สันใน', category: 'เนื้อแดง', sortOrder: 4 },
+    { id: 'd-105', name: 'สันคอ', category: 'เนื้อแดง', sortOrder: 5 },
+    { id: 'd-106', name: 'ตะเข้', category: 'เนื้อแดง', sortOrder: 6 },
+    { id: 'd-107', name: 'สะโพก', category: 'เนื้อแดง', sortOrder: 7 },
+    { id: 'd-108', name: 'มะพร้าว', category: 'เนื้อแดง', sortOrder: 8 },
+    { id: 'd-109', name: 'ลั้ม', category: 'เนื้อแดง', sortOrder: 9 },
+    { id: 'd-110', name: 'ก้อนขาหน้า', category: 'เนื้อแดง', sortOrder: 10 },
+    { id: 'd-111', name: 'ใบพาย', category: 'เนื้อแดง', sortOrder: 11 },
+    { id: 'd-112', name: 'เสือร้องให้', category: 'เนื้อแดง', sortOrder: 12 },
+    { id: 'd-113', name: 'ปลาช่อน', category: 'เนื้อแดง', sortOrder: 13 },
+    { id: 'd-114', name: 'น่องลาย', category: 'เนื้อแดง', sortOrder: 14 },
+    { id: 'd-115', name: 'น่องแก้ว', category: 'เนื้อแดง', sortOrder: 15 },
+    { id: 'd-116', name: 'หนอก', category: 'เนื้อแดง', sortOrder: 16 },
+    { id: 'd-117', name: 'ฮัม / สันไหล่', category: 'เนื้อแดง', sortOrder: 17 },
+    { id: 'd-118', name: 'ชายโครง', category: 'เนื้อแดง', sortOrder: 18 },
+    { id: 'd-119', name: 'สามชั้น', category: 'เนื้อแดง', sortOrder: 19 },
+    { id: 'd-120', name: 'ใบบัว', category: 'เนื้อแดง', sortOrder: 20 },
+    { id: 'd-121', name: 'ตับ', category: 'เนื้อแดง', sortOrder: 21 },
+    { id: 'd-122', name: 'หางตะเข้', category: 'เนื้อแดง', sortOrder: 22 },
+    { id: 'd-123', name: 'บางขาหน้า', category: 'เนื้อแดง', sortOrder: 23 },
+    { id: 'd-124', name: 'เนื้อนุ่ม', category: 'เนื้อแดง', sortOrder: 24 },
+    { id: 'd-125', name: 'ขอบสัน / หัวสัน', category: 'เนื้อแดง', sortOrder: 25 },
+    { id: 'd-126', name: 'เศษเล็ก', category: 'เนื้อแดง', sortOrder: 26 },
+    { id: 'd-127', name: 'ลิ้น', category: 'เนื้อแดง', sortOrder: 27 },
+    { id: 'd-128', name: 'ยกตัว', category: 'เนื้อแดง', sortOrder: 28 },
+    { id: 'd-129', name: 'ครึ่งตัว', category: 'เนื้อแดง', sortOrder: 29 },
+    // 🟢 เศษ
+    { id: 'd-201', name: 'แก้ม', category: 'เศษ', sortOrder: 1 },
+    { id: 'd-202', name: 'เศษเลาะ', category: 'เศษ', sortOrder: 2 },
+    { id: 'd-203', name: 'เศษใหญ่', category: 'เศษ', sortOrder: 3 },
+    { id: 'd-204', name: 'เศษหัว', category: 'เศษ', sortOrder: 4 },
+    { id: 'd-205', name: 'ปากหนาม', category: 'เศษ', sortOrder: 5 },
+    { id: 'd-206', name: 'เอ็นแก้ว', category: 'เศษ', sortOrder: 6 },
+    { id: 'd-207', name: 'เศษก้อนแดงหั่นปอ', category: 'เศษ', sortOrder: 7 },
+    { id: 'd-208', name: 'เนื้อนุ่มเขียว', category: 'เศษ', sortOrder: 8 },
+    { id: 'd-209', name: 'เศษเสือ', category: 'เศษ', sortOrder: 9 },
+    { id: 'd-210', name: 'เนื้อบด', category: 'เศษ', sortOrder: 10 },
+    { id: 'd-211', name: 'เอ็นเหลือง', category: 'เศษ', sortOrder: 11 },
+    // 💜 เครื่องใน
+    { id: 'd-301', name: 'เครื่องในรวม', category: 'เครื่องใน', sortOrder: 1 },
+    { id: 'd-302', name: 'ชุดดำ', category: 'เครื่องใน', sortOrder: 2 },
+    { id: 'd-303', name: 'ผ้าขน', category: 'เครื่องใน', sortOrder: 3 },
+    { id: 'd-304', name: 'หำ + เจี้ยว', category: 'เครื่องใน', sortOrder: 4 },
+    { id: 'd-305', name: 'หัวใจ', category: 'เครื่องใน', sortOrder: 5 },
+    { id: 'd-306', name: 'ไขหลัง', category: 'เครื่องใน', sortOrder: 6 },
+    { id: 'd-307', name: 'ดีพก', category: 'เครื่องใน', sortOrder: 7 },
+    { id: 'd-308', name: 'ม้าม', category: 'เครื่องใน', sortOrder: 8 },
+    { id: 'd-309', name: 'ขั้วตับ', category: 'เครื่องใน', sortOrder: 9 },
+    { id: 'd-310', name: 'สมอง', category: 'เครื่องใน', sortOrder: 10 },
+    { id: 'd-311', name: 'ไส้', category: 'เครื่องใน', sortOrder: 11 },
+    // 🔵 อะไหล่
+    { id: 'd-401', name: 'มันแต่ง', category: 'อะไหล่', sortOrder: 1 },
+    { id: 'd-402', name: 'มันทิ้ง', category: 'อะไหล่', sortOrder: 2 },
+    { id: 'd-403', name: 'กีบ', category: 'อะไหล่', sortOrder: 3 },
+    { id: 'd-404', name: 'หางสด', category: 'อะไหล่', sortOrder: 4 },
+    { id: 'd-405', name: 'หนัง', category: 'อะไหล่', sortOrder: 5 },
+]
 
 // Type checking helper
 const safeFloat = (val: any) => {
@@ -61,27 +132,52 @@ const safeFloat = (val: any) => {
     return isNaN(parsed) ? 0 : parsed
 }
 
-export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate, onDelete, isAdmin }: any) {
+export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, onDelete, isAdmin }: any) {
     const [date, setDate] = useState<Date>(new Date())
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [showDialog, setShowDialog] = useState(false)
     const [editingItem, setEditingItem] = useState<any>(null)
 
-    // Store Search Hook
+    // savedMeatParts holds the local list (starts with default, can be extended by admins)
+    const [savedMeatParts, setSavedMeatParts] = useState<MeatPartItem[]>(DEFAULT_MEAT_PARTS)
+
+    // Meat Part Search Hook (mirrors useStoreSearch)
     const {
-        storeSearch,
-        setStoreSearch,
-        isSearching,
-        suggestions,
-        showSuggestions,
-        selectedStore,
-        selectStore,
-        clearStore,
-    } = useStoreSearch()
+        search: partSearch,
+        setSearch: setPartSearch,
+        categoryFilter: partCatFilter,
+        setCategoryFilter: setPartCatFilter,
+        selectedPart: selectedMeatPart,
+        selectPart: selectMeatPart,
+        clearPart: clearMeatPart,
+        showSuggestions: showPartSuggestions,
+        setShowSuggestions: setShowPartSuggestions,
+        filtered: filteredParts,
+        addPart: addMeatPart,
+        deletePart,
+    } = useMeatPartSearch(savedMeatParts)
+
+    const handleAddPart = async () => {
+        if (!partSearch) return toast.error("กรุณาพิมพ์ชื่อชิ้นส่วนเนื้อ")
+        const newPart = await addMeatPart(partSearch, "เนื้อแดง")
+        if (newPart) {
+            setSavedMeatParts(prev => [newPart, ...prev.filter(p => p.id !== newPart.id)])
+            selectMeatPart(newPart)
+        }
+    }
+
+    const handleDeletePart = async (id: string) => {
+        if (!confirm("ยืนยันลบชิ้นส่วนนี้?")) return
+        const ok = await deletePart(id)
+        if (ok) {
+            setSavedMeatParts(prev => prev.filter(p => p.id !== id))
+            if (selectedMeatPart?.id === id) clearMeatPart()
+        }
+    }
 
     // Form State
     const [formData, setFormData] = useState({
-        product: "",
+        product: "", // This is now 'ประเภทเนื้อ'
         targetWeek: "",
         targetMonth: "",
         forecast: "",
@@ -111,14 +207,13 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
             actual: "",
             notes: ""
         })
-        clearStore()
+        clearMeatPart()
         setEditingItem(null)
         setShowDialog(false)
     }
 
-    // Add Product to existing store
-    const handleAddProduct = (store: any) => {
-        // Clear form data but keep store
+    // Add Product to existing meat part (group)
+    const handleAddProduct = (part: any) => {
         setFormData({
             product: "",
             targetWeek: "",
@@ -128,10 +223,8 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
             notes: ""
         })
         setEditingItem(null)
-
-        // Select the store
-        if (store) {
-            selectStore(store)
+        if (part) {
+            selectMeatPart(part)
         }
         setShowDialog(true)
     }
@@ -147,28 +240,32 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
             actual: item.actual?.toString() || "",
             notes: item.notes || ""
         })
-        // Mock selecting the store
-        if (item.store) {
-            selectStore(item.store)
+
+        let foundPart = savedMeatParts.find(p => p.id === item.masterId)
+        if (!foundPart && item.store) {
+            foundPart = { id: item.store.id, name: item.store.name, category: "ไม่ระบุ" }
+        }
+        if (foundPart) {
+            selectMeatPart(foundPart)
         }
         setShowDialog(true)
     }
 
     // Handle Submit
     const handleSubmit = async () => {
-        if (!selectedStore) {
-            toast.error("กรุณาเลือกร้านค้า")
+        if (!selectedMeatPart) {
+            toast.error("กรุณาเลือกชิ้นส่วนเนื้อ")
             return
         }
         if (!formData.product) {
-            toast.error("กรุณาระบุสินค้า")
+            toast.error("กรุณาระบุประเภทเนื้อ")
             return
         }
 
         setIsSubmitting(true)
         try {
             const payload = {
-                masterId: selectedStore.id,
+                masterId: selectedMeatPart.id,
                 product: formData.product,
                 targetWeek: safeFloat(formData.targetWeek),
                 targetMonth: safeFloat(formData.targetMonth),
@@ -188,7 +285,8 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
 
             resetForm()
         } catch (error) {
-            handleApiError(error)
+            console.error(error)
+            toast.error("เกิดข้อผิดพลาด, กรุณาลองใหม่")
         } finally {
             setIsSubmitting(false)
         }
@@ -199,9 +297,10 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
         if (!confirm("ยืนยันการลบรายการนี้?")) return
         try {
             if (onDelete) await onDelete(id)
-            toast.success("ลบรายการรเรียบร้อย")
+            toast.success("ลบรายการเรียบร้อย")
         } catch (error) {
-            handleApiError(error)
+            console.error(error)
+            toast.error("ลบไม่สำเร็จ")
         }
     }
 
@@ -231,7 +330,7 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
             weekActual += wActual
             monthTarget += mTarget
 
-            // Product Grouping
+            // Product/Category Grouping
             const pName = f.product || "Other"
             if (!productsMap.has(pName)) {
                 productsMap.set(pName, { name: pName, target: 0, actual: 0, forecast: 0 })
@@ -259,32 +358,32 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
         }
     }, [forecasts])
 
-    // --- Grouping by Store ---
+    // --- Grouping by Meat Part ---
     const groupedForecasts = useMemo(() => {
         if (!forecasts) return []
-        const groups: Record<string, { store: any, items: any[] }> = {}
+        const groups: Record<string, { part: any, items: any[] }> = {}
 
         forecasts.forEach((f: any) => {
-            const sid = f.store?.id || 'unknown'
+            const sid = f.masterId || f.store?.id || 'unknown'
             if (!groups[sid]) {
+                const foundPart = savedMeatParts.find(p => p.id === sid) || f.store || { id: sid, name: "ไม่ระบุชิ้นส่วน", category: "ไม่ระบุ" }
                 groups[sid] = {
-                    store: f.store,
+                    part: foundPart,
                     items: []
                 }
             }
             groups[sid].items.push(f)
         })
 
-        // Sort by store code
+        // Sort by part name
         return Object.values(groups).sort((a: any, b: any) =>
-            (a.store?.code || "").localeCompare(b.store?.code || "")
+            (a.part?.name || "").localeCompare(b.part?.name || "")
         )
-    }, [forecasts])
+    }, [forecasts, savedMeatParts])
 
 
     return (
         <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-700 min-h-screen pb-20">
-
             {/* --- HEADER --- */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-6 rounded-[2rem] border border-white/20 dark:border-slate-800/50 shadow-xl">
                 <div>
@@ -292,7 +391,7 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
                         <span className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl shadow-lg shadow-blue-500/30">
                             <TrendingUp size={24} />
                         </span>
-                        คาดการณ์ <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">ลูกค้าสัปดาห์</span>
+                        คาดการณ์ <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">ชิ้นส่วนเนื้อรายสัปดาห์</span>
                     </h2>
                 </div>
 
@@ -318,14 +417,12 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
                     </div>
 
                     {/* Add Button */}
-                    {isAdmin && (
-                        <Button
-                            onClick={() => setShowDialog(true)}
-                            className="bg-white dark:bg-white text-slate-900 font-bold rounded-full dark:text-black  px-6 shadow-lg hover:shadow-xl hover:bg-slate-50 transition-all active:scale-95"
-                        >
-                            <Plus size={18} className="text-blue-500" />เพิ่มคาดการณ์
-                        </Button>
-                    )}
+                    <Button
+                        onClick={() => setShowDialog(true)}
+                        className="bg-white dark:bg-white text-slate-900 font-bold rounded-full dark:text-black hover:bg-slate-50 transition-all active:scale-95 px-6 shadow-lg hover:shadow-xl"
+                    >
+                        <Plus size={18} className="text-blue-500" />เพิ่มคาดการณ์
+                    </Button>
                 </div>
             </div>
 
@@ -410,7 +507,7 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
                 <Card className="bg-slate-900 text-slate-300 border-slate-800 rounded-[2rem] overflow-hidden">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-base flex items-center gap-2">
-                            <ShoppingBag size={18} className="text-orange-400" /> สรุปตามสินค้า
+                            <ShoppingBag size={18} className="text-orange-400" /> สรุปตามประเภทเนื้อ
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
@@ -434,38 +531,37 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
                 </Card>
             )}
 
-            {/* --- DETAILED LIST (GROUPED BY STORE) --- */}
+            {/* --- DETAILED LIST (GROUPED BY MEAT PART) --- */}
             <div className="space-y-6">
                 <h3 className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-300 ml-2 pt-4">
-                    <div className="w-1.5 h-6 bg-slate-500 rounded-full" /> รายละเอียดรายร้านค้า
+                    <div className="w-1.5 h-6 bg-slate-500 rounded-full" /> รายละเอียดรายชิ้นส่วนเนื้อ
                 </h3>
 
                 {groupedForecasts.length > 0 ? (
                     <div className="flex flex-col gap-8">
                         {groupedForecasts.map((group: any) => (
-                            <div key={group.store?.id || Math.random()} className="bg-slate-50/50 dark:bg-slate-900/30 backdrop-blur-md rounded-[2rem] p-4 md:p-6 border border-white/20 dark:border-slate-800 shadow-sm">
-                                {/* Store Group Header */}
+                            <div key={group.part?.id || Math.random()} className="bg-slate-50/50 dark:bg-slate-900/30 backdrop-blur-md rounded-[2rem] p-4 md:p-6 border border-white/20 dark:border-slate-800 shadow-sm">
+                                {/* Component Group Header */}
                                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 px-2">
                                     <div className="flex items-center gap-4">
                                         <div className="h-12 w-12 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-lg shadow-indigo-500/20">
-                                            {group.store?.name?.charAt(0) || "?"}
+                                            {group.part?.name?.charAt(0) || "?"}
                                         </div>
                                         <div>
-                                            <h4 className="text-2xl font-black text-slate-900 dark:text-white leading-none mb-1.5">{group.store?.name}</h4>
+                                            <h4 className="text-2xl font-black text-slate-900 dark:text-white leading-none mb-1.5">{group.part?.name}</h4>
                                             <div className="flex gap-2 text-xs font-mono text-slate-500 items-center">
-                                                <span className="bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-md text-slate-700 dark:text-slate-300 font-bold">{group.store?.code}</span>
-                                                <span className="opacity-70">| {group.store?.name}</span>
+                                                <span className="bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-md text-slate-700 dark:text-slate-300 font-bold">{group.part?.category}</span>
                                                 <span className="opacity-50">({group.items.length} รายการ)</span>
                                             </div>
                                         </div>
                                     </div>
                                     {isAdmin && (
                                         <Button
-                                            onClick={() => handleAddProduct(group.store)}
+                                            onClick={() => handleAddProduct(group.part)}
                                             size="sm"
                                             className="bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white font-bold rounded-full px-5 shadow-sm hover:shadow-md transition-all border border-indigo-100 dark:border-indigo-500"
                                         >
-                                            <Plus size={16} className="mr-1" /> เพิ่มสินค้า
+                                            <Plus size={16} className="mr-1" /> เพิ่มข้อมูลประเภทเนื้อ
                                         </Button>
                                     )}
                                 </div>
@@ -582,38 +678,74 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
 
                     <div className="p-6 space-y-5">
                         <div className="grid grid-cols-2 gap-4">
+                            {/* ชิ้นส่วนเนื้อ — same pattern as ForecastForm's store search */}
                             <div className="col-span-1 space-y-1.5">
-                                <Label className="text-xs text-slate-400">เลือกร้าน *</Label>
-                                <div className="relative">
-                                    <Input
-                                        placeholder="พิมพ์ชื่อร้าน..."
-                                        value={storeSearch}
-                                        onChange={(e) => setStoreSearch(e.target.value)}
-                                        className="bg-slate-800 border-slate-700 rounded-xl"
-                                        disabled={!!editingItem || !!selectedStore} // Disable if editing OR if store explicitly selected via Add Product
-                                    />
-                                    {showSuggestions && (
-                                        <div className="absolute top-full left-0 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto">
-                                            {suggestions.map(s => (
-                                                <div key={s.id} onClick={() => selectStore(s)} className="p-3 hover:bg-slate-700 cursor-pointer text-sm">
-                                                    {s.name}
-                                                </div>
-                                            ))}
-                                        </div>
+                                <Label className="text-xs text-slate-400">ชิ้นส่วนเนื้อ *</Label>
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <Input
+                                            placeholder="พิมพ์ชื่อชิ้นส่วน..."
+                                            value={partSearch}
+                                            onFocus={() => setShowPartSuggestions(true)}
+                                            onChange={(e) => { setPartSearch(e.target.value); setShowPartSuggestions(true) }}
+                                            className="bg-slate-800 border-slate-700 rounded-xl"
+                                            disabled={!!editingItem || !!selectedMeatPart}
+                                        />
+                                        {showPartSuggestions && filteredParts.length > 0 && (
+                                            <div className="absolute top-full left-0 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 max-h-44 overflow-y-auto">
+                                                {filteredParts.map(p => (
+                                                    <div key={p.id} className="flex items-center group/item hover:bg-slate-700">
+                                                        <button
+                                                            onClick={() => { selectMeatPart(p); setFormData(prev => ({ ...prev, product: p.category })); setShowPartSuggestions(false) }}
+                                                            className="flex-1 flex items-center gap-2 p-3 text-sm text-left text-white"
+                                                        >
+                                                            <span className="flex-1">{p.name}</span>
+                                                            <span className="text-[10px] text-slate-400 bg-slate-700/80 px-1.5 py-0.5 rounded">{p.category}</span>
+                                                        </button>
+                                                        {isAdmin && (
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleDeletePart(p.id) }}
+                                                                className="opacity-0 group-hover/item:opacity-100 p-2 mr-1 rounded-md text-rose-400 hover:bg-rose-500/20 transition-all"
+                                                                title="ลบ"
+                                                            >
+                                                                <Trash2 size={13} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {isAdmin && !selectedMeatPart && (
+                                        <Button size="sm" onClick={handleAddPart} className="bg-blue-600 hover:bg-blue-500 h-10 px-3 rounded-xl flex-shrink-0" title="เพิ่มชิ้นส่วนใหม่">
+                                            <Plus size={16} />
+                                        </Button>
                                     )}
                                 </div>
-                                {selectedStore && <div className="text-xs text-blue-400 font-bold mt-1">✓ {selectedStore.name}</div>}
+                                {selectedMeatPart && <div className="text-xs text-blue-400 font-bold mt-1">✓ {selectedMeatPart.name}</div>}
                             </div>
                             <div className="col-span-1 space-y-1.5">
-                                <Label className="text-xs text-slate-400">สินค้า *</Label>
-                                <Input
-                                    placeholder="เช่น สะโพก, น่อง"
+                                <Label className="text-xs text-slate-400">ประเภทเนื้อ *</Label>
+                                <Select
                                     value={formData.product}
-                                    onChange={(e) => setFormData({ ...formData, product: e.target.value })}
-                                    className="bg-slate-800 border-slate-700 rounded-xl"
-                                />
+                                    onValueChange={(val) => {
+                                        setFormData(prev => ({ ...prev, product: val }))
+                                        setPartCatFilter(val)       // filter meat part search to this category
+                                        clearMeatPart()             // clear current selection when category changes
+                                    }}
+                                >
+                                    <SelectTrigger className="bg-slate-800 border-slate-700 text-white rounded-xl h-11">
+                                        <SelectValue placeholder="เลือกประเภทเนื้อ..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                                        {MEAT_CATEGORIES.map(c => (
+                                            <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
+
 
                         <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-800 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             <div className="space-y-2">
@@ -677,8 +809,6 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
                 </DialogContent>
             </Dialog>
 
-
-            <FontionTwo isAdmin={isAdmin} />
         </div>
     )
 }

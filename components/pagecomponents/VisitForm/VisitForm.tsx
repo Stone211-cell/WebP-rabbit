@@ -131,8 +131,6 @@ export default function
       })
       clearStore()
       setEditingVisitId(null)
-
-      if (onRefresh) onRefresh()
     } catch (error) {
       handleApiError(error)
     } finally {
@@ -180,7 +178,6 @@ export default function
     try {
       const res = await axiosInstance.delete('/visits')
       toast.success(res.data.message || "ลบข้อมูลการเข้าพบเรียบร้อยแล้ว")
-      if (onRefresh) onRefresh()
     } catch (error) {
       handleApiError(error)
     } finally {
@@ -195,7 +192,6 @@ export default function
     try {
       await axiosInstance.delete(`/visits/${id}`)
       toast.success("ลบข้อมูลสำเร็จ")
-      if (onRefresh) onRefresh()
     } catch (error) {
       handleApiError(error)
     } finally {

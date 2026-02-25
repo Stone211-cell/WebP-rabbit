@@ -136,3 +136,15 @@ model Issue {
   updatedAt DateTime @updatedAt
   store     Store    @relation(fields: [masterId], references: [id])
 }
+
+// ชิ้นส่วนเนื้อ
+model MeatPart {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  category  String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+}
