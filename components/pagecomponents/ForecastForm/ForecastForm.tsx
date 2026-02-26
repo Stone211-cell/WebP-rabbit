@@ -1,15 +1,15 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { axiosInstance } from "@/lib/axios"
-import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
 import { addWeeks, subWeeks, startOfWeek, endOfWeek } from "date-fns"
 import { th } from "date-fns/locale"
 import { cn, formatThaiDate } from "@/lib/utils"
-import { useCRM } from "@/components/hooks/useCRM"
-
+import { validateFields } from "@/lib/toast/validate"
+import { useStoreSearch } from "@/components/hooks/useStoreSearch"
+import { StoreSearchBox } from "@/components/crmhelper/StoreSearchBox"
+import FontionTwo from "./fontiontwo"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -53,13 +53,10 @@ import {
     AlertCircle
 } from "lucide-react"
 
-import { useStoreSearch } from "@/components/hooks/useStoreSearch"
-import FontionTwo from "./fontiontwo"
-
 // Type checking helper
 const safeFloat = (val: any) => {
     const parsed = parseFloat(val)
-    return isNaN(parsed) ? 0 : parsed
+    return !isNaN(parsed) ? parsed : 0
 }
 
 const PRODUCT_TYPES = [
@@ -88,6 +85,7 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
         selectedStore,
         selectStore,
         clearStore,
+        handleManualSearch,
     } = useStoreSearch()
 
     // Form State
@@ -171,14 +169,13 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
 
     // Handle Submit
     const handleSubmit = async () => {
-        if (!selectedStore) {
-            toast.error("กรุณาเลือกร้านค้า")
-            return
-        }
-        if (!formData.product) {
-            toast.error("กรุณาระบุสินค้า")
-            return
-        }
+        const ok = validateFields([
+            { label: "ร้านค้า", value: selectedStore },
+            { label: "ชื่อสินค้า", value: formData.product },
+            { label: "เป้าหมายรายสัปดาห์", value: formData.targetWeek, invalid: formData.targetWeek === "" },
+            { label: "เป้าหมายรายเดือน", value: formData.targetMonth, invalid: formData.targetMonth === "" },
+        ], toast.error)
+        if (!ok) return
 
         setIsSubmitting(true)
         try {
@@ -204,8 +201,8 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
 
             resetForm()
             router.refresh()
-        } catch (error) {
-            handleApiError(error)
+        } catch (error: any) {
+            toast.error(error?.response?.data?.error || error?.message || "เกิดข้อผิดพลาด")
         } finally {
             setIsSubmitting(false)
         }
@@ -217,9 +214,9 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
         try {
             if (onDelete) await onDelete(id)
             router.refresh()
-            toast.success("ลบรายการรเรียบร้อย")
-        } catch (error) {
-            handleApiError(error)
+            toast.success("ลบรายการเรียบร้อย")
+        } catch (error: any) {
+            toast.error(error?.response?.data?.error || "ลบไม่สำเร็จ")
         }
     }
 
@@ -590,7 +587,7 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
 
             {/* --- ADD/EDIT DIALOG --- */}
             <Dialog open={showDialog} onOpenChange={(o) => { if (!o) resetForm(); else setShowDialog(o); }}>
-                <DialogContent className="max-w-xl md:max-w-2xl lg:max-w-4xl bg-slate-900 border-slate-800 text-white rounded-3xl p-0 overflow-hidden">
+                <DialogContent className="max-w-xl md:max-w-2xl lg:max-w-4xl bg-slate-900 border-slate-800 text-white rounded-3xl p-0 overflow-hidden flex flex-col max-h-[90vh]">
                     <DialogHeader className="p-6 bg-slate-950/50">
                         <DialogTitle className="text-xl font-black flex items-center gap-2">
                             {editingItem ? <Edit2 className="text-blue-500" /> : <Plus className="text-blue-500" />}
@@ -598,29 +595,25 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
                         </DialogTitle>
                     </DialogHeader>
 
-                    <div className="p-6 space-y-5">
+                    <div className="p-6 space-y-5 overflow-y-auto flex-1">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-1.5">
                                 <Label className="text-xs text-slate-400">เลือกร้าน *</Label>
                                 <div className="relative">
-                                    <Input
-                                        placeholder="พิมพ์ชื่อร้าน..."
-                                        value={storeSearch}
-                                        onChange={(e) => setStoreSearch(e.target.value)}
-                                        className="bg-slate-800 border-slate-700 rounded-xl"
-                                        disabled={!!editingItem || !!selectedStore}
+                                    <StoreSearchBox
+                                        storeSearch={storeSearch}
+                                        setStoreSearch={setStoreSearch}
+                                        suggestions={suggestions}
+                                        showSuggestions={showSuggestions}
+                                        selectedStore={selectedStore}
+                                        selectStore={selectStore}
+                                        clearStore={clearStore}
+                                        handleManualSearch={handleManualSearch}
+                                        isSearching={isSearching}
+                                        placeholder="ค้นหารหัส หรือ ชื่อร้าน..."
+                                        variant="dark"
                                     />
-                                    {showSuggestions && (
-                                        <div className="absolute top-full left-0 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto">
-                                            {suggestions.map(s => (
-                                                <div key={s.id} onClick={() => selectStore(s)} className="p-3 hover:bg-slate-700 cursor-pointer text-sm">
-                                                    {s.name}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
-                                {selectedStore && <div className="text-xs text-blue-400 font-bold mt-1">✓ {selectedStore.name}</div>}
                             </div>
                             <div className="space-y-1.5">
                                 <Label className="text-xs text-slate-400">สินค้า *</Label>
@@ -660,7 +653,7 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-xs text-slate-400 flex items-center gap-1"><Target size={12} className="text-purple-500" /> เป้ารายเดือน (กก.) *</Label>
+                                <Label className="text-xs text-slate-400 flex items-center gap-1"><Target size={12} className="text-purple-500" /> เป้าหมายเดือน (กก.) *</Label>
                                 <Input
                                     type="number"
                                     value={formData.targetMonth}

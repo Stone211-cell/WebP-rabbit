@@ -2,10 +2,13 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
+import useSWR, { mutate as swrMutate } from "swr"
+import axios from "axios"
 import { useStoreSearch } from "@/components/hooks/useStoreSearch"
 import { useMeatPartSearch } from "@/components/hooks/useMeatPartSearch"
 import { StoreSearchBox } from "@/components/crmhelper/StoreSearchBox"
 import { toast } from "sonner"
+import { validateFields } from "@/lib/toast/validate"
 import { addWeeks, subWeeks, startOfWeek, endOfWeek } from "date-fns"
 import { th } from "date-fns/locale"
 import { cn, formatThaiDate } from "@/lib/utils"
@@ -144,7 +147,9 @@ const safeFloat = (val: any) => {
     return isNaN(parsed) ? 0 : parsed
 }
 
-export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, onDelete, isAdmin }: any) {
+const fetcher = (url: string) => axios.get(url).then(r => r.data)
+
+export default function FontionTwo({ isAdmin }: { isAdmin?: boolean }) {
     const router = useRouter()
     const [date, setDate] = useState<Date>(new Date())
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -165,8 +170,9 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
         handleManualSearch
     } = useStoreSearch()
 
-    // Meat Part Search
-    const [savedMeatParts, setSavedMeatParts] = useState<MeatPartItem[]>(DEFAULT_MEAT_PARTS)
+    // Meat Part Search — fetch from API
+    const [savedMeatParts, setSavedMeatParts] = useState<MeatPartItem[]>([])
+    const [isLoadingParts, setIsLoadingParts] = useState(true)
     const {
         search: partSearch,
         setSearch: setPartSearch,
@@ -200,9 +206,25 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
         }
     }
 
+    // Fetch meat parts from DB on mount
+    useEffect(() => {
+        const fetchParts = async () => {
+            setIsLoadingParts(true)
+            try {
+                const { data } = await import('axios').then(m => m.default.get<MeatPartItem[]>('/api/meat-parts'))
+                setSavedMeatParts(data)
+            } catch {
+                // Fallback to defaults if API fails
+                setSavedMeatParts(DEFAULT_MEAT_PARTS)
+            } finally {
+                setIsLoadingParts(false)
+            }
+        }
+        fetchParts()
+    }, [])
+
     // Form State
     const [formData, setFormData] = useState({
-        product: "",
         productType: "",
         targetWeek: "",
         targetMonth: "",
@@ -215,10 +237,12 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
     const weekEnd = endOfWeek(date, { weekStartsOn: 1 })
     const weekStartStr = weekStart.toISOString()
 
-    // Load data on date change
-    useEffect(() => {
-        if (onRefresh) onRefresh(weekStartStr)
-    }, [weekStartStr, onRefresh])
+    // Self-contained SWR fetch — keyed by this component's own week
+    const forecastKey = `/api/forecasts?weekStart=${weekStartStr}`
+    const { data: forecasts = [], mutate: mutateForecasts } = useSWR<any[]>(forecastKey, fetcher, {
+        revalidateOnFocus: false,
+        dedupingInterval: 10000,
+    })
 
     const goPrevWeek = () => setDate(subWeeks(date, 1))
     const goNextWeek = () => setDate(addWeeks(date, 1))
@@ -226,7 +250,6 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
     // Reset form
     const resetForm = () => {
         setFormData({
-            product: "",
             productType: "",
             targetWeek: "",
             targetMonth: "",
@@ -240,21 +263,12 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
         setShowDialog(false)
     }
 
-    // Add Product to existing meat part (group) / store
+    // Open Add dialog (pre-fill store from group)
     const handleAddProduct = (store: any) => {
-        setFormData({
-            product: "",
-            productType: "",
-            targetWeek: "",
-            targetMonth: "",
-            forecast: "",
-            actual: "",
-            notes: ""
-        })
+        setFormData({ productType: "", targetWeek: "", targetMonth: "", forecast: "", actual: "", notes: "" })
         setEditingItem(null)
-        if (store) {
-            selectStore(store)
-        }
+        clearMeatPart()
+        if (store) selectStore(store)
         setShowDialog(true)
     }
 
@@ -262,7 +276,6 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
     const handleEdit = (item: any) => {
         setEditingItem(item)
         setFormData({
-            product: item.product || "",
             productType: item.productType || "",
             targetWeek: item.targetWeek?.toString() || "",
             targetMonth: item.targetMonth?.toString() || "",
@@ -273,8 +286,8 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
 
         if (item.store) selectStore(item.store)
 
-        // Restore meat part selection if available
-        const foundPart = savedMeatParts.find(p => p.id === item.masterId)
+        // Restore meat part selection if available (match by name in product field)
+        const foundPart = savedMeatParts.find(p => p.name === item.product)
         if (foundPart) selectMeatPart(foundPart)
 
         setShowDialog(true)
@@ -282,34 +295,35 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
 
     // Handle Submit
     const handleSubmit = async () => {
-        if (!selectedStore) {
-            toast.error("กรุณาเลือกร้านค้า")
-            return
-        }
-        if (!formData.product) {
-            toast.error("กรุณาระบุชื่อสินค้า")
-            return
-        }
+        const ok = validateFields([
+            { label: "ร้านค้า", value: selectedStore },
+            { label: "ชิ้นส่วนเนื้อ", value: selectedMeatPart },
+            { label: "เป้าหมายรายสัปดาห์", value: formData.targetWeek, invalid: formData.targetWeek === "" },
+            { label: "เป้าหมายรายเดือน", value: formData.targetMonth, invalid: formData.targetMonth === "" },
+        ], toast.error)
+        if (!ok) return
 
         setIsSubmitting(true)
         try {
             const payload = {
                 masterId: selectedStore.id,
-                product: formData.product,
-                productType: formData.productType,
+                product: selectedMeatPart.name,  // use meat part name as the product field
+                productType: formData.productType || null,
                 targetWeek: safeFloat(formData.targetWeek),
                 targetMonth: safeFloat(formData.targetMonth),
                 forecast: safeFloat(formData.forecast),
                 actual: safeFloat(formData.actual),
-                notes: formData.notes,
+                notes: formData.notes || null,
                 weekStart: weekStart.toISOString()
             }
 
             if (editingItem) {
-                if (onUpdate) await onUpdate(editingItem.id, payload)
+                const { data } = await axios.put(`/api/forecasts/${editingItem.id}`, payload)
+                mutateForecasts(prev => prev?.map(f => f.id === editingItem.id ? data : f), false)
                 toast.success("อัปเดตข้อมูลเรียบร้อย")
             } else {
-                if (onCreate) await onCreate(payload)
+                const { data } = await axios.post('/api/forecasts', payload)
+                mutateForecasts(prev => [data, ...(prev || [])], false)
                 toast.success("เพิ่มข้อมูลเรียบร้อย")
             }
 
@@ -327,8 +341,8 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
     const handleDelete = async (id: string) => {
         if (!confirm("ยืนยันการลบรายการนี้?")) return
         try {
-            if (onDelete) await onDelete(id)
-            router.refresh()
+            await axios.delete(`/api/forecasts/${id}`)
+            mutateForecasts(prev => prev?.filter(f => f.id !== id), false)
             toast.success("ลบรายการเรียบร้อย")
         } catch (error) {
             console.error(error)
@@ -705,7 +719,7 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
 
             {/* --- ADD/EDIT DIALOG --- */}
             <Dialog open={showDialog} onOpenChange={(o) => { if (!o) resetForm(); else setShowDialog(o); }}>
-                <DialogContent className="max-w-xl md:max-w-2xl lg:max-w-4xl bg-slate-900 border-slate-800 text-white rounded-3xl p-0 overflow-hidden">
+                <DialogContent className="max-w-xl md:max-w-2xl lg:max-w-4xl bg-slate-900 border-slate-800 text-white rounded-3xl p-0 overflow-hidden flex flex-col max-h-[90vh]">
                     <DialogHeader className="p-6 bg-slate-950/50">
                         <DialogTitle className="text-xl font-black flex items-center gap-2">
                             {editingItem ? <Edit2 className="text-blue-500" /> : <Plus className="text-blue-500" />}
@@ -713,7 +727,7 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
                         </DialogTitle>
                     </DialogHeader>
 
-                    <div className="p-6 space-y-5">
+                    <div className="p-6 space-y-5 overflow-y-auto flex-1">
                         {/* Row 1: ชิ้นส่วนเนื้อ */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="col-span-1 space-y-1.5">
@@ -779,8 +793,8 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
                             </div>
                         </div>
 
-                        {/* Row 2: ร้านค้า + สินค้า + ชนิด */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {/* Row 2: ร้านค้า + ชนิด */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1.5 relative">
                                 <Label className="text-xs text-slate-400">เลือกร้านค้า *</Label>
                                 <StoreSearchBox
@@ -795,15 +809,6 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
                                     isSearching={isSearching}
                                     placeholder="ค้นหารหัส หรือ ชื่อร้าน..."
                                     variant="dark"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs text-slate-400">ชื่อสินค้า *</Label>
-                                <Input
-                                    placeholder="เช่น สะโพก, น่อง"
-                                    value={formData.product}
-                                    onChange={(e) => setFormData({ ...formData, product: e.target.value })}
-                                    className="bg-slate-800 border-slate-700 rounded-xl"
                                 />
                             </div>
                             <div className="space-y-1.5">

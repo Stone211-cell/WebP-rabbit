@@ -8,21 +8,19 @@ import { axiosInstance } from '@/lib/axios';
 import { getIsAdminAction } from '@/lib/auth';
 import './crm.css';
 
+import dynamic from 'next/dynamic';
 import Dashboard from '@/components/pagecomponents/Dashboard/Dashboard';
-import VisitForm from '@/components/pagecomponents/VisitForm/VisitForm';
 
-
-import PlanForm from '@/components/pagecomponents/PlanForm/PlanForm';
-import ForecastForm from '@/components/pagecomponents/ForecastForm/ForecastForm';
-import JobCard from '@/components/pagecomponents/JobCard/JobCard';
-import Alerts from '@/components/pagecomponents/Alerts/Alerts';
-import OrderTracking from '@/components/pagecomponents/OrderTracking/OrderTracking';
-import FAQ from '@/components/pagecomponents/FAQ/FAQ';
-import Fine from '@/components/pagecomponents/Fine/Fine';
-
-
-
-import StoreInformation from '@/components/pagecomponents/StoreInformation/StoreInformation';
+// Lazy-loaded page components — only loaded when the user navigates to that section
+const VisitForm = dynamic(() => import('@/components/pagecomponents/VisitForm/VisitForm'), { ssr: false })
+const PlanForm = dynamic(() => import('@/components/pagecomponents/PlanForm/PlanForm'), { ssr: false })
+const ForecastForm = dynamic(() => import('@/components/pagecomponents/ForecastForm/ForecastForm'), { ssr: false })
+const JobCard = dynamic(() => import('@/components/pagecomponents/JobCard/JobCard'), { ssr: false })
+const Alerts = dynamic(() => import('@/components/pagecomponents/Alerts/Alerts'), { ssr: false })
+const OrderTracking = dynamic(() => import('@/components/pagecomponents/OrderTracking/OrderTracking'), { ssr: false })
+const FAQ = dynamic(() => import('@/components/pagecomponents/FAQ/FAQ'), { ssr: false })
+const Fine = dynamic(() => import('@/components/pagecomponents/Fine/Fine'), { ssr: false })
+const StoreInformation = dynamic(() => import('@/components/pagecomponents/StoreInformation/StoreInformation'), { ssr: false })
 
 
 
