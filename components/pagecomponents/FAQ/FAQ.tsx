@@ -133,12 +133,7 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
     setIsCreateOpen(true)
   }
 
-  // บังคับชื่อผู้บันทึกเป็นผู้ใช้งานปัจจุบันถ้าไม่ใช่แอดมิน
-  useEffect(() => {
-    if (!isAdmin && currentUserProfile && isCreateOpen) {
-      setForm(prev => ({ ...prev, recorder: currentUserProfile.name }));
-    }
-  }, [isAdmin, currentUserProfile, isCreateOpen]);
+  // ผู้บรรทึกสามารถกรอกได้อิสระ ไม่บังคับชื่อ
 
   const resetForm = () => {
     setForm(initialForm)
@@ -441,17 +436,15 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
               </div>
 
               {/* Recorder */}
-              <SalesPersonSelect
-                profiles={profiles}
-                value={form.recorder}
-                onValueChange={(v) => setForm({ ...form, recorder: v })}
-                isAdmin={isAdmin}
-                currentUserProfile={currentUserProfile}
-                label="ผู้บันทึก *"
-                placeholder="เลือกผู้บันทึก"
-                variant="dark"
-                className="space-y-2"
-              />
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">ผู้บันทึก *</Label>
+                <Input
+                  placeholder="กรอกชื่อผู้บันทึก..."
+                  value={form.recorder}
+                  onChange={(e) => setForm({ ...form, recorder: e.target.value })}
+                  className="h-12 bg-slate-900/50 border-slate-800 rounded-2xl focus:ring-amber-500/20 text-white font-bold"
+                />
+              </div>
             </div>
 
             {/* Notes */}

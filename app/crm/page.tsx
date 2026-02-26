@@ -311,7 +311,7 @@ export default function CRMPage() {
 
             {/* ส่วนเสริมใหม่จ้า api ยังไม่ต่อ ติดตามคำสั่งซื้อ */}
             <div id="OrderTracking" className="page" style={{ display: activePage === 'ordertracking' ? 'block' : 'none' }}>
-              <OrderTracking stores={stores} visits={visits} />
+              <OrderTracking stores={stores} visits={visits} isAdmin={isAdmin} />
             </div>
 
             {/* คำถามที่พบบ่อย */}
