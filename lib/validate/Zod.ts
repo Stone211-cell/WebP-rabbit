@@ -63,6 +63,7 @@ export const planSchema = z.object({
 export const forecastSchema = z.object({
     masterId: z.string().min(1, "กรุณาเลือกร้านค้า"),
     product: z.string().min(1, "กรุณาระบุสินค้า"),
+    productType: z.string().optional().nullable(),
     targetWeek: z.number().min(0, "เป้าหมายรายสัปดาห์ต้องมากกว่า 0"),
     targetMonth: z.number().min(0, "เป้าหมายรายเดือนต้องมากกว่า 0"),
     weekStart: z.coerce.date(), // Auto convert string/number to Date

@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Trash2, Database, Upload, FileSpreadsheet, Plus } from "lucide-react"
 import { axiosInstance } from "@/lib/axios"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
 import { cn, confirmDelete, confirmClearAll } from "@/lib/utils"
 import * as XLSX from "xlsx"
-import { exportToExcel } from "@/lib/export"
-import { getExcelValue } from "@/lib/excel"
+import { exportStoresToExcel } from "@/lib/exportexcel/exportFormatters"
+import { getExcelValue } from "@/lib/exportexcel/excel"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -36,7 +37,8 @@ import { StoreDetailModal } from "./StoreDetailModal"
 import { Eye } from "lucide-react"
 import { useSearch } from "@/components/hooks/useSearch"
 
-export default function StoreInformation({ stores, visits = [], issues = [], onRefresh, onCreate, onUpdate, onDelete, isAdmin }: { stores: any, visits?: any[], issues?: any[], onRefresh?: () => void, onCreate?: any, onUpdate?: any, onDelete?: any, isAdmin?: boolean }) {
+export default function StoreInformation({ stores, visits = [], issues = [], onRefresh, onCreate, onUpdate, onDelete, isAdmin, currentUserProfile }: { stores: any, visits?: any[], issues?: any[], onRefresh?: () => void, onCreate?: any, onUpdate?: any, onDelete?: any, isAdmin?: boolean, currentUserProfile?: any }) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [viewingStore, setViewingStore] = useState<any>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -96,6 +98,7 @@ export default function StoreInformation({ stores, visits = [], issues = [], onR
       }
       resetForm()
       setOpen(false)
+      router.refresh()
     } catch (error) {
       handleApiError(error)
     } finally {
@@ -107,6 +110,7 @@ export default function StoreInformation({ stores, visits = [], issues = [], onR
     if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบร้านค้า "${name}"?`)) return
     try {
       if (onDelete) await onDelete(id)
+      router.refresh()
       toast.success("ลบร้านค้าเรียบร้อยแล้ว!")
     } catch (error) {
       handleApiError(error)
@@ -120,6 +124,7 @@ export default function StoreInformation({ stores, visits = [], issues = [], onR
     try {
       const res = await axiosInstance.delete('/stores')
       toast.success(res.data.message || "ลบข้อมูลทั้งหมดเรียบร้อยแล้ว")
+      router.refresh()
       if (onRefresh) onRefresh()
     } catch (error) {
       handleApiError(error)
@@ -230,25 +235,7 @@ export default function StoreInformation({ stores, visits = [], issues = [], onR
   )
 
   const handleExport = () => {
-    const dataToExport = filteredStores.map((s: any, index: number) => ({
-      "ลำดับ": index + 1,
-      "รหัส": s.code || "-",
-      "ชื่อร้าน": s.name,                   // matches import 'ชื่อร้าน'
-      "ประเภทร้าน": s.type || "-",         // matches import 'ประเภทร้าน'
-      "ประเภทลูกค้า": s.customerType || "-",
-      "เจ้าของ": s.owner || "-",
-      "เบอร์โทร": s.phone || "-",
-      "ที่อยู่": s.address || "-",
-      "สินค้าที่ใช้": s.productUsed || "-",  // matches import 'สินค้าที่ใช้'
-      "ปริมาณ": s.quantity || "-",
-      "ระยะเวลาสั่ง": s.orderPeriod || "-",
-      "รับของเดิมจาก": s.supplier || "-",   // matches import 'รับของเดิมจาก'
-      "เงื่อนไขชำระ": s.payment || "-",
-      "เครดิต": s.paymentScore ? `${s.paymentScore} ดาว` : "-",   // matches import 'เครดิต'
-      "สถานะ": s.status || "-",
-      "เหตุผลปิดการขาย": s.closeReason || "-"
-    }));
-    exportToExcel(dataToExport, "StoreInformation");
+    exportStoresToExcel(filteredStores);
   }
 
   return (

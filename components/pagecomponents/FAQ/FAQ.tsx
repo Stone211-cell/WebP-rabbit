@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { axiosInstance } from "@/lib/axios"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
 import { cn, formatThaiDate, confirmDelete } from "@/lib/utils"
-import { exportToExcel } from "@/lib/export"
+import { exportToExcel } from "@/lib/exportexcel/export"
 
 import {
   Dialog,
@@ -44,6 +45,7 @@ import { SalesPersonSelect } from "@/components/crmhelper/SalesPersonSelect"
 import { useSearch } from "@/components/hooks/useSearch"
 
 export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onUpdate, onDelete, isAdmin, currentUserProfile }: any) {
+  const router = useRouter()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -97,6 +99,7 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
       }
       setIsCreateOpen(false)
       resetForm()
+      router.refresh()
     } catch (error) {
       handleApiError(error)
     } finally {
@@ -108,6 +111,7 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
     if (!confirmDelete(name || "รายการนี้")) return
     try {
       await onDelete(id)
+      router.refresh()
       toast.success("ลบรายการเรียบร้อยแล้ว")
     } catch (error) {
       handleApiError(error)
@@ -177,7 +181,7 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
       "ผู้บันทึก": item.recorder || "-",
       "สถานะ": getStatusText(item.status) || "-"
     }));
-    exportToExcel(dataToExport, "FAQ_Issues");
+    exportToExcel(dataToExport, "FAQ_Issues", "แจ้งปัญหา");
   }
 
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -207,6 +211,7 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
           const info = await res.json();
           if (res.ok) {
             toast.success(info.message || "นำเข้าข้อมูลสำเร็จ", { id: 'import-faq' });
+            router.refresh()
             if (onRefresh) onRefresh();
           } else {
             toast.error(info.error || "เกิดข้อผิดพลาดในการนำเข้า", { id: 'import-faq' });

@@ -1,14 +1,15 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { axiosInstance } from "@/lib/axios"
 import * as XLSX from "xlsx"
 import { createVisit, updateVisit } from "@/lib/api/visits"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
 import { cn, formatThaiDate, confirmDelete, confirmClearAll } from "@/lib/utils"
-import { exportToExcel } from "@/lib/export"
-import { getExcelValue, parseExcelDate } from "@/lib/excel"
+import { exportVisitsToExcel } from "@/lib/exportexcel/exportFormatters"
+import { getExcelValue, parseExcelDate } from "@/lib/exportexcel/excel"
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -43,8 +44,8 @@ import { SalesPersonSelect } from "@/components/crmhelper/SalesPersonSelect"
 import { VisitDetailModal } from "./VisitDetailModal"
 import { Eye, Trash2, Upload, FileSpreadsheet, MapPin, Phone, CreditCard, Package, Clock, Truck, User, Store, Pencil } from "lucide-react"
 
-export default function
-  VisitForm({ visits, profiles, onRefresh, isAdmin, hasProfile, currentUserProfile }: any) {
+export default function VisitForm({ visits, stores, profiles, onRefresh, onCreate, onUpdate, onDelete, isAdmin, hasProfile, currentUserProfile }: any) {
+  const router = useRouter()
   const [form, setForm] = useState<any>({
     sales: !isAdmin && currentUserProfile ? currentUserProfile.name : "",
     date: new Date().toLocaleDateString('en-CA'),
@@ -113,9 +114,11 @@ export default function
       if (editingVisitId) {
         await updateVisit(editingVisitId, payload)
         toast.success("แก้ไขการเข้าพบเรียบร้อยแล้ว!")
+        if (onUpdate) onUpdate(editingVisitId, payload)
       } else {
         await createVisit(payload)
         toast.success("บันทึกการเข้าพบเรียบร้อยแล้ว!")
+        if (onCreate) onCreate(payload)
       }
 
       // ล้างฟอร์ม
@@ -131,6 +134,7 @@ export default function
       })
       clearStore()
       setEditingVisitId(null)
+      router.refresh()
     } catch (error) {
       handleApiError(error)
     } finally {
@@ -177,7 +181,9 @@ export default function
     const toastId = toast.loading("กำลังลบข้อมูลการเข้าพบ...")
     try {
       const res = await axiosInstance.delete('/visits')
-      toast.success(res.data.message || "ลบข้อมูลการเข้าพบเรียบร้อยแล้ว")
+      toast.success(res.data.message || "ลบข้อมูลทั้งหมดเรียบร้อยแล้ว")
+      router.refresh()
+      if (onRefresh) onRefresh()
     } catch (error) {
       handleApiError(error)
     } finally {
@@ -192,6 +198,8 @@ export default function
     try {
       await axiosInstance.delete(`/visits/${id}`)
       toast.success("ลบข้อมูลสำเร็จ")
+      if (onDelete) onDelete(id)
+      router.refresh()
     } catch (error) {
       handleApiError(error)
     } finally {
@@ -256,6 +264,7 @@ export default function
       toast.dismiss(toastId)
       if (res.data.success > 0) {
         toast.success(`นำเข้าข้อมูลสำเร็จ ${res.data.success} รายการ, ล้มเหลว ${res.data.failed} รายการ`)
+        router.refresh()
         if (onRefresh) onRefresh()
       } else {
         toast.error(`ไม่สามารถนำเข้าข้อมูลได้ ล้มเหลว ${res.data.failed} รายการ`)
@@ -270,29 +279,7 @@ export default function
   }
 
   const handleExport = () => {
-    const dataToExport = filteredVisits.map((v: any, index: number) => ({
-      "ลำดับ": index + 1,
-      "วันที่": v.date ? new Date(v.date).toLocaleDateString('th-TH') : "-",
-      "เซลล์": v.sales || "-",
-      "รหัสลูกค้า": v.store?.code || "-",      // matches import 'รหัสลูกค้า'
-      "ชื่อร้าน": v.store?.name || "-",         // matches import 'ชื่อร้าน'
-      "ประเภทลูกค้า": v.store?.customerType || "-",
-      "เจ้าของ": v.store?.owner || "-",
-      "เบอร์โทร": v.store?.phone || "-",
-      "ประเภทร้าน": v.store?.type || "-",        // matches import 'ประเภทร้าน'
-      "ที่อยู่": v.store?.address || "-",
-      "สินค้าที่ใช้": v.store?.productUsed || "-",   // matches import 'สินค้าที่ใช้'
-      "ปริมาณ": v.store?.quantity || "-",
-      "ระยะเวลาสั่ง": v.store?.orderPeriod || "-",
-      "รับของเดิมจาก": v.store?.supplier || "-",    // matches import 'รับของเดิมจาก'
-      "เงื่อนไขชำระ": v.store?.payment || "-",
-      "หัวข้อเข้าพบ": v.visitCat || "-",
-      "ประเภทเข้าพบ": v.visitType || "-",
-      "สถานะ": v.dealStatus || "-",
-      "เหตุผลปิดการขาย": v.closeReason || "-",
-      "บันทึกเข้าพบ": v.notes?.text || (typeof v.notes === 'object' ? Object.values(v.notes).join(' \n') : v.notes) || "-",
-    }));
-    exportToExcel(dataToExport, "VisitHistory");
+    exportVisitsToExcel(filteredVisits);
   }
 
   // 🔍 ใช้ shared useSearch hook — แทน filteredVisits inline

@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { axiosInstance } from "@/lib/axios"
 import { createPlan, updatePlan, deletePlan } from "@/lib/api/plans"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
 import { cn, formatThaiDate, confirmDelete, confirmClearAll } from "@/lib/utils"
-import { exportToExcel } from "@/lib/export"
-import { getExcelValue, parseExcelDate } from "@/lib/excel"
+import { exportPlansToExcel } from "@/lib/exportexcel/exportFormatters"
+import { getExcelValue, parseExcelDate } from "@/lib/exportexcel/excel"
 import * as XLSX from "xlsx"
 
 import { Card, CardContent } from "@/components/ui/card"
@@ -39,7 +40,9 @@ import { useStoreSearch } from "@/components/hooks/useStoreSearch"
 import { VisitTopics } from "@/lib/types/manu"
 
 
-export default function PlanForm({ plans, profiles, onRefresh, isAdmin, currentUserProfile }: any) {
+export default function PlanForm({ plans, stores, profiles, onRefresh, onCreate, onUpdate, onDelete, isAdmin, currentUserProfile }: any) {
+    const router = useRouter()
+    const [isCreateOpen, setIsCreateOpen] = useState(false)
     const [form, setForm] = useState<any>({
         sales: "",
         date: new Date().toLocaleDateString('en-CA'),
@@ -127,6 +130,18 @@ export default function PlanForm({ plans, profiles, onRefresh, isAdmin, currentU
 
     const [editingPlan, setEditingPlan] = useState<any>(null)
 
+    const resetForm = () => {
+        setForm({
+            sales: isAdmin && currentUserProfile ? currentUserProfile.name : "",
+            date: new Date().toLocaleDateString('en-CA'),
+            visitCat: "ตรวจเยี่ยมประจำเดือน",
+            notes: "",
+            order: "1"
+        });
+        clearStore();
+        setEditingPlan(null);
+    };
+
     /** เริ่มโหมดแก้ไข — เติมฟอร์มจากข้อมูลแผนที่เลือก */
     const startEdit = (plan: any) => {
         setEditingPlan(plan)
@@ -165,7 +180,7 @@ export default function PlanForm({ plans, profiles, onRefresh, isAdmin, currentU
                     date: new Date(form.date).toISOString(),
                 })
                 toast.success("แก้ไขแผนงานเรียบร้อยแล้ว")
-                setEditingPlan(null)
+                if (onUpdate) onUpdate(editingPlan.id, { ...form, masterId: selectedStore.id, date: new Date(form.date).toISOString() })
             } else {
                 // CREATE
                 await createPlan({
@@ -174,16 +189,13 @@ export default function PlanForm({ plans, profiles, onRefresh, isAdmin, currentU
                     date: new Date(form.date).toISOString(),
                 })
                 toast.success("บันทึกแผนเรียบร้อยแล้ว")
+                if (onCreate) onCreate({ ...form, masterId: selectedStore.id, date: new Date(form.date).toISOString() })
             }
 
             // ล้างฟอร์ม
-            setForm({
-                ...form,
-                date: new Date().toLocaleDateString('en-CA'),
-                visitCat: "ตรวจเยี่ยมประจำเดือน",
-                notes: "",
-                order: "1"
-            })
+            resetForm()
+            setIsCreateOpen(false)
+            router.refresh()
         } catch (error) {
             handleApiError(error)
         } finally {
@@ -196,7 +208,9 @@ export default function PlanForm({ plans, profiles, onRefresh, isAdmin, currentU
         const toastId = toast.loading("กำลังลบแผนงาน...")
         try {
             await deletePlan(id)
-            toast.success("ลบแผนงานเรียบร้อยแล้ว")
+            if (onDelete) await onDelete(id)
+            router.refresh()
+            toast.success("ลบแผนงานเรียบร้อยแล้ว!")
         } catch (error) {
             handleApiError(error)
         } finally {
@@ -214,16 +228,7 @@ export default function PlanForm({ plans, profiles, onRefresh, isAdmin, currentU
     }
 
     const handleExport = () => {
-        const dataToExport = (plans || []).map((p: any, index: number) => ({
-            "ลำดับ": index + 1,
-            "วันที่": new Date(p.date).toLocaleDateString('th-TH'),
-            "รหัส": p.store?.code || "-",                  // matches API 'รหัส'
-            "ชื่อร้าน": p.store?.name || p.storeName || "-",  // matches API 'ชื่อร้าน'
-            "เซลล์": p.sales || "-",                         // matches API 'เซลล์'
-            "หัวข้อเข้าพบ": p.visitCat || "-",               // matches API 'หัวข้อเข้าพบ'
-            "บันทึก": p.notes || "-"                          // matches API 'บันทึก'
-        }));
-        exportToExcel(dataToExport, "WeeklyPlans");
+        exportPlansToExcel(plans || []);
     }
 
     const handleClear = async () => {
@@ -232,7 +237,9 @@ export default function PlanForm({ plans, profiles, onRefresh, isAdmin, currentU
         const toastId = toast.loading("กำลังลบแผนงาน...")
         try {
             const res = await axiosInstance.delete('/plans')
-            toast.success(res.data.message || "ลบแผนงานเรียบร้อยแล้ว")
+            toast.success(res.data.message || "ลบข้อมูลทั้งหมดเรียบร้อยแล้ว")
+            router.refresh()
+            if (onRefresh) onRefresh()
         } catch (error) {
             handleApiError(error)
         } finally {
@@ -283,8 +290,9 @@ export default function PlanForm({ plans, profiles, onRefresh, isAdmin, currentU
                     });
                     const info = await res.json();
                     if (res.ok) {
-                        toast.success(info.message || "นำเข้าข้อมูลสำเร็จ", { id: 'import-plan' });
-                        if (onRefresh) onRefresh();
+                        toast.success(info.message || "นำเข้าข้อมูลสำเร็จ", { id: 'import-plan' })
+                        router.refresh()
+                        if (onRefresh) onRefresh()
                     } else {
                         toast.error(info.error || "เกิดข้อผิดพลาดในการนำเข้า", { id: 'import-plan' });
                     }

@@ -9,7 +9,7 @@ import axios from "axios"
 import { handleApiError } from "@/lib/handleError"
 import PurchaseDialog from "@/components/purchase/PurchaseDialog"
 import { Button } from "@/components/ui/button"
-import { exportToExcel } from "@/lib/export"
+import { exportToExcel } from "@/lib/exportexcel/export"
 import { Upload } from "lucide-react"
 import { toast } from "sonner"
 import * as React from "react"
@@ -45,7 +45,7 @@ export default function OrderTracking({ stores, visits }: any) {
             "สถานะ": post.status === "paid" ? "ซื้อแล้ว" : "ยังไม่ซื้อ",
             "ยอดซื้อ": post.amount || 0
         }));
-        exportToExcel(dataToExport, "OrderTracking");
+        exportToExcel(dataToExport, "OrderTracking", "ติดตามสินค้า");
     }
 
     const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {

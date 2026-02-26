@@ -47,8 +47,15 @@ import {
   CheckCircle2
 } from "lucide-react"
 import * as XLSX from 'xlsx'
-import { exportToExcel } from "@/lib/export"
-import { getExcelValue, parseExcelDate } from "@/lib/excel"
+import { exportToExcel } from "@/lib/exportexcel/export"
+import {
+  exportVisitsToExcel,
+  exportPlansToExcel,
+  getVisitsExportData,
+  getPlansExportData,
+  getStoresExportData
+} from "@/lib/exportexcel/exportFormatters"
+import { getExcelValue, parseExcelDate } from "@/lib/exportexcel/excel"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -422,26 +429,20 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
 
   // --- EXPORT TO EXCEL ---IMPORT HANDLERS ---
   const handleExportVisits = () => {
-    const ws = XLSX.utils.json_to_sheet(displayVisits)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, "Visits")
-    XLSX.writeFile(wb, `visits_export_${formatThaiDate(new Date(), 'dd-MM-yyyy')}.xlsx`)
+    exportVisitsToExcel(displayVisits);
     toast.success("Export เข้าพบเรียบร้อย")
   }
 
   const handleExportPlans = () => {
-    const ws = XLSX.utils.json_to_sheet(plans || [])
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, "Plans")
-    XLSX.writeFile(wb, `plans_export_${formatThaiDate(new Date(), 'dd-MM-yyyy')}.xlsx`)
+    exportPlansToExcel(plans || []);
     toast.success("Export แผนเรียบร้อย")
   }
 
   const handleExportAll = () => {
     const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(displayVisits), "Visits")
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(plans || []), "Plans")
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(displayStores), "Stores")
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(getVisitsExportData(displayVisits)), "บันทึกเข้าพบ")
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(getPlansExportData(plans || [])), "แผนงานสัปดาห์")
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(getStoresExportData(displayStores)), "ฐานข้อมูลลูกค้า")
     XLSX.writeFile(wb, `backup_full_${formatThaiDate(new Date(), 'dd-MM-yyyy')}.xlsx`)
     toast.success("Export ข้อมูลทั้งหมดเรียบร้อย")
   }
@@ -987,7 +988,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
       "% สำเร็จ": `${totalPercent}%`
     });
 
-    exportToExcel(dataToExport, "SalesPerformance");
+    exportToExcel(dataToExport, "SalesPerformance", "สรุปผลงานเซลล์");
   }
 
   // Calculate Percentages for Table

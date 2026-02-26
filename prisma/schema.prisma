@@ -82,6 +82,7 @@ model Forecast {
   id          String   @id @default(uuid())
   masterId    String
   product     String
+  productType String? // สด, เก่าสด, ขึ้นรูป, สไลด์, แพ็ค, เสต็ก
   targetWeek  Float
   targetMonth Float
   forecast    Float?

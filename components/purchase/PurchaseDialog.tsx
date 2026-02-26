@@ -11,6 +11,8 @@ import axios from "axios"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { useStoreSearch } from "@/components/hooks/useStoreSearch"
+import { StoreSearchBox } from "@/components/crmhelper/StoreSearchBox"
 
 export default function PurchaseDialog({ stores, onSuccess }: any) {
     const [open, setOpen] = useState(false)
@@ -21,9 +23,24 @@ export default function PurchaseDialog({ stores, onSuccess }: any) {
     const [isPaid, setIsPaid] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
+    // 🔍 ใช้ Hook จัดการค้นหาร้านค้า
+    const {
+        storeSearch,
+        setStoreSearch,
+        isSearching,
+        suggestions,
+        showSuggestions,
+        selectedStore,
+        setSelectedStore,
+        selectStore,
+        clearStore,
+        handleManualSearch
+    } = useStoreSearch()
+
+    // 🚀 จัดการการบันทึก (Standard Clean Pattern)
     // 🚀 จัดการการบันทึก (Standard Clean Pattern)
     const handleSave = async () => {
-        if (!round || !date || !storeId) {
+        if (!round || !date || !selectedStore) {
             toast.error("กรุณากรอกข้อมูลให้ครบถ้วน")
             return
         }
@@ -33,7 +50,7 @@ export default function PurchaseDialog({ stores, onSuccess }: any) {
             await axios.post("/api/OrderTracking", {
                 round,
                 date,
-                storeId,
+                storeId: selectedStore.id,
                 amount: parseFloat(amount),
                 status: isPaid ? "paid" : "pending"
             })
@@ -44,7 +61,7 @@ export default function PurchaseDialog({ stores, onSuccess }: any) {
             // ล้างฟอร์ม
             setRound("")
             setDate("")
-            setStoreId("")
+            clearStore()
             setAmount("0")
             setIsPaid(false)
         } catch (error) {
@@ -91,20 +108,21 @@ export default function PurchaseDialog({ stores, onSuccess }: any) {
                         </div>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2 relative">
                         <Label className="text-xs font-black text-slate-400 uppercase">เลือกร้านค้า *</Label>
-                        <Select onValueChange={setStoreId} value={storeId}>
-                            <SelectTrigger className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800 h-11 rounded-xl font-bold">
-                                <SelectValue placeholder="เลือกรายการร้านค้า" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {stores?.map((s: any) => (
-                                    <SelectItem key={s.id} value={s.id} className="font-bold">
-                                        {s.name} <span className="text-[10px] text-slate-400 opacity-60 ml-2 font-mono">{s.code}</span>
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <StoreSearchBox
+                            storeSearch={storeSearch}
+                            setStoreSearch={setStoreSearch}
+                            suggestions={suggestions}
+                            showSuggestions={showSuggestions}
+                            selectedStore={selectedStore}
+                            selectStore={selectStore}
+                            clearStore={clearStore}
+                            handleManualSearch={handleManualSearch}
+                            isSearching={isSearching}
+                            placeholder="ค้นหารหัส หรือ ชื่อร้าน..."
+                            variant="dark"
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 items-end">

@@ -1,7 +1,10 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
+import { useStoreSearch } from "@/components/hooks/useStoreSearch"
 import { useMeatPartSearch } from "@/components/hooks/useMeatPartSearch"
+import { StoreSearchBox } from "@/components/crmhelper/StoreSearchBox"
 import { toast } from "sonner"
 import { addWeeks, subWeeks, startOfWeek, endOfWeek } from "date-fns"
 import { th } from "date-fns/locale"
@@ -126,6 +129,15 @@ const DEFAULT_MEAT_PARTS: MeatPartItem[] = [
     { id: 'd-405', name: 'หนัง', category: 'อะไหล่', sortOrder: 5 },
 ]
 
+const PRODUCT_TYPES = [
+    { id: 'สด', label: 'สด' },
+    { id: 'เก่าสด', label: 'เก่าสด' },
+    { id: 'ขึ้นรูป', label: 'ขึ้นรูป' },
+    { id: 'สไลด์', label: 'สไลด์' },
+    { id: 'แพ็ค', label: 'แพ็ค' },
+    { id: 'เสต็ก', label: 'เสต็ก' },
+]
+
 // Type checking helper
 const safeFloat = (val: any) => {
     const parsed = parseFloat(val)
@@ -133,15 +145,28 @@ const safeFloat = (val: any) => {
 }
 
 export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, onDelete, isAdmin }: any) {
+    const router = useRouter()
     const [date, setDate] = useState<Date>(new Date())
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [showDialog, setShowDialog] = useState(false)
     const [editingItem, setEditingItem] = useState<any>(null)
 
-    // savedMeatParts holds the local list (starts with default, can be extended by admins)
-    const [savedMeatParts, setSavedMeatParts] = useState<MeatPartItem[]>(DEFAULT_MEAT_PARTS)
+    // Store Search Hook
+    const {
+        storeSearch,
+        setStoreSearch,
+        isSearching,
+        suggestions,
+        showSuggestions,
+        selectedStore,
+        setSelectedStore,
+        selectStore,
+        clearStore,
+        handleManualSearch
+    } = useStoreSearch()
 
-    // Meat Part Search Hook (mirrors useStoreSearch)
+    // Meat Part Search
+    const [savedMeatParts, setSavedMeatParts] = useState<MeatPartItem[]>(DEFAULT_MEAT_PARTS)
     const {
         search: partSearch,
         setSearch: setPartSearch,
@@ -177,7 +202,8 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
 
     // Form State
     const [formData, setFormData] = useState({
-        product: "", // This is now 'ประเภทเนื้อ'
+        product: "",
+        productType: "",
         targetWeek: "",
         targetMonth: "",
         forecast: "",
@@ -201,21 +227,24 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
     const resetForm = () => {
         setFormData({
             product: "",
+            productType: "",
             targetWeek: "",
             targetMonth: "",
             forecast: "",
             actual: "",
             notes: ""
         })
+        clearStore()
         clearMeatPart()
         setEditingItem(null)
         setShowDialog(false)
     }
 
-    // Add Product to existing meat part (group)
-    const handleAddProduct = (part: any) => {
+    // Add Product to existing meat part (group) / store
+    const handleAddProduct = (store: any) => {
         setFormData({
             product: "",
+            productType: "",
             targetWeek: "",
             targetMonth: "",
             forecast: "",
@@ -223,8 +252,8 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
             notes: ""
         })
         setEditingItem(null)
-        if (part) {
-            selectMeatPart(part)
+        if (store) {
+            selectStore(store)
         }
         setShowDialog(true)
     }
@@ -234,6 +263,7 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
         setEditingItem(item)
         setFormData({
             product: item.product || "",
+            productType: item.productType || "",
             targetWeek: item.targetWeek?.toString() || "",
             targetMonth: item.targetMonth?.toString() || "",
             forecast: item.forecast?.toString() || "",
@@ -241,32 +271,32 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
             notes: item.notes || ""
         })
 
-        let foundPart = savedMeatParts.find(p => p.id === item.masterId)
-        if (!foundPart && item.store) {
-            foundPart = { id: item.store.id, name: item.store.name, category: "ไม่ระบุ" }
-        }
-        if (foundPart) {
-            selectMeatPart(foundPart)
-        }
+        if (item.store) selectStore(item.store)
+
+        // Restore meat part selection if available
+        const foundPart = savedMeatParts.find(p => p.id === item.masterId)
+        if (foundPart) selectMeatPart(foundPart)
+
         setShowDialog(true)
     }
 
     // Handle Submit
     const handleSubmit = async () => {
-        if (!selectedMeatPart) {
-            toast.error("กรุณาเลือกชิ้นส่วนเนื้อ")
+        if (!selectedStore) {
+            toast.error("กรุณาเลือกร้านค้า")
             return
         }
         if (!formData.product) {
-            toast.error("กรุณาระบุประเภทเนื้อ")
+            toast.error("กรุณาระบุชื่อสินค้า")
             return
         }
 
         setIsSubmitting(true)
         try {
             const payload = {
-                masterId: selectedMeatPart.id,
+                masterId: selectedStore.id,
                 product: formData.product,
+                productType: formData.productType,
                 targetWeek: safeFloat(formData.targetWeek),
                 targetMonth: safeFloat(formData.targetMonth),
                 forecast: safeFloat(formData.forecast),
@@ -284,6 +314,7 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
             }
 
             resetForm()
+            router.refresh()
         } catch (error) {
             console.error(error)
             toast.error("เกิดข้อผิดพลาด, กรุณาลองใหม่")
@@ -297,6 +328,7 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
         if (!confirm("ยืนยันการลบรายการนี้?")) return
         try {
             if (onDelete) await onDelete(id)
+            router.refresh()
             toast.success("ลบรายการเรียบร้อย")
         } catch (error) {
             console.error(error)
@@ -361,25 +393,25 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
     // --- Grouping by Meat Part ---
     const groupedForecasts = useMemo(() => {
         if (!forecasts) return []
-        const groups: Record<string, { part: any, items: any[] }> = {}
+        const groups: Record<string, { store: any, items: any[] }> = {}
 
         forecasts.forEach((f: any) => {
             const sid = f.masterId || f.store?.id || 'unknown'
             if (!groups[sid]) {
-                const foundPart = savedMeatParts.find(p => p.id === sid) || f.store || { id: sid, name: "ไม่ระบุชิ้นส่วน", category: "ไม่ระบุ" }
+                const foundStore = f.store || { id: sid, name: "ไม่ระบุร้านค้า", code: "N/A" }
                 groups[sid] = {
-                    part: foundPart,
+                    store: foundStore,
                     items: []
                 }
             }
             groups[sid].items.push(f)
         })
 
-        // Sort by part name
+        // Sort by store name
         return Object.values(groups).sort((a: any, b: any) =>
-            (a.part?.name || "").localeCompare(b.part?.name || "")
+            (a.store?.name || "").localeCompare(b.store?.name || "")
         )
-    }, [forecasts, savedMeatParts])
+    }, [forecasts])
 
 
     return (
@@ -545,23 +577,23 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
                                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 px-2">
                                     <div className="flex items-center gap-4">
                                         <div className="h-12 w-12 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-lg shadow-indigo-500/20">
-                                            {group.part?.name?.charAt(0) || "?"}
+                                            {group.store?.name?.charAt(0) || "?"}
                                         </div>
                                         <div>
-                                            <h4 className="text-2xl font-black text-slate-900 dark:text-white leading-none mb-1.5">{group.part?.name}</h4>
+                                            <h4 className="text-2xl font-black text-slate-900 dark:text-white leading-none mb-1.5">{group.store?.name}</h4>
                                             <div className="flex gap-2 text-xs font-mono text-slate-500 items-center">
-                                                <span className="bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-md text-slate-700 dark:text-slate-300 font-bold">{group.part?.category}</span>
+                                                <span className="bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-md text-slate-700 dark:text-slate-300 font-bold">{group.store?.code}</span>
                                                 <span className="opacity-50">({group.items.length} รายการ)</span>
                                             </div>
                                         </div>
                                     </div>
                                     {isAdmin && (
                                         <Button
-                                            onClick={() => handleAddProduct(group.part)}
+                                            onClick={() => handleAddProduct(group.store)}
                                             size="sm"
                                             className="bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white font-bold rounded-full px-5 shadow-sm hover:shadow-md transition-all border border-indigo-100 dark:border-indigo-500"
                                         >
-                                            <Plus size={16} className="mr-1" /> เพิ่มข้อมูลประเภทเนื้อ
+                                            <Plus size={16} className="mr-1" /> เพิ่มข้อมูลคาดการณ์
                                         </Button>
                                     )}
                                 </div>
@@ -581,6 +613,11 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
                                                         <div>
                                                             <h4 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
                                                                 {f.product}
+                                                                {f.productType && (
+                                                                    <Badge variant="secondary" className="text-[10px] ml-2">
+                                                                        {f.productType}
+                                                                    </Badge>
+                                                                )}
                                                             </h4>
                                                         </div>
                                                         {isAdmin ? (
@@ -677,8 +714,8 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
                     </DialogHeader>
 
                     <div className="p-6 space-y-5">
-                        <div className="grid grid-cols-2 gap-4">
-                            {/* ชิ้นส่วนเนื้อ — same pattern as ForecastForm's store search */}
+                        {/* Row 1: ชิ้นส่วนเนื้อ */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="col-span-1 space-y-1.5">
                                 <Label className="text-xs text-slate-400">ชิ้นส่วนเนื้อ *</Label>
                                 <div className="flex gap-2">
@@ -696,7 +733,7 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
                                                 {filteredParts.map(p => (
                                                     <div key={p.id} className="flex items-center group/item hover:bg-slate-700">
                                                         <button
-                                                            onClick={() => { selectMeatPart(p); setFormData(prev => ({ ...prev, product: p.category })); setShowPartSuggestions(false) }}
+                                                            onClick={() => { selectMeatPart(p); setShowPartSuggestions(false) }}
                                                             className="flex-1 flex items-center gap-2 p-3 text-sm text-left text-white"
                                                         >
                                                             <span className="flex-1">{p.name}</span>
@@ -722,23 +759,66 @@ export default function FontionTwo({ forecasts, onRefresh, onCreate, onUpdate, o
                                         </Button>
                                     )}
                                 </div>
-                                {selectedMeatPart && <div className="text-xs text-blue-400 font-bold mt-1">✓ {selectedMeatPart.name}</div>}
+                                {selectedMeatPart && <div className="text-xs text-blue-400 font-bold mt-1">✓ {selectedMeatPart.name} <button onClick={() => clearMeatPart()} className="ml-2 text-slate-500 hover:text-rose-400">✕</button></div>}
                             </div>
                             <div className="col-span-1 space-y-1.5">
-                                <Label className="text-xs text-slate-400">ประเภทเนื้อ *</Label>
+                                <Label className="text-xs text-slate-400">หมวดหมู่เนื้อ</Label>
                                 <Select
-                                    value={formData.product}
-                                    onValueChange={(val) => {
-                                        setFormData(prev => ({ ...prev, product: val }))
-                                        setPartCatFilter(val)       // filter meat part search to this category
-                                        clearMeatPart()             // clear current selection when category changes
-                                    }}
+                                    value={partCatFilter}
+                                    onValueChange={(val) => { setPartCatFilter(val); clearMeatPart() }}
                                 >
                                     <SelectTrigger className="bg-slate-800 border-slate-700 text-white rounded-xl h-11">
-                                        <SelectValue placeholder="เลือกประเภทเนื้อ..." />
+                                        <SelectValue placeholder="กรองหมวดหมู่..." />
                                     </SelectTrigger>
                                     <SelectContent className="bg-slate-800 border-slate-700 text-white">
                                         {MEAT_CATEGORIES.map(c => (
+                                            <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        {/* Row 2: ร้านค้า + สินค้า + ชนิด */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="space-y-1.5 relative">
+                                <Label className="text-xs text-slate-400">เลือกร้านค้า *</Label>
+                                <StoreSearchBox
+                                    storeSearch={storeSearch}
+                                    setStoreSearch={setStoreSearch}
+                                    suggestions={suggestions}
+                                    showSuggestions={showSuggestions}
+                                    selectedStore={selectedStore}
+                                    selectStore={selectStore}
+                                    clearStore={clearStore}
+                                    handleManualSearch={handleManualSearch}
+                                    isSearching={isSearching}
+                                    placeholder="ค้นหารหัส หรือ ชื่อร้าน..."
+                                    variant="dark"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs text-slate-400">ชื่อสินค้า *</Label>
+                                <Input
+                                    placeholder="เช่น สะโพก, น่อง"
+                                    value={formData.product}
+                                    onChange={(e) => setFormData({ ...formData, product: e.target.value })}
+                                    className="bg-slate-800 border-slate-700 rounded-xl"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs text-slate-400">ชนิดสินค้า</Label>
+                                <Select
+                                    value={formData.productType}
+                                    onValueChange={(val) => {
+                                        setFormData(prev => ({ ...prev, productType: val }))
+                                    }}
+                                >
+                                    <SelectTrigger className="bg-slate-800 border-slate-700 text-white rounded-xl h-11">
+                                        <SelectValue placeholder="เลือกชนิดสินค้า..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                                        {PRODUCT_TYPES.map(c => (
                                             <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
                                         ))}
                                     </SelectContent>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { axiosInstance } from "@/lib/axios"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
@@ -61,7 +62,17 @@ const safeFloat = (val: any) => {
     return isNaN(parsed) ? 0 : parsed
 }
 
+const PRODUCT_TYPES = [
+    { id: 'สด', label: 'สด' },
+    { id: 'เก่าสด', label: 'เก่าสด' },
+    { id: 'ขึ้นรูป', label: 'ขึ้นรูป' },
+    { id: 'สไลด์', label: 'สไลด์' },
+    { id: 'แพ็ค', label: 'แพ็ค' },
+    { id: 'เสต็ก', label: 'เสต็ก' },
+]
+
 export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate, onDelete, isAdmin }: any) {
+    const router = useRouter()
     const [date, setDate] = useState<Date>(new Date())
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [showDialog, setShowDialog] = useState(false)
@@ -82,6 +93,7 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
     // Form State
     const [formData, setFormData] = useState({
         product: "",
+        productType: "",
         targetWeek: "",
         targetMonth: "",
         forecast: "",
@@ -105,6 +117,7 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
     const resetForm = () => {
         setFormData({
             product: "",
+            productType: "",
             targetWeek: "",
             targetMonth: "",
             forecast: "",
@@ -121,6 +134,7 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
         // Clear form data but keep store
         setFormData({
             product: "",
+            productType: "",
             targetWeek: "",
             targetMonth: "",
             forecast: "",
@@ -141,6 +155,7 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
         setEditingItem(item)
         setFormData({
             product: item.product || "",
+            productType: item.productType || "",
             targetWeek: item.targetWeek?.toString() || "",
             targetMonth: item.targetMonth?.toString() || "",
             forecast: item.forecast?.toString() || "",
@@ -170,6 +185,7 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
             const payload = {
                 masterId: selectedStore.id,
                 product: formData.product,
+                productType: formData.productType,
                 targetWeek: safeFloat(formData.targetWeek),
                 targetMonth: safeFloat(formData.targetMonth),
                 forecast: safeFloat(formData.forecast),
@@ -187,6 +203,7 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
             }
 
             resetForm()
+            router.refresh()
         } catch (error) {
             handleApiError(error)
         } finally {
@@ -199,6 +216,7 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
         if (!confirm("ยืนยันการลบรายการนี้?")) return
         try {
             if (onDelete) await onDelete(id)
+            router.refresh()
             toast.success("ลบรายการรเรียบร้อย")
         } catch (error) {
             handleApiError(error)
@@ -581,8 +599,8 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
                     </DialogHeader>
 
                     <div className="p-6 space-y-5">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="col-span-1 space-y-1.5">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-1.5">
                                 <Label className="text-xs text-slate-400">เลือกร้าน *</Label>
                                 <div className="relative">
                                     <Input
@@ -590,7 +608,7 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
                                         value={storeSearch}
                                         onChange={(e) => setStoreSearch(e.target.value)}
                                         className="bg-slate-800 border-slate-700 rounded-xl"
-                                        disabled={!!editingItem || !!selectedStore} // Disable if editing OR if store explicitly selected via Add Product
+                                        disabled={!!editingItem || !!selectedStore}
                                     />
                                     {showSuggestions && (
                                         <div className="absolute top-full left-0 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto">
@@ -604,7 +622,7 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
                                 </div>
                                 {selectedStore && <div className="text-xs text-blue-400 font-bold mt-1">✓ {selectedStore.name}</div>}
                             </div>
-                            <div className="col-span-1 space-y-1.5">
+                            <div className="space-y-1.5">
                                 <Label className="text-xs text-slate-400">สินค้า *</Label>
                                 <Input
                                     placeholder="เช่น สะโพก, น่อง"
@@ -612,6 +630,22 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
                                     onChange={(e) => setFormData({ ...formData, product: e.target.value })}
                                     className="bg-slate-800 border-slate-700 rounded-xl"
                                 />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs text-slate-400">ชนิดสินค้า</Label>
+                                <Select
+                                    value={formData.productType}
+                                    onValueChange={(val) => setFormData(prev => ({ ...prev, productType: val }))}
+                                >
+                                    <SelectTrigger className="bg-slate-800 border-slate-700 text-white rounded-xl h-[42px]">
+                                        <SelectValue placeholder="เลือกชนิดสินค้า..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                                        {PRODUCT_TYPES.map(c => (
+                                            <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
 

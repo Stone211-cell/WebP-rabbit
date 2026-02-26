@@ -1,13 +1,14 @@
 import * as XLSX from 'xlsx';
-import { formatThaiDate } from './utils';
+import { formatThaiDate } from '../utils';
 
-export const exportToExcel = (data: any[], filename: string) => {
+export const exportToExcel = (data: any[], filename: string, sheetName?: string) => {
     // Create a new workbook and worksheet
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
 
-    // Append worksheet to workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+    // Append worksheet to workbook, using the sheetName or filename (max 31 chars) as the sheet name
+    const finalSheetName = (sheetName || filename).substring(0, 31);
+    XLSX.utils.book_append_sheet(workbook, worksheet, finalSheetName);
 
     // Generate buffer
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
