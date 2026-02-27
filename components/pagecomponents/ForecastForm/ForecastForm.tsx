@@ -3,13 +3,14 @@
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import axios from "axios"
 import { addWeeks, subWeeks, startOfWeek, endOfWeek } from "date-fns"
-import { th } from "date-fns/locale"
 import { cn, formatThaiDate } from "@/lib/utils"
-import { validateFields } from "@/lib/toast/validate"
-import { useStoreSearch } from "@/components/hooks/useStoreSearch"
+import { useMeatPartSearch } from "@/components/hooks/useMeatPartSearch"
 import { StoreSearchBox } from "@/components/crmhelper/StoreSearchBox"
-import FontionTwo from "./fontiontwo"
+import { useStoreSearch } from "@/components/hooks/useStoreSearch"
+import { SaveButton, CancelButton } from "@/components/crmhelper/ActionButtons"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -17,14 +18,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
+// import { Badge } from "@/components/ui/badge"
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
     DialogFooter,
-    DialogTrigger,
 } from "@/components/ui/dialog"
 import {
     Popover,
@@ -38,9 +38,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-// ... (imports) ...
+
 import {
-    CalendarIcon,
     Trash2,
     Plus,
     ChevronLeft,
@@ -48,34 +47,30 @@ import {
     TrendingUp,
     Target,
     ShoppingBag,
-    Edit2,
     CheckCircle2,
-    AlertCircle
+    //    AlertCircle
 } from "lucide-react"
 
-// Type checking helper
 const safeFloat = (val: any) => {
     const parsed = parseFloat(val)
-    return !isNaN(parsed) ? parsed : 0
+    return isNaN(parsed) ? 0 : parsed
 }
 
-const PRODUCT_TYPES = [
-    { id: 'สด', label: 'สด' },
-    { id: 'เก่าสด', label: 'เก่าสด' },
-    { id: 'ขึ้นรูป', label: 'ขึ้นรูป' },
-    { id: 'สไลด์', label: 'สไลด์' },
-    { id: 'แพ็ค', label: 'แพ็ค' },
-    { id: 'เสต็ก', label: 'เสต็ก' },
+const DEFAULT_MEAT_PARTS = [
+    { id: 'd-101', name: 'สันนอก', category: 'เนื้อแดง', sortOrder: 1 },
+    { id: 'd-107', name: 'สะโพก', category: 'เนื้อแดง', sortOrder: 7 },
+    { id: 'd-104', name: 'สันใน', category: 'เนื้อแดง', sortOrder: 4 },
+    { id: 'd-114', name: 'น่องลาย', category: 'เนื้อแดง', sortOrder: 14 },
 ]
 
-export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate, onDelete, isAdmin }: any) {
-    const router = useRouter()
-    const [date, setDate] = useState<Date>(new Date())
-    const [isSubmitting, setIsSubmitting] = useState(false)
-    const [showDialog, setShowDialog] = useState(false)
-    const [editingItem, setEditingItem] = useState<any>(null)
+interface SelectedTargetStore {
+    store: any;
+    target: string;
+    existingId?: string;
+    actual?: number;
+}
 
-    // Store Search Hook
+function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onRemove }: any) {
     const {
         storeSearch,
         setStoreSearch,
@@ -86,24 +81,127 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
         selectStore,
         clearStore,
         handleManualSearch,
-    } = useStoreSearch()
+    } = useStoreSearch(storeItem.store?.code || '')
 
-    // Form State
-    const [formData, setFormData] = useState({
-        product: "",
-        productType: "",
-        targetWeek: "",
-        targetMonth: "",
-        forecast: "",
-        actual: "",
-        notes: ""
-    })
+    useEffect(() => {
+        if (selectedStore && selectedStore.id !== storeItem.store?.id) {
+            onChangeStore(index, selectedStore)
+        }
+    }, [selectedStore, index, onChangeStore, storeItem.store?.id])
+
+    useEffect(() => {
+        if (storeItem.store && !selectedStore) {
+            selectStore(storeItem.store)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    return (
+        <div className="flex items-center gap-2 relative">
+            <div className="flex-1">
+                <StoreSearchBox
+                    storeSearch={storeSearch}
+                    setStoreSearch={setStoreSearch}
+                    suggestions={suggestions}
+                    showSuggestions={showSuggestions}
+                    selectedStore={selectedStore}
+                    selectStore={selectStore}
+                    clearStore={() => { clearStore(); onChangeStore(index, null); }}
+                    handleManualSearch={handleManualSearch}
+                    isSearching={isSearching}
+                    placeholder="พิมพ์ชื่อหรือรหัสร้าน..."
+                    variant="dark"
+                />
+            </div>
+            <Input
+                type="number"
+                placeholder="เป้า (กก.)"
+                className="h-12 w-24 border-slate-200 dark:border-slate-700 text-sm font-bold bg-white dark:bg-slate-900/50 rounded-2xl"
+                value={storeItem.target}
+                onChange={(e) => onChangeTarget(index, e.target.value)}
+            />
+            <Button
+                variant="ghost"
+                size="icon"
+                className="h-12 w-12 text-rose-500 bg-rose-50 hover:bg-rose-100 hover:text-rose-600 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 rounded-2xl shrink-0"
+                onClick={() => onRemove(index)}
+            >
+                <Trash2 size={16} />
+            </Button>
+        </div>
+    )
+}
+
+export default function ForecastForm({ stores = [], forecasts, onRefresh, onCreate, onUpdate, onDelete, isAdmin }: any) {
+    const router = useRouter()
+    const [date, setDate] = useState<Date>(new Date())
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [showDialog, setShowDialog] = useState(false)
+
+    // Edit state
+    const [editingGroup, setEditingGroup] = useState<any>(null)
+
+    // Meat Part State (From fontiontwo hook)
+    const [savedMeatParts, setSavedMeatParts] = useState<{ id: string; name: string; category: string }[]>([])
+    const {
+        search: partSearch,
+        setSearch: setPartSearch,
+        selectedPart: selectedMeatPart,
+        selectPart: selectMeatPart,
+        clearPart: clearMeatPart,
+        showSuggestions: showPartSuggestions,
+        setShowSuggestions: setShowPartSuggestions,
+        filtered: filteredParts,
+        addPart: addMeatPart,
+        deletePart: deletePartItem,
+    } = useMeatPartSearch(savedMeatParts)
+
+    // Fetch meat parts on mount
+    useEffect(() => {
+        const fetchParts = async () => {
+            try {
+                const { data } = await axios.get('/api/meat-parts')
+                setSavedMeatParts(data && data.length > 0 ? data : DEFAULT_MEAT_PARTS)
+            } catch {
+                setSavedMeatParts(DEFAULT_MEAT_PARTS)
+            }
+        }
+        fetchParts()
+    }, [])
+
+    const handleAddPart = async () => {
+        if (!partSearch) return toast.error("กรุณาพิมพ์ชื่อชิ้นส่วนเนื้อ")
+        const newPart = await addMeatPart(partSearch, "เนื้อแดง")
+        if (newPart) {
+            setSavedMeatParts(prev => [newPart, ...prev.filter(p => p.id !== newPart.id)])
+            selectMeatPart(newPart)
+        }
+    }
+
+    const handleDeletePart = async (id: string) => {
+        if (!confirm("ยืนยันลบชิ้นส่วนนี้?")) return
+        const ok = await deletePartItem(id)
+        if (ok) {
+            setSavedMeatParts(prev => prev.filter(p => p.id !== id))
+            if (selectedMeatPart?.id === id) clearMeatPart()
+        }
+    }
+
+    // Dialog form states
+    const [selectedStores, setSelectedStores] = useState<SelectedTargetStore[]>([])
+    const [totalForecastInput, setTotalForecastInput] = useState<string>("")
+    const [notes, setNotes] = useState<string>("")
+
+    const autoTotalTarget = useMemo(() => {
+        let sum = 0;
+        selectedStores.forEach(s => sum += safeFloat(s.target));
+        return sum;
+    }, [selectedStores])
 
     const weekStart = startOfWeek(date, { weekStartsOn: 1 })
     const weekEnd = endOfWeek(date, { weekStartsOn: 1 })
     const weekStartStr = weekStart.toISOString()
 
-    // Load data on date change
     useEffect(() => {
         if (onRefresh) onRefresh(weekStartStr)
     }, [weekStartStr, onRefresh])
@@ -111,195 +209,198 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
     const goPrevWeek = () => setDate(subWeeks(date, 1))
     const goNextWeek = () => setDate(addWeeks(date, 1))
 
-    // Reset form
     const resetForm = () => {
-        setFormData({
-            product: "",
-            productType: "",
-            targetWeek: "",
-            targetMonth: "",
-            forecast: "",
-            actual: "",
-            notes: ""
-        })
-        clearStore()
-        setEditingItem(null)
+        setEditingGroup(null)
+        setTotalForecastInput("")
+        setSelectedStores([])
+        setNotes("")
+        clearMeatPart()
+        setPartSearch("")
         setShowDialog(false)
     }
 
-    // Add Product to existing store
-    const handleAddProduct = (store: any) => {
-        // Clear form data but keep store
-        setFormData({
-            product: "",
-            productType: "",
-            targetWeek: "",
-            targetMonth: "",
-            forecast: "",
-            actual: "",
-            notes: ""
-        })
-        setEditingItem(null)
-
-        // Select the store
-        if (store) {
-            selectStore(store)
-        }
+    const openAddDialog = () => {
+        resetForm()
         setShowDialog(true)
     }
 
-    // Open Edit Dialog
-    const handleEdit = (item: any) => {
-        setEditingItem(item)
-        setFormData({
-            product: item.product || "",
-            productType: item.productType || "",
-            targetWeek: item.targetWeek?.toString() || "",
-            targetMonth: item.targetMonth?.toString() || "",
-            forecast: item.forecast?.toString() || "",
-            actual: item.actual?.toString() || "",
-            notes: item.notes || ""
-        })
-        // Mock selecting the store
-        if (item.store) {
-            selectStore(item.store)
+    const handleEditGroup = (group: any) => {
+        resetForm()
+        setEditingGroup(group)
+
+        // Set meat part
+        const fp = savedMeatParts.find(p => p.name === group.product) || { id: 'temp', name: group.product, category: 'เนื้อแดง' }
+        selectMeatPart(fp)
+
+        // Auto calculate existing inputs
+        setTotalForecastInput(group.totalForecast.toString())
+
+        // Map existing stores
+        const mappedStores = group.items.map((item: any) => ({
+            store: item.store,
+            target: item.targetWeek.toString(),
+            existingId: item.id,
+            actual: item.actual
+        }))
+        setSelectedStores(mappedStores)
+
+        if (group.items.length > 0 && group.items[0].notes) {
+            setNotes(group.items[0].notes)
         }
+
         setShowDialog(true)
     }
 
-    // Handle Submit
+    const handleDeleteGroup = async (group: any) => {
+        if (!confirm(`ยืนยันลบคาดการณ์ทั้งหมดของชิ้นส่วน ${group.product}?`)) return
+        try {
+            for (const item of group.items) {
+                if (onDelete) await onDelete(item.id)
+            }
+            if (onRefresh) onRefresh(weekStartStr)
+            toast.success("ลบข้อมูลสำเร็จ")
+        } catch (e) {
+            toast.error("ลบข้อมูลไม่สำเร็จ")
+        }
+    }
+
     const handleSubmit = async () => {
-        const ok = validateFields([
-            { label: "ร้านค้า", value: selectedStore },
-            { label: "ชื่อสินค้า", value: formData.product },
-            { label: "เป้าหมายรายสัปดาห์", value: formData.targetWeek, invalid: formData.targetWeek === "" },
-            { label: "เป้าหมายรายเดือน", value: formData.targetMonth, invalid: formData.targetMonth === "" },
-        ], toast.error)
-        if (!ok) return
+        if (!selectedMeatPart && !partSearch) return toast.error("กรุณาเลือกชิ้นส่วน/สินค้า")
+        if (selectedStores.length === 0) return toast.error("กรุณาเพิ่มร้านเป้าหมายอย่างน้อย 1 ร้าน")
+
+        const productName = selectedMeatPart ? selectedMeatPart.name : partSearch
+
+        let valid = true
+        for (let i = 0; i < selectedStores.length; i++) {
+            if (!selectedStores[i].store?.id) {
+                toast.error(`กรุณาเลือกร้านค้าในรายการที่ ${i + 1}`)
+                valid = false; break;
+            }
+            if (!selectedStores[i].target || parseFloat(selectedStores[i].target) <= 0) {
+                toast.error(`กรุณาระบุเป้า(กก.)ให้ครบถ้วน`)
+                valid = false; break;
+            }
+        }
+        if (!valid) return
+
+        const tForecast = safeFloat(totalForecastInput)
+        const tTarget = autoTotalTarget
 
         setIsSubmitting(true)
-        try {
-            const payload = {
-                masterId: selectedStore.id,
-                product: formData.product,
-                productType: formData.productType,
-                targetWeek: safeFloat(formData.targetWeek),
-                targetMonth: safeFloat(formData.targetMonth),
-                forecast: safeFloat(formData.forecast),
-                actual: safeFloat(formData.actual),
-                notes: formData.notes,
-                weekStart: weekStart.toISOString()
-            }
 
-            if (editingItem) {
-                if (onUpdate) await onUpdate(editingItem.id, payload)
-                toast.success("อัปเดตข้อมูลเรียบร้อย")
+        try {
+            if (editingGroup) {
+                const existingItems = editingGroup.items;
+                const newIds: string[] = []
+
+                for (const row of selectedStores) {
+                    const targetVal = safeFloat(row.target)
+                    const forecastVal = tTarget > 0 ? (targetVal / tTarget) * tForecast : 0
+
+                    if (row.existingId) {
+                        newIds.push(row.existingId)
+                        const original = existingItems.find((x: any) => x.id === row.existingId)
+                        if (original) {
+                            if (onUpdate) await onUpdate(original.id, {
+                                ...original,
+                                masterId: row.store.id,
+                                targetWeek: targetVal,
+                                targetMonth: targetVal * 4,
+                                forecast: forecastVal,
+                                notes: notes
+                            })
+                        }
+                    } else {
+                        if (onCreate) await onCreate({
+                            masterId: row.store.id,
+                            product: productName,
+                            productType: "สด",
+                            targetWeek: targetVal,
+                            targetMonth: targetVal * 4,
+                            forecast: forecastVal,
+                            actual: 0,
+                            notes: notes,
+                            weekStart: weekStart.toISOString()
+                        })
+                    }
+                }
+
+                const toDelete = existingItems.filter((x: any) => !newIds.includes(x.id))
+                for (const item of toDelete) {
+                    if (onDelete) await onDelete(item.id)
+                }
+
+                toast.success("อัปเดตข้อมูลคาดการณ์สำเร็จ")
+
             } else {
-                if (onCreate) await onCreate(payload)
-                toast.success("เพิ่มข้อมูลเรียบร้อย")
+                for (const row of selectedStores) {
+                    const targetVal = safeFloat(row.target)
+                    const forecastVal = tTarget > 0 ? (targetVal / tTarget) * tForecast : 0
+
+                    if (onCreate) await onCreate({
+                        masterId: row.store.id,
+                        product: productName,
+                        productType: "สด",
+                        targetWeek: targetVal,
+                        targetMonth: targetVal * 4,
+                        forecast: forecastVal,
+                        actual: 0,
+                        notes: notes,
+                        weekStart: weekStart.toISOString()
+                    })
+                }
+                toast.success("เพิ่มข้อมูลคาดการณ์สำเร็จ")
             }
 
             resetForm()
-            router.refresh()
-        } catch (error: any) {
-            toast.error(error?.response?.data?.error || error?.message || "เกิดข้อผิดพลาด")
+            if (onRefresh) onRefresh(weekStartStr)
+        } catch (e: any) {
+            toast.error(e?.message || "เกิดข้อผิดพลาดในการบันทึก")
         } finally {
             setIsSubmitting(false)
         }
     }
 
-    // Handle Delete
-    const handleDelete = async (id: string) => {
-        if (!confirm("ยืนยันการลบรายการนี้?")) return
-        try {
-            if (onDelete) await onDelete(id)
-            router.refresh()
-            toast.success("ลบรายการเรียบร้อย")
-        } catch (error: any) {
-            toast.error(error?.response?.data?.error || "ลบไม่สำเร็จ")
+    const { summary, groupedForecasts } = useMemo(() => {
+        let sumWeekTarget = 0, sumWeekForecast = 0, sumWeekActual = 0, sumMonthTarget = 0
+        const groups: Record<string, { product: string, items: any[], totalTarget: number, totalForecast: number, totalActual: number }> = {}
+
+        if (forecasts) {
+            forecasts.forEach((f: any) => {
+                const wTarget = f.targetWeek || 0
+                const wForecast = f.forecast || 0
+                const wActual = f.actual || 0
+                const mTarget = f.targetMonth || 0
+
+                sumWeekTarget += wTarget
+                sumWeekForecast += wForecast
+                sumWeekActual += wActual
+                sumMonthTarget += mTarget
+
+                const pName = f.product || 'ไม่ระบุชิ้นส่วน'
+                if (!groups[pName]) groups[pName] = { product: pName, items: [], totalTarget: 0, totalForecast: 0, totalActual: 0 }
+
+                groups[pName].items.push(f)
+                groups[pName].totalTarget += wTarget
+                groups[pName].totalForecast += wForecast
+                groups[pName].totalActual += wActual
+            })
         }
-    }
 
-    // --- Calculations ---
-    const summary = useMemo(() => {
-        if (!forecasts) return {
-            week: { target: 0, forecast: 0, actual: 0, diff: 0 },
-            month: { target: 0, forecast: 0, actual: 0, diff: 0 },
-            products: []
-        }
-
-        let weekTarget = 0
-        let weekForecast = 0
-        let weekActual = 0
-        let monthTarget = 0
-
-        const productsMap = new Map<string, { name: string, target: number, actual: number, forecast: number }>()
-
-        forecasts.forEach((f: any) => {
-            const wTarget = f.targetWeek || 0
-            const wForecast = f.forecast || 0
-            const wActual = f.actual || 0
-            const mTarget = f.targetMonth || 0
-
-            weekTarget += wTarget
-            weekForecast += wForecast
-            weekActual += wActual
-            monthTarget += mTarget
-
-            // Product Grouping
-            const pName = f.product || "Other"
-            if (!productsMap.has(pName)) {
-                productsMap.set(pName, { name: pName, target: 0, actual: 0, forecast: 0 })
-            }
-            const p = productsMap.get(pName)!
-            p.target += wTarget
-            p.actual += wActual
-            p.forecast += wForecast
-        })
+        const sortedGroups = Object.values(groups).sort((a: any, b: any) => a.product.localeCompare(b.product))
 
         return {
-            week: {
-                target: weekTarget,
-                forecast: weekForecast,
-                actual: weekActual,
-                diff: weekActual - weekForecast
+            summary: {
+                week: { forecast: sumWeekForecast, actual: sumWeekActual, diff: sumWeekActual - sumWeekForecast, target: sumWeekTarget },
+                month: { forecast: sumWeekForecast * 4, actual: sumWeekActual * 4, diff: (sumWeekActual * 4) - sumMonthTarget, target: sumMonthTarget }
             },
-            month: {
-                target: monthTarget,
-                actual: weekActual * 4,
-                forecast: weekForecast * 4,
-                diff: (weekActual * 4) - monthTarget
-            },
-            products: Array.from(productsMap.values())
+            groupedForecasts: sortedGroups
         }
-    }, [forecasts])
-
-    // --- Grouping by Store ---
-    const groupedForecasts = useMemo(() => {
-        if (!forecasts) return []
-        const groups: Record<string, { store: any, items: any[] }> = {}
-
-        forecasts.forEach((f: any) => {
-            const sid = f.store?.id || 'unknown'
-            if (!groups[sid]) {
-                groups[sid] = {
-                    store: f.store,
-                    items: []
-                }
-            }
-            groups[sid].items.push(f)
-        })
-
-        // Sort by store code
-        return Object.values(groups).sort((a: any, b: any) =>
-            (a.store?.code || "").localeCompare(b.store?.code || "")
-        )
     }, [forecasts])
 
 
     return (
         <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-700 min-h-screen pb-20">
-
             {/* --- HEADER --- */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-6 rounded-[2rem] border border-white/20 dark:border-slate-800/50 shadow-xl">
                 <div>
@@ -307,12 +408,11 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
                         <span className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl shadow-lg shadow-blue-500/30">
                             <TrendingUp size={24} />
                         </span>
-                        คาดการณ์ <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">ลูกค้าสัปดาห์</span>
+                        คาดการณ์ <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">ชิ้นส่วนเนื้อรายสัปดาห์</span>
                     </h2>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                    {/* Week Navigation */}
                     <div className="flex items-center bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-full border border-slate-200 dark:border-slate-700">
                         <Button variant="ghost" size="icon" onClick={goPrevWeek} className="rounded-full h-8 w-8 hover:bg-white dark:hover:bg-slate-600">
                             <ChevronLeft size={16} />
@@ -332,251 +432,89 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
                         </Button>
                     </div>
 
-                    {/* Add Button */}
                     {isAdmin && (
                         <Button
-                            onClick={() => setShowDialog(true)}
-                            className="bg-white dark:bg-white text-slate-900 font-bold rounded-full dark:text-black  px-6 shadow-lg hover:shadow-xl hover:bg-slate-50 transition-all active:scale-95"
+                            onClick={openAddDialog}
+                            className="bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition-all active:scale-95 px-6 shadow-lg hover:shadow-xl"
                         >
-                            <Plus size={18} className="text-blue-500" />เพิ่มคาดการณ์
+                            <Plus size={18} className="mr-1" />เพิ่มคาดการณ์
                         </Button>
                     )}
                 </div>
             </div>
 
-            {/* --- MONTHLY SUMMARY (Purple) --- */}
-            <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-violet-600 to-purple-800 p-8 text-white shadow-2xl shadow-purple-900/40">
-                <div className="absolute top-0 right-0 p-32 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
-
-                <h3 className="flex items-center gap-2 font-bold opacity-90 mb-6">
-                    <CalendarIcon size={20} /> สรุปรายเดือน (ประมาณการ 4 สัปดาห์)
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-                    <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/10 text-center">
-                        <div className="text-sm opacity-70 mb-1">คาดการณ์รวม</div>
-                        <div className="text-4xl font-black tracking-tight">{summary.month.forecast.toLocaleString()}</div>
-                        <div className="text-xs opacity-50 mt-1">กิโลกรัม/เดือน</div>
-                    </div>
-                    <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/10 text-center">
-                        <div className="flex items-center justify-center gap-2 text-sm opacity-70 mb-1">
-                            <CheckCircle2 size={14} className="text-emerald-300" /> ซื้อรวมได้
-                        </div>
-                        <div className="text-4xl font-black tracking-tight">{summary.month.actual.toLocaleString()}</div>
-                        <div className="text-xs opacity-50 mt-1">กิโลกรัม/เดือน</div>
-                    </div>
-                    <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/10 text-center relative overflow-hidden">
-                        <div className={cn("absolute inset-0 opacity-20", summary.month.diff >= 0 ? "bg-emerald-500" : "bg-rose-500")} />
-                        <div className="relative z-10">
-                            <div className="text-sm opacity-70 mb-1">ส่วนต่าง</div>
-                            <div className="text-4xl font-black tracking-tight flex items-center justify-center gap-2">
-                                {summary.month.diff > 0 ? "▲" : "▼"} {Math.abs(summary.month.diff).toLocaleString()}
-                            </div>
-                            <div className="text-xs opacity-50 mt-1">
-                                {summary.month.target > 0
-                                    ? `เกินเป้า ${((summary.month.actual / summary.month.target) * 100).toFixed(0)}%`
-                                    : "ไม่มีเป้าหมาย"
-                                }
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* --- WEEKLY SUMMARY (Blue/Green) --- */}
-            <div className="space-y-4">
-                <h3 className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-300 ml-2">
-                    <div className="w-1.5 h-6 bg-blue-500 rounded-full" /> สรุปรายสัปดาห์นี้
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="bg-blue-500 text-white border-0 shadow-lg shadow-blue-500/20 rounded-[2rem]">
-                        <CardContent className="p-6 text-center">
-                            <div className="text-sm opacity-80 mb-1">คาดการณ์รวม</div>
-                            <div className="text-3xl font-black">{summary.week.forecast.toLocaleString()}</div>
-                            <div className="text-[10px] opacity-60">กิโลกรัม</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-emerald-500 text-white border-0 shadow-lg shadow-emerald-500/20 rounded-[2rem]">
-                        <CardContent className="p-6 text-center">
-                            <div className="text-sm opacity-80 mb-1">ซื้อจริง</div>
-                            <div className="text-3xl font-black">{summary.week.actual.toLocaleString()}</div>
-                            <div className="text-[10px] opacity-60">กิโลกรัม</div>
-                        </CardContent>
-                    </Card>
-                    <Card className={cn("text-white border-0 shadow-lg rounded-[2rem]", summary.week.diff >= 0 ? "bg-emerald-600 shadow-emerald-600/20" : "bg-rose-500 shadow-rose-500/20")}>
-                        <CardContent className="p-6 text-center">
-                            <div className="text-sm opacity-80 mb-1">ส่วนต่าง</div>
-                            <div className="text-3xl font-black flex items-center justify-center gap-2">
-                                {summary.week.diff > 0 ? "▲" : "▼"} {Math.abs(summary.week.diff).toLocaleString()}
-                            </div>
-                            <div className="text-[10px] opacity-60">
-                                {summary.week.target > 0
-                                    ? `${((summary.week.actual / summary.week.target) * 100).toFixed(0)}% จากเป้า`
-                                    : "ไม่มีเป้าหมาย"
-                                }
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-
-            {/* --- PRODUCT SUMMARY --- */}
-            {summary.products.length > 0 && (
-                <Card className="bg-slate-900 text-slate-300 border-slate-800 rounded-[2rem] overflow-hidden">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex items-center gap-2">
-                            <ShoppingBag size={18} className="text-orange-400" /> สรุปตามสินค้า
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <div className="divide-y divide-slate-800">
-                            {summary.products.map((p, i) => (
-                                <div key={i} className="flex justify-between items-center p-4 hover:bg-white/5 transition-colors">
-                                    <div className="font-bold text-white ml-2">{p.name}</div>
-                                    <div className="text-right text-xs space-y-1 mr-2">
-                                        <div className="flex gap-4 opacity-70">
-                                            <span>คาดการณ์ {p.forecast}</span>
-                                            <span>ซื้อจริง {p.actual}</span>
-                                        </div>
-                                        <div className={cn("font-bold text-sm", (p.actual - p.forecast) >= 0 ? "text-emerald-400" : "text-rose-400")}>
-                                            ส่วนต่าง {(p.actual - p.forecast) > 0 ? "+" : ""}{(p.actual - p.forecast).toLocaleString()}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* --- DETAILED LIST (GROUPED BY STORE) --- */}
+            {/* --- LIST OVERVIEW --- */}
             <div className="space-y-6">
-                <h3 className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-300 ml-2 pt-4">
-                    <div className="w-1.5 h-6 bg-slate-500 rounded-full" /> รายละเอียดรายร้านค้า
-                </h3>
+                <div className="flex items-center gap-2 text-slate-500 font-bold ml-2">
+                    <div className="h-4 w-4 bg-indigo-200 rounded-sm"></div> คาดการณ์รายสัปดาห์ แยกตามชิ้นส่วน
+                </div>
 
                 {groupedForecasts.length > 0 ? (
-                    <div className="flex flex-col gap-8">
-                        {groupedForecasts.map((group: any) => (
-                            <div key={group.store?.id || Math.random()} className="bg-slate-50/50 dark:bg-slate-900/30 backdrop-blur-md rounded-[2rem] p-4 md:p-6 border border-white/20 dark:border-slate-800 shadow-sm">
-                                {/* Store Group Header */}
-                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 px-2">
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-12 w-12 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-lg shadow-indigo-500/20">
-                                            {group.store?.name?.charAt(0) || "?"}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {groupedForecasts.map(group => {
+                            const diff = group.totalTarget - group.totalForecast
+                            const percent = group.totalTarget > 0 ? (group.totalForecast / group.totalTarget) * 100 : 0
+
+                            return (
+                                <Card key={group.product} className="relative overflow-hidden bg-white dark:bg-slate-900 rounded-[1.2rem] shadow-sm border border-slate-200 dark:border-slate-800">
+                                    <div className="p-5 space-y-4">
+                                        {/* Header */}
+                                        <div className="flex justify-between items-center">
+                                            <h4 className="text-xl font-black flex items-center gap-2 text-slate-800 dark:text-slate-100">🥩 {group.product}</h4>
+                                            {isAdmin && (
+                                                <div className="flex gap-1.5">
+                                                    <Button size="sm" variant="outline" className="h-7 px-3 rounded-md text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-0" onClick={() => handleEditGroup(group)}>แก้ไข</Button>
+                                                    <Button size="sm" variant="ghost" className="h-7 px-3 rounded-md text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:text-rose-600 hover:bg-rose-100" onClick={() => handleDeleteGroup(group)}>ลบ</Button>
+                                                </div>
+                                            )}
                                         </div>
-                                        <div>
-                                            <h4 className="text-2xl font-black text-slate-900 dark:text-white leading-none mb-1.5">{group.store?.name}</h4>
-                                            <div className="flex gap-2 text-xs font-mono text-slate-500 items-center">
-                                                <span className="bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-md text-slate-700 dark:text-slate-300 font-bold">{group.store?.code}</span>
-                                                <span className="opacity-70">| {group.store?.name}</span>
-                                                <span className="opacity-50">({group.items.length} รายการ)</span>
+
+                                        {/* Blue Card */}
+                                        <div className="bg-blue-600 text-white p-3 sm:p-4 rounded-[1rem] flex items-center justify-between shadow-inner gap-1 sm:gap-0">
+                                            <div className="text-center w-1/3 border-r border-blue-500/50 px-1">
+                                                <div className="text-[9px] sm:text-[10px] font-bold opacity-80 flex flex-col sm:flex-row items-center justify-center gap-1 mb-1 truncate"><Target size={10} className="hidden sm:block" /> เป้าหมาย </div>
+                                                <div className="text-lg sm:text-2xl font-black leading-none truncate">{group.totalTarget.toFixed(1)}</div>
+                                                <div className="text-[9px] sm:text-[10px] opacity-70 mt-1">กก.</div>
+                                            </div>
+                                            <div className="text-center w-1/3 border-r border-blue-500/50 px-1">
+                                                <div className="text-[9px] sm:text-[10px] font-bold opacity-80 flex flex-col sm:flex-row items-center justify-center gap-1 mb-1 truncate"><CheckCircle2 size={10} className="hidden sm:block" /> คาดการณ์ </div>
+                                                <div className="text-lg sm:text-2xl font-black text-emerald-300 leading-none truncate">{group.totalForecast.toFixed(1)}</div>
+                                                <div className="text-[9px] sm:text-[10px] opacity-70 mt-1 truncate">({percent.toFixed(0)}%)</div>
+                                            </div>
+                                            <div className="text-center w-1/3 px-1">
+                                                <div className="text-[9px] sm:text-[10px] font-bold opacity-80 flex flex-col sm:flex-row items-center justify-center gap-1 text-rose-200 mb-1 truncate">✗ ขาด </div>
+                                                <div className="text-lg sm:text-2xl font-black text-rose-300 leading-none truncate">{diff.toFixed(1)}</div>
+                                                <div className="text-[9px] sm:text-[10px] opacity-70 mt-1">กก.</div>
+                                            </div>
+                                        </div>
+
+                                        {/* Store Target List */}
+                                        <div className="space-y-2 mt-4 pt-2">
+                                            <div className="flex items-center gap-1 text-xs font-bold text-slate-500 dark:text-slate-400 max-w-full">
+                                                <ShoppingBag size={12} className="shrink-0" /> ร้านเป้าหมาย
+                                            </div>
+                                            <div className="space-y-2">
+                                                {group.items.map((item: any) => {
+                                                    const itemPercent = item.targetWeek > 0 ? (item.actual / item.targetWeek) * 100 : 0;
+                                                    return (
+                                                        <div key={item.id} className="flex justify-between items-center p-3 rounded-lg bg-red-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-200">
+                                                            <div className="min-w-0 pr-2">
+                                                                <div className="font-bold text-sm tracking-tight leading-tight truncate">{item.store?.name}</div>
+                                                                <div className="text-[10px] opacity-60 font-mono mb-1 truncate">{item.store?.code}</div>
+                                                                <div className="text-xs font-medium truncate">เป้า: {item.targetWeek.toFixed(1)} กก.</div>
+                                                            </div>
+                                                            <div className="font-black text-sm shrink-0">
+                                                                {itemPercent.toFixed(0)}%
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })}
                                             </div>
                                         </div>
                                     </div>
-                                    {isAdmin && (
-                                        <Button
-                                            onClick={() => handleAddProduct(group.store)}
-                                            size="sm"
-                                            className="bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white font-bold rounded-full px-5 shadow-sm hover:shadow-md transition-all border border-indigo-100 dark:border-indigo-500"
-                                        >
-                                            <Plus size={16} className="mr-1" /> เพิ่มสินค้า
-                                        </Button>
-                                    )}
-                                </div>
-
-                                {/* Items Grid */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {group.items.map((f: any) => {
-                                        const progressWeek = f.targetWeek > 0 ? (f.actual / f.targetWeek) * 100 : 0
-                                        const progressMonth = f.targetMonth > 0 ? (f.actual / f.targetMonth) * 100 : 0
-                                        const diff = (f.actual || 0) - (f.forecast || 0)
-
-                                        return (
-                                            <Card key={f.id} className="relative overflow-hidden border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 backdrop-blur-sm rounded-[1.2rem] hover:shadow-lg transition-all group">
-                                                <div className="p-4 space-y-1">
-                                                    {/* Top Row: Product Name & Edit */}
-                                                    <div className="flex justify-between items-start">
-                                                        <div>
-                                                            <h4 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-                                                                {f.product}
-                                                            </h4>
-                                                        </div>
-                                                        {isAdmin ? (
-                                                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                <Button size="sm" variant="outline" className="h-8 rounded-lg" onClick={() => handleEdit(f)}>
-                                                                    แก้ไข
-                                                                </Button>
-                                                                <Button size="sm" variant="ghost" className="h-8 w-8 text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg" onClick={() => handleDelete(f.id)}>
-                                                                    ลบ
-                                                                </Button>
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-[10px] text-slate-400 italic opacity-0 group-hover:opacity-100 transition-opacity">View Only</span>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Progress Bars Row */}
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        {/* Week Target */}
-                                                        <div className="space-y-2">
-                                                            <div className="flex justify-between text-xs font-bold">
-                                                                <span className="flex items-center gap-1 text-blue-500"><Target size={12} /> เป้าหมายสัปดาห์</span>
-                                                                <span>{f.targetWeek?.toLocaleString()} กก.</span>
-                                                            </div>
-                                                            <Progress value={progressWeek} className="h-2.5 bg-slate-200 dark:bg-slate-700" />
-                                                            <div className="flex justify-between text-[10px] font-medium">
-                                                                <span className="text-slate-500">ซื้อแล้ว {f.actual?.toLocaleString()} ({progressWeek.toFixed(0)}%)</span>
-                                                                {progressWeek >= 100 ? (
-                                                                    <span className="text-emerald-500 font-bold">บรรลุเป้าแล้ว!</span>
-                                                                ) : (
-                                                                    <span className="text-slate-400">เหลืออีก {(f.targetWeek - f.actual).toLocaleString()}</span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Month Target */}
-                                                        <div className="space-y-2">
-                                                            <div className="flex justify-between text-xs font-bold">
-                                                                <span className="flex items-center gap-1 text-purple-500"><Target size={12} /> เป้าหมายเดือน</span>
-                                                                <span>{f.targetMonth?.toLocaleString()} กก.</span>
-                                                            </div>
-                                                            <Progress value={progressMonth} className="h-2.5 bg-slate-200 dark:bg-slate-700" />
-                                                            <div className="flex justify-between text-[10px] font-medium">
-                                                                <span className="text-slate-500">สะสม {f.actual?.toLocaleString()} ({progressMonth.toFixed(0)}%)</span>
-                                                                {progressMonth >= 100 ? (
-                                                                    <span className="text-emerald-500 font-bold">บรรลุเป้าแล้ว!</span>
-                                                                ) : (
-                                                                    <span className="text-rose-400">ยังขาดอีก {(f.targetMonth - f.actual).toLocaleString()}</span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Bottom Stats Footer */}
-                                                <div className="bg-slate-50/50 dark:bg-black/20 px-4 py-3 flex justify-between items-center text-[10px] border-t border-slate-100 dark:border-slate-800">
-                                                    <div className="text-center w-1/3 border-r border-slate-200 dark:border-slate-800">
-                                                        <div className="opacity-50 mb-0.5">คาดการณ์</div>
-                                                        <div className="font-bold text-blue-500 text-sm">{f.forecast?.toLocaleString()}</div>
-                                                    </div>
-                                                    <div className="text-center w-1/3 border-r border-slate-200 dark:border-slate-800">
-                                                        <div className="opacity-50 mb-0.5">ซื้อจริง</div>
-                                                        <div className="font-bold text-emerald-500 text-sm">{f.actual?.toLocaleString()}</div>
-                                                    </div>
-                                                    <div className="text-center w-1/3">
-                                                        <div className="opacity-50 mb-0.5">ส่วนต่าง</div>
-                                                        <div className={cn("font-bold text-sm", diff >= 0 ? "text-emerald-500" : "text-rose-500")}>
-                                                            {diff > 0 ? "+" : ""}{diff.toLocaleString()}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </Card>
-                                        )
-                                    })}
-                                </div>
-                            </div>
-                        ))}
+                                </Card>
+                            )
+                        })}
                     </div>
                 ) : (
                     <div className="text-center py-20 bg-slate-50 dark:bg-slate-800/20 rounded-[2rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
@@ -587,125 +525,158 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
 
             {/* --- ADD/EDIT DIALOG --- */}
             <Dialog open={showDialog} onOpenChange={(o) => { if (!o) resetForm(); else setShowDialog(o); }}>
-                <DialogContent className="max-w-xl md:max-w-2xl lg:max-w-4xl bg-slate-900 border-slate-800 text-white rounded-3xl p-0 overflow-hidden flex flex-col max-h-[90vh]">
-                    <DialogHeader className="p-6 bg-slate-950/50">
-                        <DialogTitle className="text-xl font-black flex items-center gap-2">
-                            {editingItem ? <Edit2 className="text-blue-500" /> : <Plus className="text-blue-500" />}
-                            {editingItem ? "แก้ไขคาดการณ์" : "เพิ่มคาดการณ์รายสัปดาห์"}
+                <DialogContent className="max-w-2xl bg-white dark:bg-slate-900 border-none shadow-2xl rounded-[1.5rem] p-0 overflow-hidden flex flex-col max-h-[90vh]">
+                    <DialogHeader className="p-5 border-b border-slate-100 dark:border-slate-800">
+                        <DialogTitle className="text-lg font-black flex items-center gap-2 text-slate-800 dark:text-white">
+                            <span className="bg-rose-500 text-white p-1.5 rounded-lg"><Target size={16} /></span>
+                            {editingGroup ? "แก้ไขคาดการณ์รายสัปดาห์" : "เพิ่มคาดการณ์รายสัปดาห์"}
                         </DialogTitle>
                     </DialogHeader>
 
-                    <div className="p-6 space-y-5 overflow-y-auto flex-1">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs text-slate-400">เลือกร้าน *</Label>
-                                <div className="relative">
-                                    <StoreSearchBox
-                                        storeSearch={storeSearch}
-                                        setStoreSearch={setStoreSearch}
-                                        suggestions={suggestions}
-                                        showSuggestions={showSuggestions}
-                                        selectedStore={selectedStore}
-                                        selectStore={selectStore}
-                                        clearStore={clearStore}
-                                        handleManualSearch={handleManualSearch}
-                                        isSearching={isSearching}
-                                        placeholder="ค้นหารหัส หรือ ชื่อร้าน..."
-                                        variant="dark"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs text-slate-400">สินค้า *</Label>
-                                <Input
-                                    placeholder="เช่น สะโพก, น่อง"
-                                    value={formData.product}
-                                    onChange={(e) => setFormData({ ...formData, product: e.target.value })}
-                                    className="bg-slate-800 border-slate-700 rounded-xl"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs text-slate-400">ชนิดสินค้า</Label>
-                                <Select
-                                    value={formData.productType}
-                                    onValueChange={(val) => setFormData(prev => ({ ...prev, productType: val }))}
-                                >
-                                    <SelectTrigger className="bg-slate-800 border-slate-700 text-white rounded-xl h-[42px]">
-                                        <SelectValue placeholder="เลือกชนิดสินค้า..." />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-slate-800 border-slate-700 text-white">
-                                        {PRODUCT_TYPES.map(c => (
-                                            <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-800 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <div className="space-y-2">
-                                <Label className="text-xs text-slate-400 flex items-center gap-1"><Target size={12} className="text-blue-500" /> เป้าหมายสัปดาห์ (กก.) *</Label>
-                                <Input
-                                    type="number"
-                                    value={formData.targetWeek}
-                                    onChange={(e) => setFormData({ ...formData, targetWeek: e.target.value })}
-                                    className="bg-slate-900 border-slate-700 rounded-xl h-11"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs text-slate-400 flex items-center gap-1"><Target size={12} className="text-purple-500" /> เป้าหมายเดือน (กก.) *</Label>
-                                <Input
-                                    type="number"
-                                    value={formData.targetMonth}
-                                    onChange={(e) => setFormData({ ...formData, targetMonth: e.target.value })}
-                                    className="bg-slate-900 border-slate-700 rounded-xl h-11"
-                                />
-                            </div>
-                        </div>
+                    <div className="p-6 space-y-6 overflow-y-auto flex-1">
 
                         <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs text-slate-400">คาดการณ์ (กก./สัปดาห์)</Label>
-                                <Input
-                                    type="number"
-                                    value={formData.forecast}
-                                    onChange={(e) => setFormData({ ...formData, forecast: e.target.value })}
-                                    className="bg-slate-800 border-slate-700 rounded-xl"
-                                />
+                            {/* ชิ้นส่วน/สินค้า */}
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold text-slate-500">ชิ้นส่วน/สินค้า *</Label>
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <Input
+                                            placeholder="เช่น สะโพก, น่อง, สันใน"
+                                            value={partSearch}
+                                            onFocus={() => setShowPartSuggestions(true)}
+                                            onChange={(e) => { setPartSearch(e.target.value); setShowPartSuggestions(true) }}
+                                            className="h-10 border-slate-200 dark:border-slate-700 focus-visible:ring-blue-500"
+                                            disabled={!!editingGroup || !!selectedMeatPart}
+                                        />
+                                        {showPartSuggestions && filteredParts.length > 0 && (
+                                            <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 max-h-44 overflow-y-auto">
+                                                {filteredParts.map(p => (
+                                                    <div key={p.id} className="flex items-center group/item hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
+                                                        <button
+                                                            onClick={() => { selectMeatPart(p); setShowPartSuggestions(false) }}
+                                                            className="flex-1 flex items-center gap-2 p-3 text-sm text-left text-slate-700 dark:text-white"
+                                                        >
+                                                            <span className="flex-1">{p.name}</span>
+                                                            <span className="text-[10px] text-slate-500 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">{p.category}</span>
+                                                        </button>
+                                                        {isAdmin && (
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleDeletePart(p.id) }}
+                                                                className="opacity-0 group-hover/item:opacity-100 p-2 mr-1 rounded-md text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all"
+                                                                title="ลบ"
+                                                            >
+                                                                <Trash2 size={13} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {isAdmin && !selectedMeatPart && (
+                                        <Button size="icon" onClick={handleAddPart} className="bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 h-10 w-10 shrink-0" title="เพิ่มชิ้นส่วนใหม่">
+                                            <Plus size={16} />
+                                        </Button>
+                                    )}
+                                </div>
+                                {selectedMeatPart && (
+                                    <div className="text-xs text-blue-600 dark:text-blue-400 font-bold mt-1 bg-blue-50 dark:bg-blue-500/10 px-2 py-1 rounded-md inline-flex items-center">
+                                        ✓ {selectedMeatPart.name}
+                                        {!editingGroup && <button onClick={() => clearMeatPart()} className="ml-2 text-slate-400 hover:text-rose-500">✕</button>}
+                                    </div>
+                                )}
                             </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs text-slate-400">ยอดซื้อจริง (กก.)</Label>
+
+                            {/* เป้าหมายรวม */}
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold text-rose-500 flex items-center gap-1"><Target size={12} /> เป้าหมายรวม (กก.) *</Label>
                                 <Input
-                                    type="number"
-                                    value={formData.actual}
-                                    onChange={(e) => setFormData({ ...formData, actual: e.target.value })}
-                                    className="bg-slate-800 border-slate-700 rounded-xl"
+                                    readOnly
+                                    className="h-10 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 cursor-not-allowed font-medium text-slate-500"
+                                    value={autoTotalTarget || ''}
+                                    placeholder="ใส่เป้าหมายแต่ละร้านด้านล่าง"
                                 />
                             </div>
                         </div>
 
-                        <div className="space-y-1.5">
-                            <Label className="text-xs text-slate-400">หมายเหตุ</Label>
+                        <div className="grid grid-cols-2 gap-6 pb-2 border-b border-slate-100 dark:border-slate-800">
+                            {/* คาดการณ์ขายได้ */}
+                            <div className="space-y-2 mb-4">
+                                <Label className="text-xs font-bold text-slate-500">คาดการณ์ขายได้ (กก.)</Label>
+                                <Input
+                                    type="number"
+                                    placeholder="ใส่ยอดรวม"
+                                    value={totalForecastInput}
+                                    onChange={e => setTotalForecastInput(e.target.value)}
+                                    className="h-10 border-slate-200 dark:border-slate-700"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Store List */}
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                                <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5"><ShoppingBag size={14} /> ร้านเป้าหมาย</Label>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setSelectedStores([...selectedStores, { store: null, target: '' }])}
+                                    className="h-7 text-xs font-bold bg-slate-100 border-none dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                >
+                                    + เพิ่มร้าน
+                                </Button>
+                            </div>
+
+                            {selectedStores.length === 0 ? (
+                                <div className="text-center py-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-xs text-slate-400 border border-slate-100 dark:border-slate-800">
+                                    คลิก "+ เพิ่มร้าน" เพื่อเพิ่มร้านเป้าหมาย
+                                </div>
+                            ) : (
+                                <div className="space-y-2 mt-2">
+                                    {selectedStores.map((s, i) => (
+                                        <TargetStoreRow
+                                            key={i}
+                                            index={i}
+                                            storeItem={s}
+                                            onChangeStore={(idx: number, newStore: any) => {
+                                                const newArr = [...selectedStores]
+                                                newArr[idx].store = newStore
+                                                setSelectedStores(newArr)
+                                            }}
+                                            onChangeTarget={(idx: number, newTarget: string) => {
+                                                const newArr = [...selectedStores]
+                                                newArr[idx].target = newTarget
+                                                setSelectedStores(newArr)
+                                            }}
+                                            onRemove={(idx: number) => {
+                                                setSelectedStores(selectedStores.filter((_, idx2) => idx2 !== idx))
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Notes */}
+                        <div className="space-y-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <Label className="text-xs font-bold text-slate-500">หมายเหตุ</Label>
                             <Textarea
                                 placeholder="บันทึกเพิ่มเติม..."
-                                value={formData.notes}
-                                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                className="bg-slate-800 border-slate-700 rounded-xl resize-none h-20"
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                className="h-16 resize-none border-slate-200 dark:border-slate-700 text-sm"
                             />
                         </div>
+
                     </div>
 
-                    <DialogFooter className="p-4 bg-slate-950/50 flex gap-2 justify-end">
-                        <Button variant="ghost" onClick={resetForm} className="hover:bg-white/10 text-slate-400 hover:text-white">ยกเลิก</Button>
-                        <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-500 text-white min-w-[100px]">
-                            {isSubmitting ? "บันทึก..." : "บันทึก"}
-                        </Button>
+                    <DialogFooter className="p-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-2 justify-end bg-slate-50 dark:bg-slate-950/50">
+                        <CancelButton onClick={resetForm} className="w-full sm:w-auto" />
+                        <SaveButton onClick={handleSubmit} isSubmitting={isSubmitting} className="w-full sm:w-auto" />
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-
-
-            <FontionTwo isAdmin={isAdmin} />
         </div>
     )
 }
