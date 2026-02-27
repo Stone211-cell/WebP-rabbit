@@ -63,6 +63,23 @@ const DEFAULT_MEAT_PARTS = [
     { id: 'd-114', name: 'น่องลาย', category: 'เนื้อแดง', sortOrder: 14 },
 ]
 
+const PRODUCT_TYPES = [
+    { id: 'สด', label: 'สด' },
+    { id: 'เก่าสด', label: 'เก่าสด' },
+    { id: 'ขึ้นรูป', label: 'ขึ้นรูป' },
+    { id: 'สไลด์', label: 'สไลด์' },
+    { id: 'แพ็ค', label: 'แพ็ค' },
+    { id: 'เสต็ก', label: 'เสต็ก' },
+]
+
+const MEAT_CATEGORIES = [
+    { id: 'เนื้อแดง', label: '🥩 เนื้อแดง' },
+    { id: 'เครื่องใน', label: '💜 เครื่องใน' },
+    { id: 'ส่วนหัว', label: '🐷 ส่วนหัว' },
+    { id: 'เศษ', label: '🟢 เศษ' },
+    { id: 'อะไหล่', label: '🔵 อะไหล่' },
+]
+
 interface SelectedTargetStore {
     store: any;
     target: string;
@@ -70,7 +87,7 @@ interface SelectedTargetStore {
     actual?: number;
 }
 
-function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onRemove }: any) {
+function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onChangeActual, onRemove }: any) {
     const {
         storeSearch,
         setStoreSearch,
@@ -97,7 +114,7 @@ function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onRem
     }, [])
 
     return (
-        <div className="flex items-center gap-2 relative">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 relative p-3 sm:p-0 bg-slate-50 dark:bg-slate-900/40 sm:bg-transparent rounded-2xl border border-slate-100 dark:border-slate-800/50 sm:border-none">
             <div className="flex-1">
                 <StoreSearchBox
                     storeSearch={storeSearch}
@@ -113,21 +130,30 @@ function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onRem
                     variant="dark"
                 />
             </div>
-            <Input
-                type="number"
-                placeholder="เป้า (กก.)"
-                className="h-12 w-24 border-slate-200 dark:border-slate-700 text-sm font-bold bg-white dark:bg-slate-900/50 rounded-2xl"
-                value={storeItem.target}
-                onChange={(e) => onChangeTarget(index, e.target.value)}
-            />
-            <Button
-                variant="ghost"
-                size="icon"
-                className="h-12 w-12 text-rose-500 bg-rose-50 hover:bg-rose-100 hover:text-rose-600 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 rounded-2xl shrink-0"
-                onClick={() => onRemove(index)}
-            >
-                <Trash2 size={16} />
-            </Button>
+            <div className="flex items-center gap-2">
+                <Input
+                    type="number"
+                    placeholder="เป้า (กก.)"
+                    className="h-12 flex-1 sm:w-28 border-slate-200 dark:border-slate-700 text-sm font-bold bg-white dark:bg-slate-900 rounded-2xl focus-visible:ring-blue-500"
+                    value={storeItem.target}
+                    onChange={(e) => onChangeTarget(index, e.target.value)}
+                />
+                <Input
+                    type="number"
+                    placeholder="จริง (กก.)"
+                    className="h-12 flex-1 sm:w-28 border-emerald-200 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-sm font-black bg-emerald-50/10 dark:bg-emerald-500/5 rounded-2xl focus-visible:ring-emerald-500 hidden"
+                    value={storeItem.actual || ''}
+                    onChange={(e) => onChangeActual(index, e.target.value)}
+                />
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-12 w-12 text-rose-500 bg-rose-50 hover:bg-rose-100 hover:text-rose-600 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 rounded-2xl shrink-0 transition-colors"
+                    onClick={() => onRemove(index)}
+                >
+                    <Trash2 size={16} />
+                </Button>
+            </div>
         </div>
     )
 }
@@ -141,11 +167,17 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
     // Edit state
     const [editingGroup, setEditingGroup] = useState<any>(null)
 
+    // Form inputs state additions
+    const [selectedProductType, setSelectedProductType] = useState<string>("")
+    const [newPartCategory, setNewPartCategory] = useState<string>("")
+
     // Meat Part State (From fontiontwo hook)
     const [savedMeatParts, setSavedMeatParts] = useState<{ id: string; name: string; category: string }[]>([])
     const {
         search: partSearch,
         setSearch: setPartSearch,
+        categoryFilter: partCategoryFilter,
+        setCategoryFilter: setPartCategoryFilter,
         selectedPart: selectedMeatPart,
         selectPart: selectMeatPart,
         clearPart: clearMeatPart,
@@ -171,7 +203,15 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
 
     const handleAddPart = async () => {
         if (!partSearch) return toast.error("กรุณาพิมพ์ชื่อชิ้นส่วนเนื้อ")
-        const newPart = await addMeatPart(partSearch, "เนื้อแดง")
+
+        // Use active filter category if available, otherwise use the specific select
+        const finalCategory = (partCategoryFilter && partCategoryFilter !== 'all')
+            ? partCategoryFilter
+            : newPartCategory;
+
+        if (!finalCategory) return toast.error("กรุณาเลือกประเภทชิ้นส่วนก่อนเพิ่มใหม่")
+
+        const newPart = await addMeatPart(partSearch, finalCategory)
         if (newPart) {
             setSavedMeatParts(prev => [newPart, ...prev.filter(p => p.id !== newPart.id)])
             selectMeatPart(newPart)
@@ -214,8 +254,11 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
         setTotalForecastInput("")
         setSelectedStores([])
         setNotes("")
+        setSelectedProductType("")
+        setNewPartCategory("")
         clearMeatPart()
         setPartSearch("")
+        setPartCategoryFilter("all")
         setShowDialog(false)
     }
 
@@ -234,6 +277,11 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
 
         // Auto calculate existing inputs
         setTotalForecastInput(group.totalForecast.toString())
+
+        // Product Type
+        if (group.items.length > 0 && group.items[0].productType) {
+            setSelectedProductType(group.items[0].productType)
+        }
 
         // Map existing stores
         const mappedStores = group.items.map((item: any) => ({
@@ -269,6 +317,7 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
         if (selectedStores.length === 0) return toast.error("กรุณาเพิ่มร้านเป้าหมายอย่างน้อย 1 ร้าน")
 
         const productName = selectedMeatPart ? selectedMeatPart.name : partSearch
+        const pType = selectedProductType || ""
 
         let valid = true
         for (let i = 0; i < selectedStores.length; i++) {
@@ -296,6 +345,7 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                 for (const row of selectedStores) {
                     const targetVal = safeFloat(row.target)
                     const forecastVal = tTarget > 0 ? (targetVal / tTarget) * tForecast : 0
+                    const actualVal = safeFloat(row.actual)
 
                     if (row.existingId) {
                         newIds.push(row.existingId)
@@ -307,6 +357,7 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                                 targetWeek: targetVal,
                                 targetMonth: targetVal * 4,
                                 forecast: forecastVal,
+                                actual: actualVal,
                                 notes: notes
                             })
                         }
@@ -314,11 +365,11 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                         if (onCreate) await onCreate({
                             masterId: row.store.id,
                             product: productName,
-                            productType: "สด",
+                            productType: pType,
                             targetWeek: targetVal,
                             targetMonth: targetVal * 4,
                             forecast: forecastVal,
-                            actual: 0,
+                            actual: actualVal,
                             notes: notes,
                             weekStart: weekStart.toISOString()
                         })
@@ -336,15 +387,16 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                 for (const row of selectedStores) {
                     const targetVal = safeFloat(row.target)
                     const forecastVal = tTarget > 0 ? (targetVal / tTarget) * tForecast : 0
+                    const actualVal = safeFloat(row.actual)
 
                     if (onCreate) await onCreate({
                         masterId: row.store.id,
                         product: productName,
-                        productType: "สด",
+                        productType: pType,
                         targetWeek: targetVal,
                         targetMonth: targetVal * 4,
                         forecast: forecastVal,
-                        actual: 0,
+                        actual: actualVal,
                         notes: notes,
                         weekStart: weekStart.toISOString()
                     })
@@ -489,22 +541,44 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                                         </div>
 
                                         {/* Store Target List */}
-                                        <div className="space-y-2 mt-4 pt-2">
-                                            <div className="flex items-center gap-1 text-xs font-bold text-slate-500 dark:text-slate-400 max-w-full">
+                                        <div className="space-y-3 mt-4 pt-2">
+                                            <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
                                                 <ShoppingBag size={12} className="shrink-0" /> ร้านเป้าหมาย
                                             </div>
-                                            <div className="space-y-2">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 {group.items.map((item: any) => {
-                                                    const itemPercent = item.targetWeek > 0 ? (item.actual / item.targetWeek) * 100 : 0;
+                                                    const tWeek = item.targetWeek || 0;
+                                                    const tActual = item.actual || 0;
+                                                    const itemPercent = group.totalTarget > 0 ? (tWeek / group.totalTarget) * 100 : 0;
                                                     return (
-                                                        <div key={item.id} className="flex justify-between items-center p-3 rounded-lg bg-red-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-200">
-                                                            <div className="min-w-0 pr-2">
-                                                                <div className="font-bold text-sm tracking-tight leading-tight truncate">{item.store?.name}</div>
-                                                                <div className="text-[10px] opacity-60 font-mono mb-1 truncate">{item.store?.code}</div>
-                                                                <div className="text-xs font-medium truncate">เป้า: {item.targetWeek.toFixed(1)} กก.</div>
-                                                            </div>
-                                                            <div className="font-black text-sm shrink-0">
-                                                                {itemPercent.toFixed(0)}%
+                                                        <div key={item.id} className="relative overflow-hidden group/store text-[15px]">
+                                                            <div className="flex justify-between items-center p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/60 hover:border-blue-500/30 transition-all duration-300 h-full">
+                                                                <div className="min-w-0 pr-2 space-y-0.5">
+                                                                    <div className="font-black  text-slate-700 dark:text-slate-200 truncate text-[15px] leading-tight">{item.store?.name}</div>
+                                                                    <div className="font-bold text-black dark:text-slate-500 font-mono tracking-tighter opacity-80 text-[15px]">{item.store?.code}</div>
+                                                                    <div className="flex flex-col gap-0.5 mt-1.5 single">
+                                                                        <div className="text-[15px] font-bold text-slate-500 dark:text-slate-400 flex justify-between">
+                                                                            <span>เป้า:</span>
+                                                                            <span className="text-slate-900 dark:text-slate-200 text-[15px] ml-1">{tWeek.toFixed(1)}</span>
+                                                                        </div>
+                                                                        <div className="text-[15px] font-bold text-slate-500 dark:text-slate-400 flex justify-between">
+                                                                            <span>จริง:</span>
+                                                                            <span className={cn("font-black ml-1", tActual > 0 ? "text-emerald-500" : "text-slate-400")}>{tActual.toFixed(1)}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="flex flex-col items-end gap-1.5 shrink-0 ml-2">
+                                                                    <span className="text-[13px] font-black text-blue-500 dark:text-blue-400 transition-colors duration-500">
+                                                                        {itemPercent.toFixed(0)}%
+                                                                    </span>
+                                                                    <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
+                                                                        <div
+                                                                            className="h-full bg-blue-500 dark:bg-blue-400 transition-all duration-1000 ease-out"
+                                                                            style={{ width: `${Math.min(itemPercent, 100)}%` }}
+                                                                        />
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     )
@@ -525,7 +599,7 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
 
             {/* --- ADD/EDIT DIALOG --- */}
             <Dialog open={showDialog} onOpenChange={(o) => { if (!o) resetForm(); else setShowDialog(o); }}>
-                <DialogContent className="max-w-2xl bg-white dark:bg-slate-900 border-none shadow-2xl rounded-[1.5rem] p-0 overflow-hidden flex flex-col max-h-[90vh]">
+                <DialogContent className="max-w-3xl bg-white dark:bg-slate-900 border-none shadow-2xl rounded-[1.5rem] p-0 overflow-hidden flex flex-col max-h-[95vh]">
                     <DialogHeader className="p-5 border-b border-slate-100 dark:border-slate-800">
                         <DialogTitle className="text-lg font-black flex items-center gap-2 text-slate-800 dark:text-white">
                             <span className="bg-rose-500 text-white p-1.5 rounded-lg"><Target size={16} /></span>
@@ -535,38 +609,54 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
 
                     <div className="p-6 space-y-6 overflow-y-auto flex-1">
 
-                        <div className="grid grid-cols-2 gap-6">
-                            {/* ชิ้นส่วน/สินค้า */}
+                        {/* Section 1: Product Selection */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50/50 dark:bg-slate-900/30 rounded-[2rem] border border-slate-100 dark:border-slate-800/50">
                             <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">ชิ้นส่วน/สินค้า *</Label>
+                                <Label className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">เลือกกลุ่ม/ประเภท</Label>
+                                <Select value={partCategoryFilter} onValueChange={setPartCategoryFilter}>
+                                    <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700/50 font-medium rounded-xl shadow-sm">
+                                        <SelectValue placeholder="-- ทั้งหมด --" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-slate-200 dark:border-slate-800 shadow-2xl">
+                                        <SelectItem value="all" className="rounded-lg">-- ทั้งหมด --</SelectItem>
+                                        {MEAT_CATEGORIES.map(c => (
+                                            <SelectItem key={c.id} value={c.id} className="rounded-lg">{c.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="md:col-span-2 space-y-2">
+                                <Label className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">ชิ้นส่วน/สินค้า *</Label>
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
                                         <Input
-                                            placeholder="เช่น สะโพก, น่อง, สันใน"
+                                            placeholder="พิมพ์เพื่อค้นหา..."
                                             value={partSearch}
                                             onFocus={() => setShowPartSuggestions(true)}
                                             onChange={(e) => { setPartSearch(e.target.value); setShowPartSuggestions(true) }}
-                                            className="h-10 border-slate-200 dark:border-slate-700 focus-visible:ring-blue-500"
+                                            className="h-10 border-slate-200 dark:border-slate-700/50 focus-visible:ring-blue-500 rounded-xl shadow-sm bg-white dark:bg-slate-900"
                                             disabled={!!editingGroup || !!selectedMeatPart}
                                         />
                                         {showPartSuggestions && filteredParts.length > 0 && (
-                                            <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 max-h-44 overflow-y-auto">
+                                            <div className="absolute top-full left-0 w-full mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 max-h-56 overflow-y-auto p-1 divide-y divide-slate-50 dark:divide-slate-800/50">
                                                 {filteredParts.map(p => (
-                                                    <div key={p.id} className="flex items-center group/item hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
+                                                    <div key={p.id} className="flex items-center group/item hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer first:rounded-t-xl last:rounded-b-xl transition-colors">
                                                         <button
                                                             onClick={() => { selectMeatPart(p); setShowPartSuggestions(false) }}
-                                                            className="flex-1 flex items-center gap-2 p-3 text-sm text-left text-slate-700 dark:text-white"
+                                                            className="flex-1 flex items-center gap-3 p-3 text-sm text-left text-slate-700 dark:text-slate-200"
                                                         >
-                                                            <span className="flex-1">{p.name}</span>
-                                                            <span className="text-[10px] text-slate-500 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">{p.category}</span>
+                                                            <span className="h-6 w-6 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-lg text-xs group-hover/item:bg-blue-500 group-hover/item:text-white transition-colors">🥩</span>
+                                                            <span className="flex-1 font-bold">{p.name}</span>
+                                                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">{p.category}</span>
                                                         </button>
                                                         {isAdmin && (
                                                             <button
                                                                 onClick={(e) => { e.stopPropagation(); handleDeletePart(p.id) }}
-                                                                className="opacity-0 group-hover/item:opacity-100 p-2 mr-1 rounded-md text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all"
+                                                                className="opacity-0 group-hover/item:opacity-100 p-2 mr-2 rounded-lg text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all hover:text-rose-600"
                                                                 title="ลบ"
                                                             >
-                                                                <Trash2 size={13} />
+                                                                <Trash2 size={14} />
                                                             </button>
                                                         )}
                                                     </div>
@@ -575,53 +665,93 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                                         )}
                                     </div>
                                     {isAdmin && !selectedMeatPart && (
-                                        <Button size="icon" onClick={handleAddPart} className="bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 h-10 w-10 shrink-0" title="เพิ่มชิ้นส่วนใหม่">
+                                        <Button size="icon" onClick={handleAddPart} className="bg-slate-200/50 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 h-10 w-10 shrink-0 rounded-xl transition-all shadow-sm" title="เพิ่มชิ้นส่วนใหม่">
                                             <Plus size={16} />
                                         </Button>
                                     )}
                                 </div>
                                 {selectedMeatPart && (
-                                    <div className="text-xs text-blue-600 dark:text-blue-400 font-bold mt-1 bg-blue-50 dark:bg-blue-500/10 px-2 py-1 rounded-md inline-flex items-center">
-                                        ✓ {selectedMeatPart.name}
-                                        {!editingGroup && <button onClick={() => clearMeatPart()} className="ml-2 text-slate-400 hover:text-rose-500">✕</button>}
+                                    <div className="text-xs text-blue-600 dark:text-blue-400 font-black mt-2 bg-blue-50 dark:bg-blue-500/10 px-3 py-1.5 rounded-full inline-flex items-center border border-blue-100 dark:border-blue-900/30 shadow-sm animate-in zoom-in-95 duration-200">
+                                        <span className="mr-1.5 opacity-70">✓</span> {selectedMeatPart.name} <span className="mx-1.5 opacity-30">|</span> <span className="opacity-70 text-[10px] uppercase font-bold tracking-wider">{selectedMeatPart.category}</span>
+                                        {!editingGroup && <button onClick={() => clearMeatPart()} className="ml-2 h-5 w-5 flex items-center justify-center rounded-full text-blue-300 dark:text-blue-700 hover:bg-rose-100 hover:text-rose-500 transition-colors">✕</button>}
+                                    </div>
+                                )}
+                                {isAdmin && !selectedMeatPart && filteredParts.length === 0 && partSearch.length > 0 && partCategoryFilter === 'all' && (
+                                    <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-200 dark:border-amber-800/50 space-y-2">
+                                        <Label className="text-[10px] font-bold text-amber-600 dark:text-amber-400">ระบุประเภทชิ้นส่วนใหม่ก่อนเพิ่ม:</Label>
+                                        <Select value={newPartCategory} onValueChange={setNewPartCategory}>
+                                            <SelectTrigger className="h-9 bg-white dark:bg-slate-900 border-amber-200 dark:border-amber-800">
+                                                <SelectValue placeholder="-- ไม่ได้เลือกรายการ --" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {MEAT_CATEGORIES.map(c => (
+                                                    <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                 )}
                             </div>
-
-                            {/* เป้าหมายรวม */}
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-rose-500 flex items-center gap-1"><Target size={12} /> เป้าหมายรวม (กก.) *</Label>
-                                <Input
-                                    readOnly
-                                    className="h-10 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 cursor-not-allowed font-medium text-slate-500"
-                                    value={autoTotalTarget || ''}
-                                    placeholder="ใส่เป้าหมายแต่ละร้านด้านล่าง"
-                                />
-                            </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-6 pb-2 border-b border-slate-100 dark:border-slate-800">
-                            {/* คาดการณ์ขายได้ */}
-                            <div className="space-y-2 mb-4">
-                                <Label className="text-xs font-bold text-slate-500">คาดการณ์ขายได้ (กก.)</Label>
-                                <Input
-                                    type="number"
-                                    placeholder="ใส่ยอดรวม"
-                                    value={totalForecastInput}
-                                    onChange={e => setTotalForecastInput(e.target.value)}
-                                    className="h-10 border-slate-200 dark:border-slate-700"
-                                />
+                        {/* Section 2: Details and Summary */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 p-5 bg-slate-50 dark:bg-slate-950/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 shadow-inner">
+                            <div className="space-y-2 min-w-0">
+                                <Label className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">
+                                    <ShoppingBag size={12} /> ชนิดสินค้า
+                                </Label>
+                                <Select value={selectedProductType} onValueChange={setSelectedProductType}>
+                                    <SelectTrigger className="h-11 w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700/50 font-bold rounded-2xl shadow-sm focus:ring-blue-500/20">
+                                        <SelectValue placeholder="-- เลือกประเภท --" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-slate-200 dark:border-slate-800 shadow-2xl">
+                                        {PRODUCT_TYPES.map(pt => (
+                                            <SelectItem key={pt.id} value={pt.id} className="rounded-xl font-medium">{pt.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2 min-w-0">
+                                <Label className="text-[11px] font-black uppercase tracking-wider text-rose-500/80 flex items-center gap-1.5 ml-1">
+                                    <Target size={12} /> เป้าหมายรวม (กก.)
+                                </Label>
+                                <div className="relative group">
+                                    <Input
+                                        readOnly
+                                        className="h-11 w-full bg-rose-50/30 dark:bg-rose-500/5 border-rose-100 dark:border-rose-900/20 cursor-not-allowed font-black text-rose-600 dark:text-rose-400 rounded-2xl text-lg pl-10"
+                                        value={autoTotalTarget || '0'}
+                                    />
+                                    <Target className="absolute left-3.5 top-1/2 -translate-y-1/2 text-rose-400 dark:text-rose-600" size={18} />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2 min-w-0">
+                                <Label className="text-[11px] font-black uppercase tracking-wider text-blue-500/80 flex items-center gap-1.5 ml-1">
+                                    <TrendingUp size={12} /> คาดการณ์ขายได้
+                                </Label>
+                                <div className="relative">
+                                    <Input
+                                        type="number"
+                                        placeholder="0.0"
+                                        value={totalForecastInput}
+                                        onChange={e => setTotalForecastInput(e.target.value)}
+                                        className="h-11 w-full border-blue-200 dark:border-blue-900/30 focus-visible:ring-blue-500 font-black text-blue-600 dark:text-blue-400 rounded-2xl text-lg pl-10 bg-blue-50/10"
+                                    />
+                                    <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-400 dark:text-blue-600" size={18} />
+                                </div>
                             </div>
                         </div>
 
                         {/* Store List */}
+
                         <div className="space-y-3">
                             <div className="flex justify-between items-center">
                                 <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5"><ShoppingBag size={14} /> ร้านเป้าหมาย</Label>
                                 <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => setSelectedStores([...selectedStores, { store: null, target: '' }])}
+                                    onClick={() => setSelectedStores([...selectedStores, { store: null, target: '', actual: 0 }])}
                                     className="h-7 text-xs font-bold bg-slate-100 border-none dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700"
                                 >
                                     + เพิ่มร้าน
@@ -649,6 +779,11 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                                                 newArr[idx].target = newTarget
                                                 setSelectedStores(newArr)
                                             }}
+                                            onChangeActual={(idx: number, newActual: string) => {
+                                                const newArr = [...selectedStores]
+                                                newArr[idx].actual = safeFloat(newActual)
+                                                setSelectedStores(newArr)
+                                            }}
                                             onRemove={(idx: number) => {
                                                 setSelectedStores(selectedStores.filter((_, idx2) => idx2 !== idx))
                                             }}
@@ -668,7 +803,6 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                                 className="h-16 resize-none border-slate-200 dark:border-slate-700 text-sm"
                             />
                         </div>
-
                     </div>
 
                     <DialogFooter className="p-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-2 justify-end bg-slate-50 dark:bg-slate-950/50">

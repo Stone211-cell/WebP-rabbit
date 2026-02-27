@@ -207,8 +207,14 @@ export default function CRMPage() {
             </div>
             {/*  */}
             <button className="dark-toggle dark:bg-[#0f172a]" onClick={toggleTheme}>
-              <span id="darkIcon">{theme === 'dark' ? '☀️' : '🌙'}</span>
-              <span id="darkText">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+              {isMounted ? (
+                <>
+                  <span id="darkIcon">{theme === 'dark' ? '☀️' : '🌙'}</span>
+                  <span id="darkText">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                </>
+              ) : (
+                <div className="h-4 w-20 animate-pulse bg-slate-200 dark:bg-slate-700" />
+              )}
             </button>
           </div>
         </div>
