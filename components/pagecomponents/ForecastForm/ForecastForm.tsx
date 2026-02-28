@@ -560,22 +560,22 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                                                 </div>
 
                                             </div>
-                                            <div className="text-center flex-1 px-1 flex flex-row justify-center border-l border-blue-500/50 gap-7">
-                                                <div className=" sm:text-xs font-bold opacity-80 flex flex-col xl:flex-col items-center justify-center  mb-1 leading-tight text-emerald-200">
-                                                    <span className="whitespace-nowrap text-[15px]">เกินเป้า</span>
-                                                    <div className="text-md sm:text-2xl font-black leading-tight mt-auto truncate w-full text-emerald-300">
+                                            <div className="flex-1 px-1 flex flex-row items-center justify-center border-l border-blue-500/50 gap-4 sm:gap-6 py-1">
+                                                <div className="flex flex-col items-center justify-center min-w-[3rem]">
+                                                    <span className="whitespace-nowrap text-[12px] sm:text-[14px] font-bold opacity-80 mb-0.5 leading-tight text-emerald-200">เกินเป้า</span>
+                                                    <div className="text-xl sm:text-2xl font-black leading-tight text-emerald-300">
                                                         {groupExceed.toFixed(1)}
                                                     </div>
                                                 </div>
 
+                                                <div className="w-px h-8 sm:h-10 bg-blue-400/30"></div>
 
-                                                <div className="text-[12px] sm:text-xs font-bold opacity-80 flex flex-col xl:flex-col items-center justify-center gap-1 mb-1 leading-tight text-rose-200">
-                                                    <span className="whitespace-nowrap text-[15px]">ขาดเป้า</span>
-                                                    <div className="text-md sm:text-2xl font-black leading-tight mt-auto truncate w-full text-rose-300">
+                                                <div className="flex flex-col items-center justify-center min-w-[3rem]">
+                                                    <span className="whitespace-nowrap text-[12px] sm:text-[14px] font-bold opacity-80 mb-0.5 leading-tight text-rose-200">ขาดเป้า</span>
+                                                    <div className="text-xl sm:text-2xl font-black leading-tight text-rose-300">
                                                         {groupMiss.toFixed(1)}
                                                     </div>
                                                 </div>
-
                                             </div>
 
                                         </div>
@@ -604,12 +604,14 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
 
 
                                                                     <div className="flex gap-2 mt-2 bg-slate-50/50 dark:bg-slate-900/50 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
-                                                                        <div className="flex flex-row items-center justify-between flex-1 px-1 sm:px-2">
+                                                                        <div className="flex flex-col items-center flex-1 px-2 sm:px-3 justify-center">
                                                                             <span className="opacity-80 text-[12px] sm:text-[14px] font-bold text-slate-500 dark:text-slate-400">เป้า</span>
                                                                             <span className="text-slate-900 text-xl sm:text-2xl dark:text-slate-200 font-black truncate">{tWeek.toFixed(1)}</span>
                                                                         </div>
+
                                                                         <div className="w-px bg-slate-200 dark:bg-slate-800"></div>
-                                                                        <div className="flex flex-row items-center justify-between flex-1 px-1 sm:px-2">
+
+                                                                        <div className="flex flex-col items-center flex-1 px-2 sm:px-3 justify-center">
                                                                             <span className="opacity-80 text-[12px] sm:text-[14px] font-bold text-slate-500 dark:text-slate-400">จริง</span>
                                                                             <span className={cn("font-black text-xl sm:text-2xl truncate", tActual > 0 ? "text-emerald-500" : "text-slate-400")}>{tActual.toFixed(1)}</span>
                                                                         </div>
