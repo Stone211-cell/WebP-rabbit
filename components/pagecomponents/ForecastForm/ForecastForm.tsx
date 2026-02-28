@@ -525,13 +525,16 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                 </div>
 
                 {groupedForecasts.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 xl:gap-8">
+                    <div className="columns-1 xl:columns-2 gap-4 xl:gap-8 space-y-4 xl:space-y-8">
                         {groupedForecasts.map(group => {
-                            const diff = group.totalTarget - group.totalForecast
                             const percent = group.totalTarget > 0 ? (group.totalForecast / group.totalTarget) * 100 : 0
+                            const forecastValue = group.totalForecast || 0;
+                            const actualValue = group.totalActual || 0;
+                            const groupExceed = actualValue > forecastValue ? actualValue - forecastValue : 0;
+                            const groupMiss = actualValue < forecastValue ? forecastValue - actualValue : 0;
 
                             return (
-                                <Card key={group.product} className="relative overflow-hidden bg-white dark:bg-slate-900 rounded-[1.2rem] shadow-sm border border-slate-200 dark:border-slate-800">
+                                <Card key={group.product} className="break-inside-avoid mb-4 xl:mb-8 relative overflow-hidden bg-white dark:bg-slate-900 rounded-[1.2rem] shadow-sm border border-slate-200 dark:border-slate-800">
                                     <div className="p-5 space-y-4">
                                         {/* Header */}
                                         <div className="flex justify-between items-center">
@@ -545,24 +548,36 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                                         </div>
 
                                         {/* Blue Card */}
-                                        <div className="bg-blue-600 text-white p-3 sm:p-4 rounded-xl flex items-center justify-between shadow-inner gap-2 mt-2 divide-x divide-blue-500/50">
+                                        <div className="bg-blue-600 text-white p-2.5 sm:p-4 rounded-xl flex items-center justify-between shadow-inner gap-1 sm:gap-2 mt-2 divide-x divide-blue-500/50">
                                             <div className="text-center flex-1 px-1 flex flex-col justify-center">
-                                                <div className="text-[18px] sm:text-xs font-bold opacity-80 flex flex-col xl:flex-row items-center justify-center gap-1 mb-1 leading-tight"><Target size={18} className="opacity-80 shrink-0 hidden sm:block" /> <span className="whitespace-nowrap">เป้าหมาย</span> </div>
-                                                <div className="text-lg sm:text-2xl font-black leading-tight mt-auto truncate w-full">{group.totalTarget.toFixed(1)}</div>
+                                                <div className="text-[10px] sm:text-xs font-bold opacity-80 flex flex-col xl:flex-row items-center justify-center gap-1 mb-1 leading-tight"><Target size={14} className="opacity-80 shrink-0 hidden sm:block" /> <span className="whitespace-nowrap">เป้าหมาย</span> </div>
+                                                <div className="text-base sm:text-2xl font-black leading-tight mt-auto truncate w-full">{group.totalTarget.toFixed(1)}</div>
                                             </div>
                                             <div className="text-center flex-1 px-1 flex flex-col justify-center">
-                                                <div className="text-[12px] sm:text-xs font-bold opacity-80 flex flex-col xl:flex-row items-center justify-center gap-1 mb-1 leading-tight"><CheckCircle2 size={14} className="opacity-80 shrink-0 hidden sm:block" /> <span className="whitespace-nowrap">คาดการณ์</span> </div>
-                                                <div className="text-lg flex flex-row items-center justify-center gap-1 sm:text-2xl font-black text-emerald-300 leading-tight mt-auto truncate w-full">{group.totalForecast.toFixed(1)}
-                                                    <div className="text-[9px] sm:text-xs text-emerald-200 opacity-90 font-bold mt-1 truncate ">({percent.toFixed(0)}%)</div>
-
-
+                                                <div className="text-[10px] sm:text-xs font-bold opacity-80 flex flex-col xl:flex-row items-center justify-center gap-1 mb-1 leading-tight"><CheckCircle2 size={12} className="opacity-80 shrink-0 hidden sm:block" /> <span className="whitespace-nowrap">คาดการณ์</span> </div>
+                                                <div className="text-base flex flex-col sm:flex-row items-center justify-center gap-0 sm:gap-1 sm:text-2xl font-black text-emerald-300 leading-tight mt-auto truncate w-full">{group.totalForecast.toFixed(1)}
+                                                    <div className="text-[9px] sm:text-xs text-emerald-200 opacity-90 font-bold sm:mt-1 truncate ">({percent.toFixed(0)}%)</div>
                                                 </div>
 
                                             </div>
-                                            <div className="text-center flex-1 px-1 flex flex-col justify-center">
-                                                <div className="text-[12px] sm:text-xs font-bold opacity-80 flex flex-col xl:flex-row items-center justify-center gap-1 text-rose-200 mb-1 leading-tight"><span className="text-[14px] font-black opacity-80 shrink-0 hidden sm:block">✗</span> <span className="whitespace-nowrap">ขาด</span> </div>
-                                                <div className="text-lg sm:text-2xl font-black text-rose-300 leading-tight mt-auto truncate w-full">{diff.toFixed(1)}</div>
+                                            <div className="text-center flex-1 px-1 flex flex-row justify-center border-l border-blue-500/50 gap-7">
+                                                <div className=" sm:text-xs font-bold opacity-80 flex flex-col xl:flex-col items-center justify-center  mb-1 leading-tight text-emerald-200">
+                                                    <span className="whitespace-nowrap text-[15px]">เกินเป้า</span>
+                                                    <div className="text-md sm:text-2xl font-black leading-tight mt-auto truncate w-full text-emerald-300">
+                                                        {groupExceed.toFixed(1)}
+                                                    </div>
+                                                </div>
+
+
+                                                <div className="text-[12px] sm:text-xs font-bold opacity-80 flex flex-col xl:flex-col items-center justify-center gap-1 mb-1 leading-tight text-rose-200">
+                                                    <span className="whitespace-nowrap text-[15px]">ขาดเป้า</span>
+                                                    <div className="text-md sm:text-2xl font-black leading-tight mt-auto truncate w-full text-rose-300">
+                                                        {groupMiss.toFixed(1)}
+                                                    </div>
+                                                </div>
+
                                             </div>
+
                                         </div>
 
                                         {/* Store Target List */}
@@ -576,9 +591,11 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                                                     const tActual = item.actual || 0;
                                                     const itemPercent = group.totalTarget > 0 ? (tWeek / group.totalTarget) * 100 : 0;
                                                     const actualPercent = tWeek > 0 ? (tActual / tWeek) * 100 : 0;
+                                                    const storeExceed = tActual > tWeek ? tActual - tWeek : 0;
+                                                    const storeMiss = tActual < tWeek ? tWeek - tActual : 0;
                                                     return (
                                                         <div key={item.id} className="relative overflow-hidden group/store text-[14px]">
-                                                            <div className="flex flex-col p-3 rounded-2xl bg-white dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/60 shadow-sm hover:border-blue-500/30 transition-all duration-300 h-full">
+                                                            <div className="flex flex-col p-2.5 rounded-2xl bg-white dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/60 shadow-sm hover:border-blue-500/30 transition-all duration-300 h-full">
                                                                 <div className="w-full space-y-0.5 relative">
                                                                     <div className="flex items-baseline justify-between gap-2">
                                                                         <div className="font-black text-[18px] text-slate-700 dark:text-slate-200 leading-tight truncate">{item.store?.name}</div>
@@ -586,15 +603,15 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                                                                     </div>
 
 
-                                                                    <div className="flex gap-2 mt-2 bg-slate-50/50 dark:bg-slate-900/50 p-1.5 rounded-xl border border-slate-100 dark:border-slate-800">
-                                                                        <div className="flex flex-col flex-1 pl-1">
-                                                                            <span className="opacity-80 text-[12px] font-bold text-slate-500 dark:text-slate-400 mb-0.5">เป้า</span>
-                                                                            <span className="text-slate-900 text-[16px] dark:text-slate-200 font-black truncate w-full">{tWeek.toFixed(1)}</span>
+                                                                    <div className="flex gap-2 mt-2 bg-slate-50/50 dark:bg-slate-900/50 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                                                                        <div className="flex flex-row items-center justify-between flex-1 px-1 sm:px-2">
+                                                                            <span className="opacity-80 text-[12px] sm:text-[14px] font-bold text-slate-500 dark:text-slate-400">เป้า</span>
+                                                                            <span className="text-slate-900 text-xl sm:text-2xl dark:text-slate-200 font-black truncate">{tWeek.toFixed(1)}</span>
                                                                         </div>
                                                                         <div className="w-px bg-slate-200 dark:bg-slate-800"></div>
-                                                                        <div className="flex flex-col flex-1 pr-1">
-                                                                            <span className="opacity-80 text-[12px] font-bold text-slate-500 dark:text-slate-400 mb-0.5">จริง</span>
-                                                                            <span className={cn("font-black text-[16px] truncate w-full", tActual > 0 ? "text-emerald-500" : "text-slate-400")}>{tActual.toFixed(1)}</span>
+                                                                        <div className="flex flex-row items-center justify-between flex-1 px-1 sm:px-2">
+                                                                            <span className="opacity-80 text-[12px] sm:text-[14px] font-bold text-slate-500 dark:text-slate-400">จริง</span>
+                                                                            <span className={cn("font-black text-xl sm:text-2xl truncate", tActual > 0 ? "text-emerald-500" : "text-slate-400")}>{tActual.toFixed(1)}</span>
                                                                         </div>
                                                                     </div>
                                                                 </div>
