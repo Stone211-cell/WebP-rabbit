@@ -115,7 +115,8 @@ function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onCha
 
     return (
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 relative p-3 sm:p-0 bg-slate-50 dark:bg-slate-900/40 sm:bg-transparent rounded-2xl border border-slate-100 dark:border-slate-800/50 sm:border-none">
-            <div className="flex-1">
+            <div className="flex-1 flex flex-col gap-1">
+                <Label className="text-[10px] sm:text-xs font-bold text-slate-500 px-1 hidden sm:block">สาขาขอลูกค้า</Label>
                 <StoreSearchBox
                     storeSearch={storeSearch}
                     setStoreSearch={setStoreSearch}
@@ -131,28 +132,44 @@ function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onCha
                 />
             </div>
             <div className="flex items-center gap-2">
-                <Input
-                    type="number"
-                    placeholder="เป้า (กก.)"
-                    className="h-12 flex-1 sm:w-28 border-slate-200 dark:border-slate-700 text-sm font-bold bg-white dark:bg-slate-900 rounded-2xl focus-visible:ring-blue-500"
-                    value={storeItem.target}
-                    onChange={(e) => onChangeTarget(index, e.target.value)}
-                />
-                <Input
-                    type="number"
-                    placeholder="จริง (กก.)"
-                    className="h-12 flex-1 sm:w-28 border-emerald-200 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-sm font-black bg-emerald-50/10 dark:bg-emerald-500/5 rounded-2xl focus-visible:ring-emerald-500 hidden"
-                    value={storeItem.actual || ''}
-                    onChange={(e) => onChangeActual(index, e.target.value)}
-                />
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-12 w-12 text-rose-500 bg-rose-50 hover:bg-rose-100 hover:text-rose-600 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 rounded-2xl shrink-0 transition-colors"
-                    onClick={() => onRemove(index)}
-                >
-                    <Trash2 size={16} />
-                </Button>
+                <div className="flex flex-col flex-1 sm:w-24 gap-1">
+                    <Label className="text-[10px] sm:text-xs font-bold text-slate-500 px-1 text-center">เป้า</Label>
+                    <Input
+                        type="number"
+                        placeholder="เป้า"
+                        className="h-12 w-full border-slate-200 dark:border-slate-700 text-sm py-0 text-center font-bold bg-white dark:bg-slate-900 rounded-2xl focus-visible:ring-blue-500"
+                        value={storeItem.target}
+                        onChange={(e) => onChangeTarget(index, e.target.value)}
+                    />
+                </div>
+                <div className="flex flex-col flex-1 sm:w-28 gap-1">
+                    <div className="flex justify-between items-center px-1">
+                        <Label className="text-[10px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400">ซื้อจริง</Label>
+                        {storeItem.target && parseFloat(storeItem.target) > 0 && storeItem.actual ? (
+                            <span className="text-[10px] sm:text-[11px] font-black text-emerald-500 bg-emerald-100 dark:bg-emerald-500/20 px-1.5 rounded-full">
+                                {((parseFloat(storeItem.actual) / parseFloat(storeItem.target)) * 100).toFixed(0)}%
+                            </span>
+                        ) : null}
+                    </div>
+                    <Input
+                        type="number"
+                        placeholder="จริง"
+                        className="h-12 w-full border-emerald-200 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-sm py-0 text-center font-black bg-emerald-50/10 dark:bg-emerald-500/5 rounded-2xl focus-visible:ring-emerald-500"
+                        value={storeItem.actual || ''}
+                        onChange={(e) => onChangeActual(index, e.target.value)}
+                    />
+                </div>
+                <div className="flex flex-col gap-1 justify-end">
+                    <div className="h-[14px] sm:h-[16px] hidden sm:block"></div> {/* Spacer to align with labels */}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-12 w-12 text-rose-500 bg-rose-50 hover:bg-rose-100 hover:text-rose-600 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 rounded-2xl shrink-0 transition-colors"
+                        onClick={() => onRemove(index)}
+                    >
+                        <Trash2 size={16} />
+                    </Button>
+                </div>
             </div>
         </div>
     )
@@ -558,6 +575,7 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                                                     const tWeek = item.targetWeek || 0;
                                                     const tActual = item.actual || 0;
                                                     const itemPercent = group.totalTarget > 0 ? (tWeek / group.totalTarget) * 100 : 0;
+                                                    const actualPercent = tWeek > 0 ? (tActual / tWeek) * 100 : 0;
                                                     return (
                                                         <div key={item.id} className="relative overflow-hidden group/store text-[15px]">
                                                             <div className="flex flex-col p-4 rounded-2xl bg-white dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/60 shadow-sm hover:border-blue-500/30 transition-all duration-300 h-full">
@@ -578,16 +596,42 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                                                                     </div>
                                                                 </div>
 
-                                                                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3 w-full shrink-0">
-                                                                    <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
-                                                                        <div
-                                                                            className="h-full bg-blue-500 dark:bg-blue-400 transition-all duration-1000 ease-out"
-                                                                            style={{ width: `${Math.min(itemPercent, 100)}%` }}
-                                                                        />
+                                                                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3 w-full shrink-0">
+                                                                    {/* Blue Target % */}
+                                                                    <div>
+                                                                        <div className="flex justify-between items-end mb-1.5">
+                                                                            <span className="text-[15px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">สัดส่วนเป้าหมาย</span>
+                                                                            <span className="text-[15px] font-black text-blue-500 dark:text-blue-400 transition-colors duration-500">
+                                                                                {itemPercent.toFixed(0)}%
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="flex items-center w-full">
+                                                                            <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner flex items-center">
+                                                                                <div
+                                                                                    className="h-full bg-blue-500 dark:bg-blue-400 transition-all duration-1000 ease-out"
+                                                                                    style={{ width: `${Math.min(itemPercent, 100)}%` }}
+                                                                                />
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
-                                                                    <span className="text-[17px] font-black text-blue-500 dark:text-blue-400 transition-colors duration-500 text-right min-w-[3.5rem]">
-                                                                        {itemPercent.toFixed(0)}%
-                                                                    </span>
+
+                                                                    {/* Green Actual % */}
+                                                                    <div>
+                                                                        <div className="flex justify-between items-end mb-1.5">
+                                                                            <span className="text-[15px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">สัดส่วนยอดซื้อจริง</span>
+                                                                            <span className="text-[15px] font-black text-emerald-500 dark:text-emerald-400 transition-colors duration-500">
+                                                                                {actualPercent.toFixed(0)}%
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="flex items-center w-full">
+                                                                            <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner flex items-center">
+                                                                                <div
+                                                                                    className="h-full bg-emerald-500 dark:bg-emerald-400 transition-all duration-1000 ease-out"
+                                                                                    style={{ width: `${Math.min(actualPercent, 100)}%` }}
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
