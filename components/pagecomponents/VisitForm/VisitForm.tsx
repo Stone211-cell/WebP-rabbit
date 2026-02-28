@@ -40,6 +40,7 @@ import { useSearch } from "@/components/hooks/useSearch"
 import { VisitTopics, VisitTypes, DealStatuses } from "@/lib/types/manu"
 import { ActionButton, FilterButton } from "@/components/crmhelper/helper"
 import { StoreSearchBox } from "@/components/crmhelper/StoreSearchBox"
+import { HistorySearchFilter } from "@/components/crmhelper/HistorySearchFilter"
 import { SalesPersonSelect } from "@/components/crmhelper/SalesPersonSelect"
 import { VisitDetailModal } from "./VisitDetailModal"
 import { Eye, Trash2, Upload, FileSpreadsheet, MapPin, Phone, CreditCard, Package, Clock, Truck, User, Store, Pencil } from "lucide-react"
@@ -610,32 +611,14 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
         </CardHeader>
 
         <CardContent className="p-8 space-y-8">
-          <div className="flex flex-col md:flex-row gap-6">
-            <div className="flex-1 space-y-1.5">
-              <Label className="text-xs font-black uppercase text-slate-400">ค้นหาประวัติ</Label>
-              <Input
-                placeholder="รหัส / ชื่อร้าน / รายละเอียด..."
-                value={historySearch}
-                onChange={(e) => setHistorySearch(e.target.value)}
-                className="bg-white/60 dark:bg-slate-800/60 h-12 rounded-2xl text-black dark:text-white"
-              />
-            </div>
-
-            <div className="w-full md:w-1/3 space-y-1.5">
-              <Label className="text-xs font-black uppercase text-slate-400">กรอกตามรายชื่อเซลล์</Label>
-              <Select value={salesFilter} onValueChange={setSalesFilter}>
-                <SelectTrigger className="bg-white/60 dark:bg-slate-800/60 h-12 rounded-2xl text-black dark:text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">ทั้งหมด (All Units)</SelectItem>
-                  {profiles?.map((p: any) => (
-                    <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <HistorySearchFilter
+            search={historySearch}
+            onSearchChange={setHistorySearch}
+            salesFilter={salesFilter}
+            onSalesFilterChange={setSalesFilter}
+            profiles={profiles}
+            searchLabel="ค้นหาประวัติ"
+          />
 
           <div className="rounded-[2rem] border border-slate-200/50 dark:border-slate-800/50 overflow-hidden shadow-inner bg-white/20">
             <Table style={{ tableLayout: 'fixed', width: '100%' }}>

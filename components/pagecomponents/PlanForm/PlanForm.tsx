@@ -37,7 +37,9 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useStoreSearch } from "@/components/hooks/useStoreSearch"
+import { useSearch } from "@/components/hooks/useSearch"
 import { VisitTopics } from "@/lib/types/manu"
+import { HistorySearchFilter } from "@/components/crmhelper/HistorySearchFilter"
 
 
 export default function PlanForm({ plans, stores, profiles, onRefresh, onCreate, onUpdate, onDelete, isAdmin, currentUserProfile }: any) {
@@ -67,12 +69,27 @@ export default function PlanForm({ plans, stores, profiles, onRefresh, onCreate,
         handleManualSearch
     } = useStoreSearch()
 
+    // 🌟 Local state for immediate UI updates
+    const [localPlans, setLocalPlans] = useState<any[]>(plans || [])
+
+    useEffect(() => {
+        setLocalPlans(plans || [])
+    }, [plans])
+
+    // 🔍 ใช้ shared useSearch hook สำหรับตัวกรองแผนงาน
+    const [salesFilter, setSalesFilter] = useState("all")
+    const { search: historySearch, setSearch: setHistorySearch, filtered: filteredPlans } = useSearch(
+        localPlans,
+        ['store.name', 'store.code', 'storeName', 'storeCode', 'notes', 'visitCat'],
+        salesFilter === 'all' ? undefined : (p: any) => p.sales === salesFilter
+    )
+
     // --- Order Auto-Calculation ---
     useEffect(() => {
         if (!form.sales || !form.date) return
 
         const targetDate = new Date(form.date).setHours(0, 0, 0, 0)
-        const relevantPlans = (plans || []).filter((p: any) =>
+        const relevantPlans = localPlans.filter((p: any) =>
             p.sales === form.sales &&
             new Date(p.date).setHours(0, 0, 0, 0) === targetDate
         )
@@ -83,7 +100,7 @@ export default function PlanForm({ plans, stores, profiles, onRefresh, onCreate,
         } else {
             setForm((prev: any) => ({ ...prev, order: "1" }))
         }
-    }, [form.sales, form.date, plans])
+    }, [form.sales, form.date, localPlans])
 
     // --- Week Navigation Logic ---
     const [currentWeekStart, setCurrentWeekStart] = useState(() => {
@@ -174,28 +191,44 @@ export default function PlanForm({ plans, stores, profiles, onRefresh, onCreate,
         try {
             if (editingPlan) {
                 // UPDATE
-                await updatePlan(editingPlan.id, {
+                const updatedData = {
                     ...form,
                     masterId: selectedStore.id,
                     date: new Date(form.date).toISOString(),
-                })
+                    store: selectedStore // add store object back for display
+                }
+                const res = await updatePlan(editingPlan.id, updatedData)
+
+                // Optimistic UI Update
+                setLocalPlans(prev => prev.map(p => p.id === editingPlan.id ? { ...p, ...updatedData, id: editingPlan.id } : p))
+
                 toast.success("แก้ไขแผนงานเรียบร้อยแล้ว")
-                if (onUpdate) onUpdate(editingPlan.id, { ...form, masterId: selectedStore.id, date: new Date(form.date).toISOString() })
+                if (onUpdate) onUpdate(editingPlan.id, updatedData)
             } else {
                 // CREATE
-                await createPlan({
+                const newData = {
                     ...form,
                     masterId: selectedStore.id,
                     date: new Date(form.date).toISOString(),
-                })
+                    store: selectedStore // add store object back for display
+                }
+                const res = await createPlan(newData)
+
+                // Optimistic UI Update
+                if (res && res.id) {
+                    setLocalPlans(prev => [res, ...prev])
+                } else {
+                    setLocalPlans(prev => [{ ...newData, id: Math.random().toString(36).substring(7) }, ...prev])
+                }
+
                 toast.success("บันทึกแผนเรียบร้อยแล้ว")
-                if (onCreate) onCreate({ ...form, masterId: selectedStore.id, date: new Date(form.date).toISOString() })
+                if (onCreate) onCreate(newData)
             }
 
             // ล้างฟอร์ม
             resetForm()
             setIsCreateOpen(false)
-            router.refresh()
+            if (onRefresh) onRefresh()
         } catch (error) {
             handleApiError(error)
         } finally {
@@ -208,8 +241,12 @@ export default function PlanForm({ plans, stores, profiles, onRefresh, onCreate,
         const toastId = toast.loading("กำลังลบแผนงาน...")
         try {
             await deletePlan(id)
+
+            // Optimistic UI Update
+            setLocalPlans(prev => prev.filter(p => p.id !== id))
+
             if (onDelete) await onDelete(id)
-            router.refresh()
+            if (onRefresh) onRefresh()
             toast.success("ลบแผนงานเรียบร้อยแล้ว!")
         } catch (error) {
             handleApiError(error)
@@ -563,7 +600,7 @@ export default function PlanForm({ plans, stores, profiles, onRefresh, onCreate,
                     <div className="flex items-center gap-3">
                         <div className="w-1.5 h-8 bg-indigo-500 rounded-full" />
                         <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                            รายการ แผน <span className="text-sm font-normal text-slate-500 ml-2">(ทั้งหมด {plans?.length || 0} รายการ)</span>
+                            รายการ แผน <span className="text-sm font-normal text-slate-500 ml-2">(ทั้งหมด {filteredPlans?.length || 0} รายการ)</span>
                         </h3>
                     </div>
                     <div className="flex items-center gap-2">
@@ -595,6 +632,16 @@ export default function PlanForm({ plans, stores, profiles, onRefresh, onCreate,
                     </div>
                 </div>
 
+                <HistorySearchFilter
+                    search={historySearch}
+                    onSearchChange={setHistorySearch}
+                    salesFilter={salesFilter}
+                    onSalesFilterChange={setSalesFilter}
+                    profiles={profiles}
+                    searchLabel="ค้นหาแผนงาน"
+                    searchPlaceholder="รหัส / ชื่อร้าน / รายละเอียด..."
+                />
+
                 <div className="bg-white text-black dark:bg-slate-900/50 dark:text-white rounded-[2rem] border border-slate-200/50 dark:border-slate-800/50 shadow-xl overflow-hidden">
                     <Table style={{ tableLayout: 'fixed', width: '100%' }}>
                         <TableHeader className="bg-slate-100/50 dark:bg-slate-800/50">
@@ -610,9 +657,13 @@ export default function PlanForm({ plans, stores, profiles, onRefresh, onCreate,
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {plans && plans.length > 0 ? (
-                                plans
-                                    .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                            {filteredPlans && filteredPlans.length > 0 ? (
+                                filteredPlans
+                                    .sort((a: any, b: any) => {
+                                        const dateDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
+                                        if (dateDiff !== 0) return dateDiff;
+                                        return (parseInt(a.order) || 0) - (parseInt(b.order) || 0);
+                                    })
                                     .map((p: any, index: number) => (
                                         <TableRow key={p.id} className="border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/10 transition-colors even:bg-slate-50/50 dark:even:bg-slate-800/5">
                                             <TableCell className="w-[80px] text-center text-xs text-slate-500 dark:text-slate-400 font-bold pl-6 hidden md:table-cell">{index + 1}</TableCell>
