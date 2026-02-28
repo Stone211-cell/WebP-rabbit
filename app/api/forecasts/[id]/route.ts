@@ -52,6 +52,9 @@ export async function PUT(
         notes: body.notes,
         weekStart: body.weekStart ? new Date(body.weekStart) : undefined,
       },
+      include: {
+        store: true,
+      },
     });
 
     return NextResponse.json(forecast);

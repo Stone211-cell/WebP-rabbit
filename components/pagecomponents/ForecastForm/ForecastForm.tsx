@@ -508,7 +508,7 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                 </div>
 
                 {groupedForecasts.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 xl:gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-1 gap-4 xl:gap-8">
                         {groupedForecasts.map(group => {
                             const diff = group.totalTarget - group.totalForecast
                             const percent = group.totalTarget > 0 ? (group.totalForecast / group.totalTarget) * 100 : 0
@@ -530,24 +530,28 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                                         {/* Blue Card */}
                                         <div className="bg-blue-600 text-white p-3 sm:p-4 rounded-xl flex items-center justify-between shadow-inner gap-2 mt-2 divide-x divide-blue-500/50">
                                             <div className="text-center flex-1 px-1 flex flex-col justify-center">
-                                                <div className="text-[10px] sm:text-xs font-bold opacity-80 flex flex-col xl:flex-row items-center justify-center gap-1 mb-1 leading-tight"><Target size={14} className="opacity-80 shrink-0 hidden sm:block" /> <span className="whitespace-nowrap">เป้าหมาย</span> </div>
+                                                <div className="text-[12px] sm:text-xs font-bold opacity-80 flex flex-col xl:flex-row items-center justify-center gap-1 mb-1 leading-tight"><Target size={14} className="opacity-80 shrink-0 hidden sm:block" /> <span className="whitespace-nowrap">เป้าหมาย</span> </div>
                                                 <div className="text-lg sm:text-2xl font-black leading-tight mt-auto truncate w-full">{group.totalTarget.toFixed(1)}</div>
                                             </div>
                                             <div className="text-center flex-1 px-1 flex flex-col justify-center">
-                                                <div className="text-[10px] sm:text-xs font-bold opacity-80 flex flex-col xl:flex-row items-center justify-center gap-1 mb-1 leading-tight"><CheckCircle2 size={14} className="opacity-80 shrink-0 hidden sm:block" /> <span className="whitespace-nowrap">คาดการณ์</span> </div>
-                                                <div className="text-lg sm:text-2xl font-black text-emerald-300 leading-tight mt-auto truncate w-full">{group.totalForecast.toFixed(1)}</div>
-                                                <div className="text-[9px] sm:text-xs text-emerald-200 opacity-90 font-bold mt-1 truncate w-full">({percent.toFixed(0)}%)</div>
+                                                <div className="text-[12px] sm:text-xs font-bold opacity-80 flex flex-col xl:flex-row items-center justify-center gap-1 mb-1 leading-tight"><CheckCircle2 size={14} className="opacity-80 shrink-0 hidden sm:block" /> <span className="whitespace-nowrap">คาดการณ์</span> </div>
+                                                <div className="text-lg flex flex-row items-center justify-center gap-1 sm:text-2xl font-black text-emerald-300 leading-tight mt-auto truncate w-full">{group.totalForecast.toFixed(1)}
+                                                    <div className="text-[9px] sm:text-xs text-emerald-200 opacity-90 font-bold mt-1 truncate ">({percent.toFixed(0)}%)</div>
+
+
+                                                </div>
+
                                             </div>
                                             <div className="text-center flex-1 px-1 flex flex-col justify-center">
-                                                <div className="text-[10px] sm:text-xs font-bold opacity-80 flex flex-col xl:flex-row items-center justify-center gap-1 text-rose-200 mb-1 leading-tight"><span className="text-[14px] font-black opacity-80 shrink-0 hidden sm:block">✗</span> <span className="whitespace-nowrap">ขาด</span> </div>
+                                                <div className="text-[12px] sm:text-xs font-bold opacity-80 flex flex-col xl:flex-row items-center justify-center gap-1 text-rose-200 mb-1 leading-tight"><span className="text-[14px] font-black opacity-80 shrink-0 hidden sm:block">✗</span> <span className="whitespace-nowrap">ขาด</span> </div>
                                                 <div className="text-lg sm:text-2xl font-black text-rose-300 leading-tight mt-auto truncate w-full">{diff.toFixed(1)}</div>
                                             </div>
                                         </div>
 
                                         {/* Store Target List */}
                                         <div className="space-y-3 mt-4 pt-2">
-                                            <div className="flex items-center gap-1.5 text-[10px] w-full font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                                                <ShoppingBag size={12} className="shrink-0" /> ร้านเป้าหมาย
+                                            <div className="flex items-center gap-1.5 text-[18px] w-full font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                                                <ShoppingBag size={18} className="shrink-0" /> ร้านเป้าหมาย
                                             </div>
                                             <div className="grid grid-cols-1 gap-2">
                                                 {group.items.map((item: any) => {
@@ -556,32 +560,34 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                                                     const itemPercent = group.totalTarget > 0 ? (tWeek / group.totalTarget) * 100 : 0;
                                                     return (
                                                         <div key={item.id} className="relative overflow-hidden group/store text-[15px]">
-                                                            <div className="flex justify-between items-center p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/60 hover:border-blue-500/30 transition-all duration-300 h-full">
-                                                                <div className="w-full pr-1 space-y-1">
-                                                                    <div className="font-black text-slate-700 dark:text-slate-200 text-sm leading-tight truncate w-full">{item.store?.name}</div>
-                                                                    <div className="font-bold text-slate-500 dark:text-slate-400 font-mono tracking-tighter opacity-80 text-[10px] uppercase truncate w-full">{item.store?.code}</div>
-                                                                    <div className="flex gap-2 mt-3 bg-white/50 dark:bg-slate-900/50 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
-                                                                        <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex flex-col flex-1">
-                                                                            <span className="opacity-80 text-[9px] mb-0.5">เป้า</span>
-                                                                            <span className="text-slate-900 dark:text-slate-200 font-black truncate w-full">{tWeek.toFixed(1)}</span>
+                                                            <div className="flex flex-col p-4 rounded-2xl bg-white dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/60 shadow-sm hover:border-blue-500/30 transition-all duration-300 h-full">
+                                                                <div className="w-full space-y-1 relative">
+                                                                    <div className="font-black text-[25px] text-slate-700 dark:text-slate-200 leading-tight truncate w-full pr-12">{item.store?.name}</div>
+                                                                    <div className="font-bold text-slate-500 dark:text-slate-400 font-mono tracking-tighter opacity-80 text-[18px] uppercase truncate w-full">{item.store?.code}</div>
+
+                                                                    <div className="flex gap-3 mt-4 bg-slate-50/50 dark:bg-slate-900/50 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                                                                        <div className="flex flex-col flex-1 pl-1">
+                                                                            <span className="opacity-80 text-[14px] font-bold text-slate-500 dark:text-slate-400 mb-0.5">เป้า</span>
+                                                                            <span className="text-slate-900 text-[18px] dark:text-slate-200 font-black truncate w-full">{tWeek.toFixed(1)}</span>
                                                                         </div>
-                                                                        <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex flex-col flex-1">
-                                                                            <span className="opacity-80 text-[9px] mb-0.5">จริง</span>
-                                                                            <span className={cn("font-black truncate w-full", tActual > 0 ? "text-emerald-500" : "text-slate-400")}>{tActual.toFixed(1)}</span>
+                                                                        <div className="w-px bg-slate-200 dark:bg-slate-800"></div>
+                                                                        <div className="flex flex-col flex-1 pr-1">
+                                                                            <span className="opacity-80 text-[14px] font-bold text-slate-500 dark:text-slate-400 mb-0.5">จริง</span>
+                                                                            <span className={cn("font-black text-[18px] truncate w-full", tActual > 0 ? "text-emerald-500" : "text-slate-400")}>{tActual.toFixed(1)}</span>
                                                                         </div>
                                                                     </div>
                                                                 </div>
 
-                                                                <div className="flex flex-col items-end gap-1.5 shrink-0 ml-2">
-                                                                    <span className="text-[13px] font-black text-blue-500 dark:text-blue-400 transition-colors duration-500">
-                                                                        {itemPercent.toFixed(0)}%
-                                                                    </span>
-                                                                    <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
+                                                                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3 w-full shrink-0">
+                                                                    <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
                                                                         <div
                                                                             className="h-full bg-blue-500 dark:bg-blue-400 transition-all duration-1000 ease-out"
                                                                             style={{ width: `${Math.min(itemPercent, 100)}%` }}
                                                                         />
                                                                     </div>
+                                                                    <span className="text-[17px] font-black text-blue-500 dark:text-blue-400 transition-colors duration-500 text-right min-w-[3.5rem]">
+                                                                        {itemPercent.toFixed(0)}%
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -699,7 +705,7 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                         </div>
 
                         {/* Section 2: Details and Summary */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 p-5 bg-slate-50 dark:bg-slate-950/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 shadow-inner">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 p-4 sm:p-5 bg-slate-50 dark:bg-slate-950/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 shadow-inner">
                             <div className="space-y-2 min-w-0">
                                 <Label className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">
                                     <ShoppingBag size={12} /> ชนิดสินค้า
@@ -751,7 +757,7 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
 
                         <div className="space-y-3">
                             <div className="flex justify-between items-center">
-                                <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5"><ShoppingBag size={14} /> ร้านเป้าหมาย</Label>
+                                <Label className="text-sm  font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5"><ShoppingBag size={14} /> ร้านเป้าหมาย</Label>
                                 <Button
                                     size="sm"
                                     variant="outline"
