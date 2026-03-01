@@ -525,7 +525,7 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                 </div>
 
                 {groupedForecasts.length > 0 ? (
-                    <div className="columns-1 xl:columns-2 gap-4 xl:gap-8 space-y-4 xl:space-y-8">
+                    <div className="columns-2 xl:columns-2 gap-4 xl:gap-8 space-y-4 xl:space-y-8">
                         {groupedForecasts.map(group => {
                             const percent = group.totalTarget > 0 ? (group.totalForecast / group.totalTarget) * 100 : 0
                             const forecastValue = group.totalForecast || 0;
