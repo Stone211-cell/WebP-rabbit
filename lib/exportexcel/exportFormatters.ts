@@ -103,3 +103,30 @@ export const getStoresExportData = (stores: any[]) => {
 export const exportStoresToExcel = (stores: any[]) => {
     exportToExcel(getStoresExportData(stores), "StoreInformation", "ฐานข้อมูลลูกค้า");
 };
+
+// 4. ส่งออกข้อมูลคาดการณ์ (Forecasts)
+export const getForecastsExportData = (forecasts: any[]) => {
+    const sortedForecasts = [...(forecasts || [])].sort((a: any, b: any) => {
+        const storeA = a.store?.name || a.product || "";
+        const storeB = b.store?.name || b.product || "";
+        return storeA.localeCompare(storeB);
+    });
+
+    return sortedForecasts.map((f: any, index: number) => ({
+        "ลำดับ": index + 1,
+        "ร้านค้า": f.store?.name || "ไม่ระบุร้านค้า",
+        "รหัสร้าน": f.store?.code || "-",
+        "ชิ้นส่วนเนื้อ/สินค้า": f.product || "-",
+        "รูปแบบสินค้า": f.productType || "-",
+        "เป้าหมายรายสัปดาห์ (กก.)": f.targetWeek || 0,
+        "เป้าหมายรายเดือน (กก.)": f.targetMonth || 0,
+        "คาดการณ์สัปดาห์ (กก.)": f.forecast || 0,
+        "ยอดซื้อจริงสัปดาห์ (กก.)": f.actual || 0,
+        "เกินเป้า/ขาดเป้า": (f.actual || 0) - (f.forecast || 0),
+        "หมายเหตุ": f.notes || ""
+    }));
+};
+
+export const exportForecastsToExcel = (forecasts: any[], fileName: string = "ข้อมูลคาดการณ์") => {
+    exportToExcel(getForecastsExportData(forecasts), fileName, "ข้อมูลคาดการณ์");
+};

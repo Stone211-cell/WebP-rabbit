@@ -10,6 +10,7 @@ import './crm.css';
 
 import dynamic from 'next/dynamic';
 import Dashboard from '@/components/pagecomponents/Dashboard/Dashboard';
+import ForecastFormStore from '@/components/pagecomponents/ForecastFormStore/ForecastForm';
 
 // Lazy-loaded page components — only loaded when the user navigates to that section
 const VisitForm = dynamic(() => import('@/components/pagecomponents/VisitForm/VisitForm'), { ssr: false })
@@ -146,14 +147,24 @@ export default function CRMPage() {
               className={`nav-tab ${activePage === 'forecast' ? 'active' : ''}`}
               onClick={() => setActivePage('forecast')}
             >
-              📈 คาดการณ์รายสัปดาห์
+              📈 คาดการณ์รายสัปดาห์ชิ้นส่วน
+            </button>
+
+            <button
+              className={`nav-tab ${activePage === 'forecaststore' ? 'active' : ''}`}
+              onClick={() => setActivePage('forecaststore')}
+            >
+              📈 คาดการณ์รายสัปดาห์ร้านค้า
             </button>
             <button
               className={`nav-tab ${activePage === 'jobcard' ? 'active' : ''}`}
               onClick={() => setActivePage('jobcard')}
             >
               🎴 Job Card
+
             </button>
+
+
             <button
               className={`nav-tab ${activePage === 'alerts' ? 'active' : ''}`}
               onClick={() => setActivePage('alerts')}
@@ -295,6 +306,19 @@ export default function CRMPage() {
             {/* คาดการณ์รายสัปดาห์ */}
             <div id="forecast" className="page" style={{ display: activePage === 'forecast' ? 'block' : 'none' }}>
               <ForecastForm
+                stores={stores}
+                forecasts={forecasts}
+                onRefresh={fetchForecasts}
+                onCreate={createForecast}
+                onUpdate={updateForecast}
+                onDelete={deleteForecast}
+                isAdmin={isAdmin}
+              />
+            </div>
+
+            {/* คาดการณ์รายสัปดาห์ชิ้นส่วน */}
+            <div id="forecaststore" className="page" style={{ display: activePage === 'forecaststore' ? 'block' : 'none' }}>
+              <ForecastFormStore
                 stores={stores}
                 forecasts={forecasts}
                 onRefresh={fetchForecasts}

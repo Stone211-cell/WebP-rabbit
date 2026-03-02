@@ -12,12 +12,18 @@ export function formatThaiDate(date: Date | string | number | undefined | null, 
   const d = new Date(date)
   if (isNaN(d.getTime())) return "-"
 
-  const thaiDate = new Date(d)
-  if (thaiDate.getFullYear() < 2400) {
-    thaiDate.setFullYear(thaiDate.getFullYear() + 543)
+  const christianYear = d.getFullYear()
+  const buddhistYear = christianYear < 2400 ? christianYear + 543 : christianYear
+
+  // We format normally to get the right Day, Leap Year, and Day of Week
+  let formatted = format(d, formatStr, { locale: th })
+
+  // Then we swap out the Christian year for Buddhist year globally in the formatted string
+  if (christianYear !== buddhistYear) {
+    formatted = formatted.replace(new RegExp(christianYear.toString(), 'g'), buddhistYear.toString())
   }
 
-  return format(thaiDate, formatStr, { locale: th })
+  return formatted
 }
 
 export function normalizeName(s: string) {

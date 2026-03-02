@@ -48,8 +48,11 @@ import {
     Target,
     ShoppingBag,
     CheckCircle2,
+    Download,
     //    AlertCircle
 } from "lucide-react"
+
+import { exportForecastsToExcel } from "@/lib/exportexcel/exportFormatters"
 
 const safeFloat = (val: any) => {
     const parsed = parseFloat(val)
@@ -507,14 +510,24 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                         </Button>
                     </div>
 
-                    {isAdmin && (
+                    <div className="flex items-center gap-2">
                         <Button
-                            onClick={openAddDialog}
-                            className="bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition-all active:scale-95 px-6 shadow-lg hover:shadow-xl"
+                            variant="outline"
+                            onClick={() => exportForecastsToExcel(forecasts, `คาดการณ์_ชิ้นส่วนเนื้อ_${formatThaiDate(weekStart, "d_MMM_yyyy")}`)}
+                            className="bg-white/80 dark:bg-slate-800/80 text-emerald-600 dark:text-emerald-400 font-bold rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700 transition-all active:scale-95 px-5 shadow-sm border-emerald-200 dark:border-emerald-800"
                         >
-                            <Plus size={18} className="mr-1" />เพิ่มคาดการณ์
+                            <Download size={16} className="mr-2" />ส่งออก Excel
                         </Button>
-                    )}
+
+                        {isAdmin && (
+                            <Button
+                                onClick={openAddDialog}
+                                className="bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition-all active:scale-95 px-6 shadow-lg hover:shadow-xl"
+                            >
+                                <Plus size={18} className="mr-1" />เพิ่มคาดการณ์
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -689,7 +702,7 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50/50 dark:bg-slate-900/30 rounded-[2rem] border border-slate-100 dark:border-slate-800/50">
                             <div className="space-y-2">
                                 <Label className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">เลือกกลุ่ม/ประเภท</Label>
-                                <Select value={partCategoryFilter} onValueChange={setPartCategoryFilter}>
+                                <Select value={partCategoryFilter} onValueChange={setPartCategoryFilter} disabled={!!selectedMeatPart}>
                                     <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700/50 font-medium rounded-xl shadow-sm">
                                         <SelectValue placeholder="-- ทั้งหมด --" />
                                     </SelectTrigger>
