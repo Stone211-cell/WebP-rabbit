@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { checkIsAdmin } from '@/lib/auth'
 
 // GET - Query database size from PostgreSQL (Supabase)
 export async function GET() {
+    if (!await checkIsAdmin()) {
+        return NextResponse.json({ error: 'Unauthorized: Admin only' }, { status: 403 });
+    }
     try {
         // Query the actual database size from PostgreSQL
         const result: any[] = await prisma.$queryRawUnsafe(`

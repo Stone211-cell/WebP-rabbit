@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { checkIsAdmin } from '@/lib/auth';
 
 // PUT - แก้ไขแผน
-export async function PUT(
+export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
@@ -32,7 +32,7 @@ export async function PUT(
 
     return NextResponse.json(plan);
   } catch (error) {
-    console.error('PUT /api/plans/[id] error:', error);
+    console.error('PATCH /api/plans/[id] error:', error);
     return NextResponse.json(
       { error: 'Failed to update plan' },
       { status: 500 }

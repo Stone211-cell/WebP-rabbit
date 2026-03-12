@@ -3,13 +3,16 @@
 import { useState, useMemo } from "react"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { Search, MapPin, ClipboardList, Calendar, User, Tag, Heart, ArrowRight } from "lucide-react"
+import { Search, MapPin, ClipboardList, Calendar, User, Tag, Heart, ArrowRight, Eye } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 
-export default function Fine({ stores = [], visits = [], plans = [] }: any) {
+import { StoreDetailModal } from "@/components/pagecomponents/StoreInformation/StoreDetailModal"
+
+export default function Fine({ stores = [], visits = [], plans = [], issues = [] }: any) {
   const [query, setQuery] = useState("")
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [viewingStore, setViewingStore] = useState<any>(null)
 
   // ===== SEARCH LOGIC =====
   const searchResults = useMemo(() => {
@@ -234,7 +237,13 @@ export default function Fine({ stores = [], visits = [], plans = [] }: any) {
                             👤 {s.owner || "ไม่ระบุเจ้าของ"}
                           </p>
                         </div>
-                        <Heart className="w-5 h-5 text-red-500 " />
+                        <button
+                          onClick={() => setViewingStore(s)}
+                          className="h-10 w-10 flex items-center justify-center text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl transition-colors shrink-0"
+                          title="ดูรายละเอียดร้าน"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </button>
                       </CardContent>
                     </Card>
                   ))}
@@ -279,6 +288,15 @@ export default function Fine({ stores = [], visits = [], plans = [] }: any) {
         <div
           className="fixed inset-0 z-40 bg-transparent"
           onClick={() => setShowSuggestions(false)}
+        />
+      )}
+      {/* Store Detail Modal */}
+      {viewingStore && (
+        <StoreDetailModal
+          store={viewingStore}
+          visits={visits}
+          issues={issues}
+          onClose={() => setViewingStore(null)}
         />
       )}
     </div>

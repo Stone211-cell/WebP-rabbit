@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
@@ -116,7 +116,6 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
     })
 
     const [newPartCategory, setNewPartCategory] = useState<string>("")
-    const [savedMeatParts, setSavedMeatParts] = useState<{ id: string; name: string; category: string }[]>([])
     const {
         search: partSearch,
         setSearch: setPartSearch,
@@ -130,19 +129,7 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
         filtered: filteredParts,
         addPart: addMeatPart,
         deletePart: deletePartItem,
-    } = useMeatPartSearch(savedMeatParts)
-
-    useEffect(() => {
-        const fetchParts = async () => {
-            try {
-                const { data } = await axios.get('/api/meat-parts')
-                setSavedMeatParts(data && data.length > 0 ? data : DEFAULT_MEAT_PARTS)
-            } catch {
-                setSavedMeatParts(DEFAULT_MEAT_PARTS)
-            }
-        }
-        fetchParts()
-    }, [])
+    } = useMeatPartSearch()
 
     const handleAddPart = async () => {
         if (!partSearch) return toast.error("กรุณาพิมพ์ชื่อชิ้นส่วนเนื้อ")
@@ -151,7 +138,6 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
 
         const newPart = await addMeatPart(partSearch, finalCategory)
         if (newPart) {
-            setSavedMeatParts(prev => [newPart, ...prev.filter(p => p.id !== newPart.id)])
             selectMeatPart(newPart)
         }
     }
@@ -161,7 +147,6 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
         if (!confirm("ยืนยันลบชิ้นส่วนนี้?")) return
         const ok = await deletePartItem(id)
         if (ok) {
-            setSavedMeatParts(prev => prev.filter(p => p.id !== id))
             if (selectedMeatPart?.id === id) clearMeatPart()
         }
     }
@@ -234,7 +219,7 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
         })
 
         // Find existing part or fallback to manual search string
-        const tempParts = savedMeatParts.length > 0 ? savedMeatParts : DEFAULT_MEAT_PARTS;
+        const tempParts = filteredParts.length > 0 ? filteredParts : [];
         const foundPart = tempParts.find(p => p.name === item.product)
         if (foundPart) selectMeatPart(foundPart)
         else setPartSearch(item.product || "")
@@ -501,24 +486,24 @@ export default function ForecastForm({ forecasts, onRefresh, onCreate, onUpdate,
 
             {/* --- PRODUCT SUMMARY --- */}
             {summary.products.length > 0 && (
-                <Card className="bg-slate-900 text-slate-300 border-slate-800 rounded-[2rem] overflow-hidden">
+                <Card className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-800 rounded-[2rem] overflow-hidden shadow-sm">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex items-center gap-2">
-                            <ShoppingBag size={18} className="text-orange-400" /> สรุปตามสินค้า
+                        <CardTitle className="text-base flex items-center gap-2 text-slate-900 dark:text-white">
+                            <ShoppingBag size={18} className="text-orange-500 dark:text-orange-400" /> สรุปตามสินค้า
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <div className="divide-y divide-slate-800">
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
                             {summary.products.map((p, i) => (
-                                <div key={i} className="flex justify-between items-center p-4 hover:bg-white/5 transition-colors">
-                                    <div className="font-bold text-white ml-2">{p.name}</div>
+                                <div key={i} className="flex justify-between items-center p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                                    <div className="font-bold text-slate-900 dark:text-white ml-2">{p.name}</div>
                                     <div className="text-right text-xs space-y-1 mr-2">
                                         <div className="flex gap-4 opacity-70">
-                                            <span>คาดการณ์ {p.forecast}</span>
-                                            <span>ซื้อจริง {p.actual}</span>
+                                            <span>คาดการณ์ {(Number(p.forecast) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                                            <span>ซื้อจริง {(Number(p.actual) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                                         </div>
-                                        <div className={cn("font-bold text-sm", (p.actual - p.forecast) >= 0 ? "text-emerald-400" : "text-rose-400")}>
-                                            ส่วนต่าง {(p.actual - p.forecast) > 0 ? "+" : ""}{(p.actual - p.forecast).toLocaleString()}
+                                        <div className={cn("font-bold text-sm", (p.actual - p.forecast) >= 0 ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400")}>
+                                            ส่วนต่าง {(p.actual - p.forecast) > 0 ? "+" : ""}{(Number((p.actual - p.forecast).toFixed(2))).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                         </div>
                                     </div>
                                 </div>

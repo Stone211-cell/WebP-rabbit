@@ -53,7 +53,7 @@ export default function OrderTracking({ stores, visits, isAdmin }: any) {
             const newStatus = currentStatus === "paid" ? "pending" : "paid";
             // Optimistic rendering
             setPosts(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p))
-            await axios.put(`/api/OrderTracking/${id}`, { status: newStatus })
+            await axios.patch(`/api/OrderTracking/${id}`, { status: newStatus })
             toast.success("อัปเดตสถานะการสั่งซื้อสำเร็จ")
         } catch (error) {
             handleApiError(error)

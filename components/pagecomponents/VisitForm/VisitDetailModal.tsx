@@ -98,14 +98,17 @@ export function VisitDetailModal({ visit, onClose }: VisitDetailModalProps) {
                             <h3 className="text-slate-400 font-medium text-sm">บันทึกเข้าพบ</h3>
                             {visit.notes && Object.keys(visit.notes).length > 0 ? (
                                 <div className="space-y-3">
-                                    {Object.entries(visit.notes).map(([key, note]: [string, any]) => (
-                                        <div key={key} className="bg-slate-800/30 p-4 rounded-lg border border-slate-700/50">
-                                            <div className="text-xs text-blue-400 font-bold mb-2 uppercase tracking-wider">ครั้งที่ {key}</div>
-                                            <p className="text-slate-300 whitespace-pre-wrap leading-relaxed text-sm">
-                                                {typeof note === 'string' ? note : (note?.text || JSON.stringify(note))}
-                                            </p>
-                                        </div>
-                                    ))}
+                                    {Object.entries(visit.notes)
+                                        .filter(([key]) => !isNaN(Number(key))) // กรองเฉพาะ key ที่เป็นตัวเลข
+                                        .sort(([a], [b]) => Number(a) - Number(b)) // เรียงน้อยไปมาก
+                                        .map(([key, note]: [string, any]) => (
+                                            <div key={key} className="bg-slate-800/30 p-4 rounded-lg border border-slate-700/50">
+                                                <div className="text-xs text-blue-400 font-bold mb-2 uppercase tracking-wider">ครั้งที่ {key}</div>
+                                                <p className="text-slate-300 whitespace-pre-wrap leading-relaxed text-sm">
+                                                    {typeof note === 'string' ? note : (note?.text || note?.voice || JSON.stringify(note))}
+                                                </p>
+                                            </div>
+                                        ))}
                                 </div>
                             ) : (
                                 <div className="text-slate-500 italic text-sm">ไม่มีบันทึก</div>

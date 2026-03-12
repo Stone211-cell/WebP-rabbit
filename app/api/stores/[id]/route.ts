@@ -47,7 +47,7 @@ export async function GET(
 /* =========================
    PUT - แก้ไขร้านค้า
 ========================= */
-export async function PUT(
+export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {

@@ -82,10 +82,10 @@ export async function POST(request: NextRequest) {
                 // Determine correct deal status based on string matching or fallback
                 let dealStatus = visitData.status || "เปิดการขาย";
 
-                // Map notes securely
+                // Map notes securely (ใช้ key ตัวเลขแทน text เพื่อให้ consistent กับระบบใหม่)
                 let notesJSON: any = null;
                 if (visitData.notes) {
-                    notesJSON = { text: visitData.notes };
+                    notesJSON = { 1: visitData.notes };
                 }
 
                 // Verify Date is valid

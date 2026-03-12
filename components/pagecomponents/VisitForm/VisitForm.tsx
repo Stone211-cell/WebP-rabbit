@@ -1,10 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
 import { axiosInstance } from "@/lib/axios"
 import * as XLSX from "xlsx"
-import { createVisit, updateVisit } from "@/lib/api/visits"
 import { handleApiError } from "@/lib/handleError"
 import { toast } from "sonner"
 import { cn, formatThaiDate, confirmDelete, confirmClearAll } from "@/lib/utils"
@@ -46,7 +44,6 @@ import { VisitDetailModal } from "./VisitDetailModal"
 import { Eye, Trash2, Upload, FileSpreadsheet, MapPin, Phone, CreditCard, Package, Clock, Truck, User, Store, Pencil } from "lucide-react"
 
 export default function VisitForm({ visits, stores, profiles, onRefresh, onCreate, onUpdate, onDelete, isAdmin, hasProfile, currentUserProfile }: any) {
-  const router = useRouter()
   const [form, setForm] = useState<any>({
     sales: !isAdmin && currentUserProfile ? currentUserProfile.name : "",
     date: new Date().toLocaleDateString('en-CA'),
@@ -99,27 +96,34 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
 
   // 🚀 จัดการการบันทึก (Clean Pattern)
   const handleSubmit = async () => {
-    if (!form.sales || !selectedStore) {
-      toast.error("กรุณาเลือกเซลล์และร้านค้า")
+    if (!form.sales) {
+      toast.error("กรุณาเลือกพนักงานขาย")
+      return
+    }
+    if (!editingVisitId && !selectedStore) {
+      toast.error("กรุณาเลือกร้านค้า")
       return
     }
 
     setIsSubmitting(true)
     try {
+      const masterId = selectedStore?.id || form.masterId
       const payload = {
         ...form,
-        masterId: selectedStore.id,
+        masterId,
         date: new Date(form.date).toISOString()
       }
 
       if (editingVisitId) {
-        await updateVisit(editingVisitId, payload)
+        if (onUpdate) {
+          await onUpdate(editingVisitId, payload)
+        }
         toast.success("แก้ไขการเข้าพบเรียบร้อยแล้ว!")
-        if (onUpdate) onUpdate(editingVisitId, payload)
       } else {
-        await createVisit(payload)
+        if (onCreate) {
+          await onCreate(payload)
+        }
         toast.success("บันทึกการเข้าพบเรียบร้อยแล้ว!")
-        if (onCreate) onCreate(payload)
       }
 
       // ล้างฟอร์ม
@@ -135,7 +139,6 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
       })
       clearStore()
       setEditingVisitId(null)
-      router.refresh()
     } catch (error) {
       handleApiError(error)
     } finally {
@@ -152,11 +155,12 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
       dealStatus: visit.dealStatus || "เปิดการขาย",
       closeReason: visit.closeReason || "",
       visitCat: visit.visitCat || "ตรวจเยี่ยมประจำเดือน",
-      notes: visit.notes || {}
+      notes: visit.notes || {},
+      masterId: visit.masterId || visit.store?.id  // ✅ เก็บ masterId ไว้เป็น fallback
     })
 
     // Automatically select the store for the form
-    selectStore(visit.store)
+    if (visit.store) selectStore(visit.store)
 
     // Scroll to top to bring form into view
     window.scrollTo({ top: 0, behavior: "smooth" })
@@ -183,7 +187,6 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
     try {
       const res = await axiosInstance.delete('/visits')
       toast.success(res.data.message || "ลบข้อมูลทั้งหมดเรียบร้อยแล้ว")
-      router.refresh()
       if (onRefresh) onRefresh()
     } catch (error) {
       handleApiError(error)
@@ -197,10 +200,12 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
     if (!confirmDelete(name || "การเข้าพบนี้")) return
     const toastId = toast.loading("กำลังลบข้อมูล...")
     try {
-      await axiosInstance.delete(`/visits/${id}`)
+      if (onDelete) {
+        await onDelete(id)
+      } else {
+        await axiosInstance.delete(`/visits/${id}`)
+      }
       toast.success("ลบข้อมูลสำเร็จ")
-      if (onDelete) onDelete(id)
-      router.refresh()
     } catch (error) {
       handleApiError(error)
     } finally {
@@ -265,7 +270,6 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
       toast.dismiss(toastId)
       if (res.data.success > 0) {
         toast.success(`นำเข้าข้อมูลสำเร็จ ${res.data.success} รายการ, ล้มเหลว ${res.data.failed} รายการ`)
-        router.refresh()
         if (onRefresh) onRefresh()
       } else {
         toast.error(`ไม่สามารถนำเข้าข้อมูลได้ ล้มเหลว ${res.data.failed} รายการ`)
@@ -520,32 +524,80 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
             </div>
           )}
 
-          {/* Detailed Visit Notes */}
+          {/* Detailed Visit Notes — UNLIMITED */}
           <div className="space-y-4">
-            <Label className="text-slate-900 dark:text-white font-black text-lg">บันทึกรายละเอียดการพบปะ</Label>
-            <Tabs defaultValue="1" className="w-full">
-              <div className="overflow-x-auto pb-2 scrollbar-none">
-                <TabsList className="bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-2xl border border-slate-200 dark:border-slate-700">
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <TabsTrigger key={i} value={`${i + 1}`} className="rounded-xl px-4 py-2 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-blue-600 shadow-none">
-                      ครั้งที่ {i + 1}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </div>
+            <div className="flex items-center justify-between">
+              <Label className="text-slate-900 dark:text-white font-black text-lg">บันทึกรายละเอียดการพบปะ</Label>
+              <button
+                type="button"
+                onClick={() => {
+                  const numericKeys = Object.keys(form.notes || {}).filter(k => !isNaN(Number(k))).map(Number)
+                  const nextKey = numericKeys.length > 0 ? Math.max(...numericKeys) + 1 : 1
+                  handleChange("notes", { ...form.notes, [nextKey]: "" })
+                }}
+                className="flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 px-4 py-2 rounded-xl transition-colors"
+              >
+                {(() => {
+                  const numericKeys = Object.keys(form.notes || {}).filter(k => !isNaN(Number(k))).map(Number)
+                  const nextKey = numericKeys.length > 0 ? Math.max(...numericKeys) + 1 : 1
+                  return `+ เพิ่มครั้งที่ ${nextKey}`
+                })()}
+              </button>
+            </div>
 
-              {Array.from({ length: 8 }).map((_, i) => (
-                <TabsContent key={i} value={`${i + 1}`} className="mt-4">
-                  <Textarea
-                    placeholder={`รายละเอียดการพูดคุย ครั้งที่ ${i + 1}...`}
-                    value={form.notes?.[i + 1] || ""}
-                    onChange={(e) => handleChange("notes", { ...form.notes, [i + 1]: e.target.value })}
-                    className="min-h-[150px] bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-[2rem] p-6 focus:ring-2 focus:ring-blue-500/20 transition-all font-medium leading-relaxed"
-                  />
-                </TabsContent>
-              ))}
-            </Tabs>
+            <div className="space-y-4">
+              {Object.keys(form.notes || {}).filter(k => !isNaN(Number(k))).length === 0 && (
+                <div className="text-center py-8 text-slate-400 italic text-sm border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[2rem]">
+                  กดปุ่ม <span className="font-bold text-blue-500">+ เพิ่มครั้งที่ 1</span> เพื่อเริ่มบันทึก
+                </div>
+              )}
+              {Object.entries(form.notes || {})
+                .filter(([key]) => !isNaN(Number(key)))
+                .sort(([a], [b]) => Number(a) - Number(b))
+                .map(([key, value]) => (
+                  <div key={key} className="space-y-2">
+                    <div className="flex items-center justify-between px-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">ครั้งที่</span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={key}
+                          onChange={(e) => {
+                            const newKey = e.target.value
+                            if (!newKey || newKey === key) return
+                            const newNotes = { ...form.notes }
+                            const oldVal = newNotes[key]
+                            delete newNotes[key]
+                            newNotes[newKey] = oldVal
+                            handleChange("notes", newNotes)
+                          }}
+                          className="w-16 h-7 text-center text-sm font-black bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newNotes = { ...form.notes }
+                          delete newNotes[key]
+                          handleChange("notes", newNotes)
+                        }}
+                        className="text-xs font-bold text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 px-3 py-1 rounded-lg transition-colors"
+                      >
+                        ลบ
+                      </button>
+                    </div>
+                    <Textarea
+                      placeholder={`รายละเอียดการพูดคุย ครั้งที่ ${key}...`}
+                      value={(value as string) || ""}
+                      onChange={(e) => handleChange("notes", { ...form.notes, [key]: e.target.value })}
+                      className="min-h-[130px] bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-[2rem] p-6 focus:ring-2 focus:ring-blue-500/20 transition-all font-medium leading-relaxed"
+                    />
+                  </div>
+                ))}
+            </div>
           </div>
+
 
           <div className="flex gap-4 pt-4">
             <Button onClick={handleSubmit} disabled={isSubmitting} className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black text-lg py-8 rounded-[2rem] shadow-xl transition-all active:scale-95">

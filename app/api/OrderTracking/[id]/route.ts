@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { checkIsAdmin } from "@/lib/auth"
 import { renderError } from "@/lib/rendererror"
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     if (!await checkIsAdmin()) {
         return NextResponse.json({ error: "Unauthorized: Admin only" }, { status: 403 });
     }

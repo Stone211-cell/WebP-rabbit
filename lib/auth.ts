@@ -1,5 +1,6 @@
 'use server';
 import { auth, currentUser } from '@clerk/nextjs/server';
+import { prisma } from './prisma';
 
 /**
  * Checks if the current user has the 'admin' role.
@@ -35,4 +36,20 @@ export async function checkHasProfile() {
  */
 export async function getIsAdminAction() {
     return await checkIsAdmin();
+}
+
+/**
+ * Gets the database profile for the current user.
+ */
+export async function getUserProfile() {
+    try {
+        const user = await currentUser();
+        if (!user) return null;
+
+        return await prisma.profile.findUnique({
+            where: { clerkId: user.id }
+        });
+    } catch (e) {
+        return null;
+    }
 }

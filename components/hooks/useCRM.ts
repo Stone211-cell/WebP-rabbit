@@ -98,7 +98,7 @@ export function useCRM(filters?: {
   };
 
   const updateStore = async (id: string, store: Partial<Store>) => {
-    const res = await axios.put<Store>(`/api/stores/${id}`, store);
+    const res = await axios.patch<Store>(`/api/stores/${id}`, store);
     mutateStores((prev = []) => prev.map(s => s.id === id ? res.data : s), false);
     return res.data;
   };
@@ -116,7 +116,7 @@ export function useCRM(filters?: {
   };
 
   const updateVisit = async (id: string, visit: Partial<Visit>) => {
-    const res = await axios.put<Visit>(`/api/visits/${id}`, visit);
+    const res = await axios.patch<Visit>(`/api/visits/${id}`, visit);
     mutateVisits((prev = []) => prev.map(v => v.id === id ? res.data : v), false);
     return res.data;
   };
@@ -134,7 +134,7 @@ export function useCRM(filters?: {
   };
 
   const updatePlan = async (id: string, plan: Partial<Plan>) => {
-    const res = await axios.put<Plan>(`/api/plans/${id}`, plan);
+    const res = await axios.patch<Plan>(`/api/plans/${id}`, plan);
     mutatePlans((prev = []) => prev.map(p => p.id === id ? res.data : p), false);
     return res.data;
   };
@@ -152,7 +152,7 @@ export function useCRM(filters?: {
   };
 
   const updateForecast = async (id: string, forecast: Partial<Forecast>) => {
-    const res = await axios.put<Forecast>(`/api/forecasts/${id}`, forecast);
+    const res = await axios.patch<Forecast>(`/api/forecasts/${id}`, forecast);
     mutateForecasts((prev = []) => prev.map(f => f.id === id ? res.data : f), false);
     return res.data;
   };
@@ -170,7 +170,7 @@ export function useCRM(filters?: {
   };
 
   const updateIssue = async (id: string, issue: any) => {
-    const res = await axios.put(`/api/issues/${id}`, issue);
+    const res = await axios.patch(`/api/issues/${id}`, issue);
     mutateIssues((prev = []) => prev.map(i => i.id === id ? res.data : i), false);
     return res.data;
   };

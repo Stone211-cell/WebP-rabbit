@@ -63,7 +63,7 @@ export default function PurchaseDialog({ stores, onSuccess, editingItem }: any) 
         setIsSubmitting(true)
         try {
             if (editingItem) {
-                await axios.put(`/api/OrderTracking/${editingItem.id}`, {
+                await axios.patch(`/api/OrderTracking/${editingItem.id}`, {
                     round,
                     date,
                     storeId: selectedStore.id,

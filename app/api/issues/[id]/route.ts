@@ -4,7 +4,7 @@ import { renderError } from "@/lib/rendererror"
 import { issueSchema } from "@/lib/validate/Zod"
 import { checkIsAdmin } from "@/lib/auth"
 
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
     if (!await checkIsAdmin()) {
         return NextResponse.json({ error: "Unauthorized: Admin only" }, { status: 403 });
     }

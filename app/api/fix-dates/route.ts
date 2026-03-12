@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { checkIsAdmin } from '@/lib/auth';
 
 export async function GET() {
+    if (!await checkIsAdmin()) {
+        return NextResponse.json({ error: 'Unauthorized: Admin only' }, { status: 403 });
+    }
     try {
         const visits = await prisma.visit.findMany();
         let visitCount = 0;

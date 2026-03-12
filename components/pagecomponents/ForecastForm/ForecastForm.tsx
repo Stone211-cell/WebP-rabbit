@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
@@ -192,7 +192,6 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
     const [newPartCategory, setNewPartCategory] = useState<string>("")
 
     // Meat Part State (From fontiontwo hook)
-    const [savedMeatParts, setSavedMeatParts] = useState<{ id: string; name: string; category: string }[]>([])
     const {
         search: partSearch,
         setSearch: setPartSearch,
@@ -206,20 +205,7 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
         filtered: filteredParts,
         addPart: addMeatPart,
         deletePart: deletePartItem,
-    } = useMeatPartSearch(savedMeatParts)
-
-    // Fetch meat parts on mount
-    useEffect(() => {
-        const fetchParts = async () => {
-            try {
-                const { data } = await axios.get('/api/meat-parts')
-                setSavedMeatParts(data && data.length > 0 ? data : DEFAULT_MEAT_PARTS)
-            } catch {
-                setSavedMeatParts(DEFAULT_MEAT_PARTS)
-            }
-        }
-        fetchParts()
-    }, [])
+    } = useMeatPartSearch()
 
     const handleAddPart = async () => {
         if (!partSearch) return toast.error("กรุณาพิมพ์ชื่อชิ้นส่วนเนื้อ")
@@ -233,7 +219,6 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
 
         const newPart = await addMeatPart(partSearch, finalCategory)
         if (newPart) {
-            setSavedMeatParts(prev => [newPart, ...prev.filter(p => p.id !== newPart.id)])
             selectMeatPart(newPart)
         }
     }
@@ -242,7 +227,6 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
         if (!confirm("ยืนยันลบชิ้นส่วนนี้?")) return
         const ok = await deletePartItem(id)
         if (ok) {
-            setSavedMeatParts(prev => prev.filter(p => p.id !== id))
             if (selectedMeatPart?.id === id) clearMeatPart()
         }
     }
@@ -292,7 +276,8 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
         setEditingGroup(group)
 
         // Set meat part
-        const fp = savedMeatParts.find(p => p.name === group.product) || { id: 'temp', name: group.product, category: 'เนื้อแดง' }
+        const tempParts = filteredParts.length > 0 ? filteredParts : [];
+        const fp = tempParts.find(p => p.name === group.product) || { id: 'temp', name: group.product, category: 'เนื้อแดง' }
         selectMeatPart(fp)
 
         // Auto calculate existing inputs
@@ -433,8 +418,9 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
         }
     }
 
-    const { summary, groupedForecasts } = useMemo(() => {
+    const { summary, groupedForecasts, globalAggregates } = useMemo(() => {
         let sumWeekTarget = 0, sumWeekForecast = 0, sumWeekActual = 0, sumMonthTarget = 0
+        let globalExceed = 0, globalMiss = 0
         const groups: Record<string, { product: string, items: any[], totalTarget: number, totalForecast: number, totalActual: number }> = {}
 
         if (forecasts) {
@@ -457,6 +443,11 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                 groups[pName].totalForecast += wForecast
                 groups[pName].totalActual += wActual
             })
+
+            Object.values(groups).forEach(g => {
+                globalExceed += g.totalActual > g.totalForecast ? g.totalActual - g.totalForecast : 0
+                globalMiss += g.totalActual < g.totalForecast ? g.totalForecast - g.totalActual : 0
+            })
         }
 
         const sortedGroups = Object.values(groups).sort((a: any, b: any) => a.product.localeCompare(b.product))
@@ -466,7 +457,12 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                 week: { forecast: sumWeekForecast, actual: sumWeekActual, diff: sumWeekActual - sumWeekForecast, target: sumWeekTarget },
                 month: { forecast: sumWeekForecast * 4, actual: sumWeekActual * 4, diff: (sumWeekActual * 4) - sumMonthTarget, target: sumMonthTarget }
             },
-            groupedForecasts: sortedGroups
+            groupedForecasts: sortedGroups,
+            globalAggregates: {
+                exceed: globalExceed,
+                miss: globalMiss,
+                percent: sumWeekTarget > 0 ? (sumWeekForecast / sumWeekTarget) * 100 : 0
+            }
         }
     }, [forecasts])
 
@@ -530,6 +526,52 @@ export default function ForecastForm({ stores = [], forecasts, onRefresh, onCrea
                     </div>
                 </div>
             </div>
+
+            {/* --- GLOBAL SUMMARY BANNER --- */}
+            {groupedForecasts.length > 0 && (
+                <div className="bg-[#3A7CF6] text-white rounded-[1rem] shadow-sm p-6 sm:p-8 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6 md:gap-10 border-none mt-2">
+                    <div className="flex-1 flex flex-col items-center justify-center md:border-r border-blue-400/50 pb-4 md:pb-0 border-b md:border-b-0 border-blue-400/30">
+                        <div className="text-[14px] sm:text-base font-bold opacity-80 flex items-center gap-2 mb-1 text-blue-50">
+                            <Target size={18} /> เป้าหมาย
+                        </div>
+                        <div className="text-3xl sm:text-5xl font-black tabular-nums tracking-tighter">
+                            {summary.week.target.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                        </div>
+                    </div>
+
+                    <div className="flex-1 flex flex-col items-center justify-center md:border-r border-blue-400/50 pb-4 md:pb-0 border-b md:border-b-0 border-blue-400/30">
+                        <div className="text-[14px] sm:text-base font-bold opacity-80 flex items-center gap-2 mb-1 text-emerald-100">
+                            <CheckCircle2 size={18} /> คาดการณ์
+                        </div>
+                        <div className="text-3xl sm:text-5xl font-black text-[#5ceaa3] tabular-nums tracking-tighter flex items-baseline gap-2">
+                            {summary.week.forecast.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                            <span className="text-[16px] sm:text-xl font-bold opacity-90 text-[#7debb4]">({globalAggregates.percent.toFixed(0)}%)</span>
+                        </div>
+                    </div>
+
+                    <div className="flex-[1.2] w-full flex flex-row items-center justify-center gap-10 sm:gap-16">
+                        <div className="flex-1 flex flex-col items-center justify-center">
+                            <div className="text-[14px] sm:text-base font-bold opacity-90 mb-1 text-[#5ceaa3]">
+                                เกินเป้า
+                            </div>
+                            <div className="text-2xl sm:text-4xl font-black text-[#5ceaa3] tabular-nums tracking-tighter">
+                                {globalAggregates.exceed.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                            </div>
+                        </div>
+
+                        <div className="w-px h-16 sm:h-20 bg-blue-400/30"></div>
+
+                        <div className="flex-1 flex flex-col items-center justify-center">
+                            <div className="text-[14px] sm:text-base font-bold opacity-90 mb-1 text-[#ffa3a3]">
+                                ขาดเป้า
+                            </div>
+                            <div className="text-2xl sm:text-4xl font-black text-[#ffa3a3] tabular-nums tracking-tighter">
+                                {globalAggregates.miss.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* --- LIST OVERVIEW --- */}
             <div className="space-y-6">
