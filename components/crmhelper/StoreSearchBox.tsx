@@ -41,16 +41,14 @@ export function StoreSearchBox({
     const isDark = variant === 'dark'
 
     const inputClass = isDark
-        ? "h-12 bg-slate-900/50 border-slate-700 rounded-2xl font-bold pr-10 text-white placeholder:text-slate-500"
-        : "bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl font-bold pr-10"
+        ? "h-12 bg-white/10 dark:bg-slate-900/50 border-slate-200/20 dark:border-slate-700 rounded-2xl font-bold pr-10 text-slate-900 dark:text-white placeholder:text-slate-500"
+        : "bg-white/50 dark:bg-[#1e293b]/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl font-bold pr-10 text-slate-900 dark:text-white"
 
     const btnClass = isDark
-        ? "rounded-2xl h-12 px-5 bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-md"
-        : "rounded-2xl h-12 px-5 bg-blue-600 hover:bg-blue-700 text-white shadow-md"
+        ? "rounded-2xl h-12 px-5 bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-md transition-all active:scale-95"
+        : "rounded-2xl h-12 px-5 bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all active:scale-95"
 
-    const dropdownClass = isDark
-        ? "bg-slate-900 border-slate-700"
-        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+    const dropdownClass = "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
 
     return (
         <div className={`relative w-full ${className ?? ""}`}>

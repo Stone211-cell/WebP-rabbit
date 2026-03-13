@@ -1,12 +1,20 @@
 'use client';
-
+import { useState } from 'react';
+import { startOfWeek, endOfWeek } from 'date-fns';
 import ForecastForm from '@/components/pagecomponents/ForecastForm/ForecastForm';
 import { useStores, useForecasts } from '@/components/hooks/useCRMHooks';
 import { useCRMSession } from '@/components/hooks/useCRMSession';
 
 export default function ForecastPage() {
+    const [date, setDate] = useState<Date>(new Date());
+    
+    // Calculate week bounds
+    const weekStart = startOfWeek(date, { weekStartsOn: 0 });
+    const weekEnd = endOfWeek(date, { weekStartsOn: 0 });
+    const weekStartStr = weekStart.toISOString();
+
     const { stores, isLoading: storesLoading } = useStores();
-    const { forecasts, fetchForecasts, createForecast, updateForecast, deleteForecast, isLoading: forecastsLoading } = useForecasts();
+    const { forecasts, fetchForecasts, createForecast, updateForecast, deleteForecast, isLoading: forecastsLoading } = useForecasts({ weekStart: weekStartStr });
     const { isAdmin, isLoaded } = useCRMSession();
 
     const loading = storesLoading || forecastsLoading || !isLoaded;
@@ -26,7 +34,11 @@ export default function ForecastPage() {
         <ForecastForm
             stores={stores}
             forecasts={forecasts}
-            onRefresh={fetchForecasts}
+            date={date}
+            setDate={setDate}
+            weekStart={weekStart}
+            weekEnd={weekEnd}
+            onRefresh={() => fetchForecasts()}
             onCreate={createForecast}
             onUpdate={updateForecast}
             onDelete={deleteForecast}

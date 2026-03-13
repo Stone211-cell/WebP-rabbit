@@ -215,8 +215,8 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
         switch (period) {
             case 'day': return `วันที่: ${formatThaiDate(currentDate, 'd MMM yyyy')}`
             case 'week': {
-                const start = startOfWeek(currentDate, { weekStartsOn: 1 })
-                const end = endOfWeek(currentDate, { weekStartsOn: 1 })
+                const start = startOfWeek(currentDate, { weekStartsOn: 0 })
+                const end = endOfWeek(currentDate, { weekStartsOn: 0 })
                 return `วันที่: ${formatThaiDate(start, 'd MMM yyyy')} - ${formatThaiDate(end, 'd MMM yyyy')}`
             }
             case 'month': return `เดือน: ${formatThaiDate(currentDate, 'MMMM yyyy')}`
@@ -299,7 +299,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
 
             switch (period) {
                 case 'day': return isSameDay(visitDate, currentDate)
-                case 'week': return visitDate >= startOfWeek(currentDate, { weekStartsOn: 1 }) && visitDate <= endOfWeek(currentDate, { weekStartsOn: 1 })
+                case 'week': return visitDate >= startOfWeek(currentDate, { weekStartsOn: 0 }) && visitDate <= endOfWeek(currentDate, { weekStartsOn: 0 })
                 case 'month': return isSameMonth(visitDate, currentDate)
                 case 'year': return visitDate.getFullYear() === currentDate.getFullYear()
                 case 'quarter': return visitDate >= startOfQuarter(currentDate) && visitDate <= endOfQuarter(currentDate)
@@ -315,7 +315,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
 
             switch (period) {
                 case 'day': return isSameDay(planDate, currentDate)
-                case 'week': return planDate >= startOfWeek(currentDate, { weekStartsOn: 1 }) && planDate <= endOfWeek(currentDate, { weekStartsOn: 1 })
+                case 'week': return planDate >= startOfWeek(currentDate, { weekStartsOn: 0 }) && planDate <= endOfWeek(currentDate, { weekStartsOn: 0 })
                 case 'month': return isSameMonth(planDate, currentDate)
                 case 'year': return planDate.getFullYear() === currentDate.getFullYear()
                 case 'quarter': return planDate >= startOfQuarter(currentDate) && planDate <= endOfQuarter(currentDate)
@@ -334,7 +334,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
             const createDate = new Date(s.createdAt)
             switch (period) {
                 case 'day': return isSameDay(createDate, currentDate)
-                case 'week': return createDate >= startOfWeek(currentDate, { weekStartsOn: 1 }) && createDate <= endOfWeek(currentDate, { weekStartsOn: 1 })
+                case 'week': return createDate >= startOfWeek(currentDate, { weekStartsOn: 0 }) && createDate <= endOfWeek(currentDate, { weekStartsOn: 0 })
                 case 'month': return isSameMonth(createDate, currentDate)
                 case 'year': return createDate.getFullYear() === currentDate.getFullYear()
                 case 'quarter': return createDate >= startOfQuarter(currentDate) && createDate <= endOfQuarter(currentDate)
@@ -768,8 +768,8 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
                 nextEnd = addDays(currentDate, 1)
                 break
             case 'week':
-                nextStart = startOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 1 })
-                nextEnd = endOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 1 })
+                nextStart = startOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 0 })
+                nextEnd = endOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 0 })
                 break
             case 'month':
                 nextStart = addMonths(currentDate, 1)
@@ -785,8 +785,8 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
                 nextEnd = new Date(currentDate.getFullYear() + 1, 11, 31)
                 break
             default:
-                nextStart = startOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 1 })
-                nextEnd = endOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 1 })
+                nextStart = startOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 0 })
+                nextEnd = endOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 0 })
         }
 
         const allRepNames = new Map<string, string>()

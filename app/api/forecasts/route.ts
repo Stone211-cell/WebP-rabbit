@@ -9,13 +9,19 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const weekStart = searchParams.get('weekStart');
+    const endDateParam = searchParams.get('endDate');
 
     let where: any = {};
 
     if (weekStart) {
       const start = new Date(weekStart);
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
+      start.setHours(0, 0, 0, 0);
+      
+      const end = endDateParam ? new Date(endDateParam) : new Date(start);
+      if (!endDateParam) {
+        end.setDate(start.getDate() + 6);
+      }
+      end.setHours(23, 59, 59, 999);
 
       where.weekStart = {
         gte: start,

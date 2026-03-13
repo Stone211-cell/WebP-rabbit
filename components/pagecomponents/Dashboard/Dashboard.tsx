@@ -288,8 +288,8 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
     switch (period) {
       case 'day': return `วันที่: ${formatThaiDate(currentDate, 'd MMM yyyy')}`
       case 'week': {
-        const start = startOfWeek(currentDate, { weekStartsOn: 1 })
-        const end = endOfWeek(currentDate, { weekStartsOn: 1 })
+        const start = startOfWeek(currentDate, { weekStartsOn: 0 })
+        const end = endOfWeek(currentDate, { weekStartsOn: 0 })
         return `วันที่: ${formatThaiDate(start, 'd MMM yyyy')} - ${formatThaiDate(end, 'd MMM yyyy')}`
       }
       case 'month': return `เดือน: ${formatThaiDate(currentDate, 'MMMM yyyy')}`
@@ -372,7 +372,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
 
       switch (period) {
         case 'day': return isSameDay(visitDate, currentDate)
-        case 'week': return visitDate >= startOfWeek(currentDate, { weekStartsOn: 1 }) && visitDate <= endOfWeek(currentDate, { weekStartsOn: 1 })
+        case 'week': return visitDate >= startOfWeek(currentDate, { weekStartsOn: 0 }) && visitDate <= endOfWeek(currentDate, { weekStartsOn: 0 })
         case 'month': return isSameMonth(visitDate, currentDate)
         case 'year': return visitDate.getFullYear() === currentDate.getFullYear()
         case 'quarter': return visitDate >= startOfQuarter(currentDate) && visitDate <= endOfQuarter(currentDate)
@@ -388,7 +388,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
 
       switch (period) {
         case 'day': return isSameDay(planDate, currentDate)
-        case 'week': return planDate >= startOfWeek(currentDate, { weekStartsOn: 1 }) && planDate <= endOfWeek(currentDate, { weekStartsOn: 1 })
+        case 'week': return planDate >= startOfWeek(currentDate, { weekStartsOn: 0 }) && planDate <= endOfWeek(currentDate, { weekStartsOn: 0 })
         case 'month': return isSameMonth(planDate, currentDate)
         case 'year': return planDate.getFullYear() === currentDate.getFullYear()
         case 'quarter': return planDate >= startOfQuarter(currentDate) && planDate <= endOfQuarter(currentDate)
@@ -407,7 +407,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
       const createDate = new Date(s.createdAt)
       switch (period) {
         case 'day': return isSameDay(createDate, currentDate)
-        case 'week': return createDate >= startOfWeek(currentDate, { weekStartsOn: 1 }) && createDate <= endOfWeek(currentDate, { weekStartsOn: 1 })
+        case 'week': return createDate >= startOfWeek(currentDate, { weekStartsOn: 0 }) && createDate <= endOfWeek(currentDate, { weekStartsOn: 0 })
         case 'month': return isSameMonth(createDate, currentDate)
         case 'year': return createDate.getFullYear() === currentDate.getFullYear()
         case 'quarter': return createDate >= startOfQuarter(currentDate) && createDate <= endOfQuarter(currentDate)
@@ -1015,7 +1015,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
   }, []).sort((a: any, b: any) => b.value - a.value).slice(0, 5)
 
   return (
-    <div className="p-6 space-y-6 dark:bg-[#0f172a] min-h-screen text-black relative">
+    <div className="p-6 space-y-6 dark:bg-[#0f172a] min-h-screen text-slate-900 dark:text-white relative">
       {(loading) && (
         <div className="absolute inset-0 bg-white/20 dark:bg-slate-950/20 backdrop-blur-[2px] z-[100] flex items-center justify-center rounded-[2.5rem]">
           <div className="flex flex-col items-center gap-3 p-6 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800">
@@ -1028,7 +1028,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
       <div className="flex flex-col gap-4">
         {/* Navigation & Filters Row */}
         {/* Navigation & Filters Row */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 bg-slate-100 dark:bg-[#0f172a] p-3 rounded-2xl shadow-sm border border-slate-800">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 bg-slate-100 dark:bg-slate-900/50 p-3 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
           {['day', 'week', 'month', 'quarter', 'year'].map(p => (
             <button
               key={p}
@@ -1042,7 +1042,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
                 "flex items-center justify-center gap-2 py-3 px-4 text-sm font-bold rounded-xl transition-all border",
                 period === p
                   ? "bg-blue-600 text-white border-blue-600 shadow-md"
-                  : "bg-white text-black dark:bg-transparent text-slate-300 border-slate-700 dark:hover:bg-slate-800 hover:bg-blue-200 dark:text-white text-black"
+                  : "bg-white dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-800"
               )}
             >
               <CalendarIcon className="w-4 h-4 opacity-70" />

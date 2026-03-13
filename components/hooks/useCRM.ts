@@ -16,7 +16,7 @@ export const KEYS = {
     `/api/visits?search=${search}&sales=${sales}&startDate=${startDate}&endDate=${endDate}`,
   plans: (startDate = '', endDate = '') =>
     `/api/plans?startDate=${startDate}&endDate=${endDate}`,
-  forecasts: (weekStart = '') => `/api/forecasts?weekStart=${weekStart}`,
+  forecasts: (weekStart = '', endDate = '') => `/api/forecasts?weekStart=${weekStart}&endDate=${endDate}`,
   issues: (search = '', type = '', status = '') =>
     `/api/issues?search=${search}&type=${type}&status=${status}`,
   profiles: () => `/api/profile`,
@@ -34,14 +34,14 @@ export function useCRM(filters?: {
   storeSearch?: string; storeType?: string; storeStatus?: string;
   visitSearch?: string; visitSales?: string; visitStartDate?: string; visitEndDate?: string;
   planStartDate?: string; planEndDate?: string;
-  forecastWeekStart?: string;
+  forecastWeekStart?: string; forecastEndDate?: string;
   issueSearch?: string; issueType?: string; issueStatus?: string;
 }) {
   const {
     storeSearch = '', storeType = '', storeStatus = '',
     visitSearch = '', visitSales = '', visitStartDate = '', visitEndDate = '',
     planStartDate = '', planEndDate = '',
-    forecastWeekStart = '',
+    forecastWeekStart = '', forecastEndDate = '',
     issueSearch = '', issueType = '', issueStatus = '',
   } = filters || {};
 
@@ -49,7 +49,7 @@ export function useCRM(filters?: {
   const storeKey = KEYS.stores(storeSearch, storeType, storeStatus);
   const visitKey = KEYS.visits(visitSearch, visitSales, visitStartDate, visitEndDate);
   const planKey = KEYS.plans(planStartDate, planEndDate);
-  const forecastKey = KEYS.forecasts(forecastWeekStart);
+  const forecastKey = KEYS.forecasts(forecastWeekStart, forecastEndDate);
   const issueKey = KEYS.issues(issueSearch, issueType, issueStatus);
 
   const { data: stores = [], isLoading: storesLoading, mutate: mutateStores } =
@@ -82,8 +82,8 @@ export function useCRM(filters?: {
   const fetchPlans = useCallback((startDate?: string, endDate?: string) =>
     mutate(KEYS.plans(startDate || planStartDate, endDate || planEndDate)), [planStartDate, planEndDate]);
 
-  const fetchForecasts = useCallback((weekStart?: string) =>
-    mutate(KEYS.forecasts(weekStart || forecastWeekStart)), [forecastWeekStart]);
+  const fetchForecasts = useCallback((weekStart?: string, endDate?: string) =>
+    mutate(KEYS.forecasts(weekStart || forecastWeekStart, endDate || forecastEndDate)), [forecastWeekStart, forecastEndDate]);
 
   const fetchIssues = useCallback((search?: string, type?: string, status?: string) =>
     mutate(KEYS.issues(search || issueSearch, type || issueType, status || issueStatus)), [issueSearch, issueType, issueStatus]);
@@ -93,91 +93,91 @@ export function useCRM(filters?: {
   // ─── STORES mutations ──────────────────────────────────────────────────────
   const createStore = async (store: Omit<Store, 'id' | 'createdAt' | 'updatedAt'>) => {
     const res = await axios.post<Store>('/api/stores', store);
-    mutateStores((prev = []) => [res.data, ...prev], false);
+    mutateStores((prev = []) => [res.data, ...prev]);
     return res.data;
   };
 
   const updateStore = async (id: string, store: Partial<Store>) => {
     const res = await axios.patch<Store>(`/api/stores/${id}`, store);
-    mutateStores((prev = []) => prev.map(s => s.id === id ? res.data : s), false);
+    mutateStores((prev = []) => prev.map(s => s.id === id ? res.data : s));
     return res.data;
   };
 
   const deleteStore = async (id: string) => {
     await axios.delete(`/api/stores/${id}`);
-    mutateStores((prev = []) => prev.filter(s => s.id !== id), false);
+    mutateStores((prev = []) => prev.filter(s => s.id !== id));
   };
 
   // ─── VISITS mutations ──────────────────────────────────────────────────────
   const createVisit = async (visit: Omit<Visit, 'id' | 'createdAt' | 'updatedAt'>) => {
     const res = await axios.post<Visit>('/api/visits', visit);
-    mutateVisits((prev = []) => [res.data, ...prev], false);
+    mutateVisits((prev = []) => [res.data, ...prev]);
     return res.data;
   };
 
   const updateVisit = async (id: string, visit: Partial<Visit>) => {
     const res = await axios.patch<Visit>(`/api/visits/${id}`, visit);
-    mutateVisits((prev = []) => prev.map(v => v.id === id ? res.data : v), false);
+    mutateVisits((prev = []) => prev.map(v => v.id === id ? res.data : v));
     return res.data;
   };
 
   const deleteVisit = async (id: string) => {
     await axios.delete(`/api/visits/${id}`);
-    mutateVisits((prev = []) => prev.filter(v => v.id !== id), false);
+    mutateVisits((prev = []) => prev.filter(v => v.id !== id));
   };
 
   // ─── PLANS mutations ───────────────────────────────────────────────────────
   const createPlan = async (plan: Omit<Plan, 'id' | 'createdAt' | 'updatedAt'>) => {
     const res = await axios.post<Plan>('/api/plans', plan);
-    mutatePlans((prev = []) => [res.data, ...prev], false);
+    mutatePlans((prev = []) => [res.data, ...prev]);
     return res.data;
   };
 
   const updatePlan = async (id: string, plan: Partial<Plan>) => {
     const res = await axios.patch<Plan>(`/api/plans/${id}`, plan);
-    mutatePlans((prev = []) => prev.map(p => p.id === id ? res.data : p), false);
+    mutatePlans((prev = []) => prev.map(p => p.id === id ? res.data : p));
     return res.data;
   };
 
   const deletePlan = async (id: string) => {
     await axios.delete(`/api/plans/${id}`);
-    mutatePlans((prev = []) => prev.filter(p => p.id !== id), false);
+    mutatePlans((prev = []) => prev.filter(p => p.id !== id));
   };
 
   // ─── FORECASTS mutations ───────────────────────────────────────────────────
   const createForecast = async (forecast: Omit<Forecast, 'id' | 'createdAt' | 'updatedAt'>) => {
     const res = await axios.post<Forecast>('/api/forecasts', forecast);
-    mutateForecasts((prev = []) => [res.data, ...prev], false);
+    mutateForecasts((prev = []) => [res.data, ...prev]);
     return res.data;
   };
 
   const updateForecast = async (id: string, forecast: Partial<Forecast>) => {
     const res = await axios.patch<Forecast>(`/api/forecasts/${id}`, forecast);
-    mutateForecasts((prev = []) => prev.map(f => f.id === id ? res.data : f), false);
+    mutateForecasts((prev = []) => prev.map(f => f.id === id ? res.data : f));
     return res.data;
   };
 
   const deleteForecast = async (id: string) => {
     await axios.delete(`/api/forecasts/${id}`);
-    mutateForecasts((prev = []) => prev.filter(f => f.id !== id), false);
+    mutateForecasts((prev = []) => prev.filter(f => f.id !== id));
   };
 
   // ─── ISSUES mutations ──────────────────────────────────────────────────────
   const createIssue = async (issue: any) => {
     const res = await axios.post('/api/issues', issue);
-    mutateIssues((prev = []) => [res.data, ...prev], false);
+    mutateIssues((prev = []) => [res.data, ...prev]);
     return res.data;
   };
 
   const updateIssue = async (id: string, issue: any) => {
     const res = await axios.patch(`/api/issues/${id}`, issue);
-    mutateIssues((prev = []) => prev.map(i => i.id === id ? res.data : i), false);
+    mutateIssues((prev = []) => prev.map(i => i.id === id ? res.data : i));
     return res.data;
   };
 
   const deleteIssue = async (id: string) => {
     await axios.delete(`/api/issues/${id}`);
-    mutateIssues((prev = []) => prev.filter(i => i.id !== id), false);
+    mutateIssues((prev = []) => prev.filter(i => i.id !== id));
   };
 
   // ─── Client-side search ────────────────────────────────────────────────────
@@ -194,9 +194,9 @@ export function useCRM(filters?: {
   // ─── setVisits (compat for Dashboard import) ─────────────────────────────
   const setVisits = (updater: Visit[] | ((prev: Visit[]) => Visit[])) => {
     if (typeof updater === 'function') {
-      mutateVisits(prev => updater(prev ?? []), false);
+      mutateVisits(prev => updater(prev ?? []));
     } else {
-      mutateVisits(updater, false);
+      mutateVisits(updater);
     }
   };
 

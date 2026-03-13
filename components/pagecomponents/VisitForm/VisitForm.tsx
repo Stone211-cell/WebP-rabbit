@@ -155,7 +155,7 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
       dealStatus: visit.dealStatus || "เปิดการขาย",
       closeReason: visit.closeReason || "",
       visitCat: visit.visitCat || "ตรวจเยี่ยมประจำเดือน",
-      notes: visit.notes || {},
+      notes: typeof visit.notes === 'string' ? { "1": visit.notes } : (visit.notes || {}),
       masterId: visit.masterId || visit.store?.id  // ✅ เก็บ masterId ไว้เป็น fallback
     })
 
@@ -420,7 +420,7 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
 
           {/* Enhanced Store Profile - Only shown when store selected */}
           {selectedStore && (
-            <div className="animate-in fade-in slide-in-from-top-4 duration-500 text-black">
+            <div className="animate-in fade-in slide-in-from-top-4 duration-500 text-slate-900 dark:text-slate-100">
               <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-[2rem] overflow-hidden shadow-sm">
                 {/* Profile Header */}
                 <div className="p-6 bg-gradient-to-r from-blue-600/5 to-indigo-600/5 border-b border-slate-200 dark:border-slate-700/50 flex items-center justify-between">
@@ -616,7 +616,7 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
 
       {/* ================= HISTORY TABLE ================= */}
       <Card className="border-none bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl shadow-2xl rounded-[2.5rem] overflow-hidden">
-        <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-4 p-8 bg-gradient-to-r from-orange-600/5 to-amber-600/5 border-b border-white/10 text-black">
+        <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-4 p-8 bg-gradient-to-r from-orange-600/5 to-amber-600/5 border-b border-white/10 text-slate-900 dark:text-white">
           <CardTitle className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
             <span className="p-2.5 bg-orange-500/10 rounded-2xl">📝</span>
             บันทึก <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-600 dark:from-orange-400 dark:to-amber-400">การเข้าพบ</span>
@@ -655,7 +655,7 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
             <ActionButton
               onClick={handleExport}
               variant="outline"
-              className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 shadow-lg shadow-slate-200/20 dark:shadow-none rounded-2xl px-6 text-black"
+              className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 shadow-lg shadow-slate-200/20 dark:shadow-none rounded-2xl px-6 text-slate-900 dark:text-slate-300"
               icon={<FileSpreadsheet className="w-4 h-4 mr-2 text-green-600" />}
               label="ส่งออก Excel"
             />
@@ -672,7 +672,7 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
             searchLabel="ค้นหาประวัติ"
           />
 
-          <div className="rounded-[2rem] border border-slate-200/50 dark:border-slate-800/50 overflow-hidden shadow-inner bg-white/20">
+          <div className="rounded-[2rem] border border-slate-200/50 dark:border-slate-800/50 overflow-hidden shadow-inner bg-white/20 dark:bg-slate-900/20">
             <Table style={{ tableLayout: 'fixed', width: '100%' }}>
               <TableHeader className="bg-slate-100/50 dark:bg-slate-800/50">
                 <TableRow className="border-b dark:border-slate-800">
@@ -707,9 +707,12 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
                       <TableCell className="w-[180px] hidden lg:table-cell break-words whitespace-normal">
                         <div className="flex flex-col">
                           <span className="font-bold text-xs text-slate-700 dark:text-slate-300 line-clamp-2">{v.visitCat || "-"}</span>
-                          {Object.keys(v.notes || {}).length > 0 && (
-                            <span className="text-[10px] text-indigo-500 font-bold mt-1">📝 บันทึก {Object.keys(v.notes).length} ครั้ง</span>
+                          {v.notes && (
+                            <span className="text-[10px] text-indigo-500 font-bold mt-1">
+                              📝 {typeof v.notes === 'string' ? "บันทึกทั่วไป" : `บันทึก ${Object.keys(v.notes).length} ครั้ง`}
+                            </span>
                           )}
+
                         </div>
                       </TableCell>
                       <TableCell className="w-[120px] text-center hidden sm:table-cell">

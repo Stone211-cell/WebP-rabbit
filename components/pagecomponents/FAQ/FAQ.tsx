@@ -99,7 +99,7 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
       }
       setIsCreateOpen(false)
       resetForm()
-      router.refresh()
+      if (onRefresh) onRefresh()
     } catch (error) {
       handleApiError(error)
     } finally {
@@ -112,6 +112,7 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
     try {
       await onDelete(id)
       router.refresh()
+      if (onRefresh) onRefresh()
       toast.success("ลบรายการเรียบร้อยแล้ว")
     } catch (error) {
       handleApiError(error)
@@ -351,7 +352,7 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
 
       {/* CREATE/EDIT DIALOG */}
       <Dialog open={isCreateOpen} onOpenChange={(val) => { setIsCreateOpen(val); if (!val) resetForm(); }}>
-        <DialogContent className="max-w-3xl bg-slate-950/95 border-slate-800/50 backdrop-blur-2xl rounded-[2.5rem] p-0 overflow-hidden shadow-3xl text-white">
+        <DialogContent className="max-w-4xl bg-white dark:bg-slate-950/95 border-slate-200 dark:border-slate-800/50 backdrop-blur-2xl rounded-[2.5rem] p-0 overflow-hidden shadow-3xl text-slate-900 dark:text-white">
           <DialogHeader className="p-8 pb-0">
             <DialogTitle className="text-xl font-black flex items-center gap-3 tracking-tight">
               <span className="p-2 bg-amber-500/20 rounded-xl text-amber-500 text-lg">⚠️</span>
@@ -375,29 +376,28 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
                   handleManualSearch={handleManualSearch}
                   isSearching={isSearching}
                   placeholder="ค้นหารหัส หรือ ชื่อร้าน..."
-                  variant="dark"
                 />
               </div>
 
               {/* Date */}
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">วันที่ *</Label>
-                <Input
+                 <Input
                   type="date"
                   value={form.date}
                   onChange={(e) => setForm({ ...form, date: e.target.value })}
-                  className="h-12 bg-slate-900/50 border-slate-800 rounded-2xl focus:ring-amber-500/20 text-blue-400 font-bold"
+                  className="h-12 bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-amber-500/20 text-blue-600 dark:text-blue-400 font-bold"
                 />
               </div>
 
               {/* Type */}
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">ประเภทปัญหา *</Label>
-                <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                  <SelectTrigger className="h-12 bg-slate-900/50 border-slate-800 rounded-2xl">
+                 <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+                  <SelectTrigger className="h-12 bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-2xl text-slate-900 dark:text-white">
                     <SelectValue placeholder="เลือกประเภท" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800 text-white rounded-2xl overflow-hidden">
+                  <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl overflow-hidden">
                     <SelectItem value="ส่งช้า">🚛 ส่งช้า</SelectItem>
                     <SelectItem value="หั่นหนาเกินไป">🔪 หั่นหนาเกินไป</SelectItem>
                     <SelectItem value="ไม่ตรงสเปก">📏 ไม่ตรงสเปก</SelectItem>
@@ -412,11 +412,11 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
               {/* Status Dropdown */}
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">สถานะ</Label>
-                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                  <SelectTrigger className={cn("h-12 bg-slate-900/50 border-slate-800 rounded-2xl", getStatusColor(form.status))}>
+                 <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                  <SelectTrigger className={cn("h-12 bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-2xl", getStatusColor(form.status))}>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800 text-white rounded-2xl overflow-hidden">
+                  <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl overflow-hidden">
                     <SelectItem value="pending">🟡 รอดำเนินการ</SelectItem>
                     <SelectItem value="fixing">🔵 กำลังแก้ไข</SelectItem>
                     <SelectItem value="done">🟢 ดำเนินการแล้ว</SelectItem>
@@ -431,18 +431,18 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
                   placeholder="อธิบายรายละเอียดปัญหา..."
                   value={form.detail}
                   onChange={(e) => setForm({ ...form, detail: e.target.value })}
-                  className="min-h-[100px] bg-slate-900/50 border-slate-800 rounded-[1.5rem] focus:ring-amber-500/20"
+                  className="min-h-[150px] bg-slate-50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 rounded-[1.5rem] focus:ring-amber-500/20 text-slate-900 dark:text-white text-base p-4 shadow-sm"
                 />
               </div>
 
               {/* Recorder */}
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">ผู้บันทึก *</Label>
-                <Input
+                 <Input
                   placeholder="กรอกชื่อผู้บันทึก..."
                   value={form.recorder}
                   onChange={(e) => setForm({ ...form, recorder: e.target.value })}
-                  className="h-12 bg-slate-900/50 border-slate-800 rounded-2xl focus:ring-amber-500/20 text-white font-bold"
+                  className="h-12 bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-amber-500/20 text-slate-900 dark:text-white font-bold"
                 />
               </div>
             </div>
@@ -450,11 +450,11 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
             {/* Notes */}
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase text-slate-500 tracking-wider">หมายเหตุ/แนวทางแก้ไข</Label>
-              <Textarea
+               <Textarea
                 placeholder="บันทึกเพิ่มเติม..."
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                className="min-h-[80px] bg-slate-900/50 border-slate-800 rounded-[1.5rem] focus:ring-amber-500/20"
+                className="min-h-[120px] bg-slate-50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 rounded-[1.5rem] focus:ring-amber-500/20 text-slate-900 dark:text-white text-base p-4 shadow-sm"
               />
             </div>
 
@@ -468,10 +468,10 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
                 <span className="mr-2">💾</span>
                 {isSubmitting ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
               </Button>
-              <Button
+               <Button
                 variant="outline"
                 onClick={() => { setIsCreateOpen(false); resetForm(); }}
-                className="px-8 bg-slate-900 border-slate-800 hover:bg-slate-800 text-slate-400 font-bold py-7 rounded-[1.5rem] active:scale-95"
+                className="px-8 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold py-7 rounded-[1.5rem] active:scale-95"
               >
                 ยกเลิก
               </Button>

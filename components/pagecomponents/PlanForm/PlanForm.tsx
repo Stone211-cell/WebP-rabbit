@@ -275,7 +275,6 @@ export default function PlanForm({ plans, stores, profiles, onRefresh, onCreate,
         try {
             const res = await axiosInstance.delete('/plans')
             toast.success(res.data.message || "ลบข้อมูลทั้งหมดเรียบร้อยแล้ว")
-            router.refresh()
             if (onRefresh) onRefresh()
         } catch (error) {
             handleApiError(error)
@@ -483,7 +482,7 @@ export default function PlanForm({ plans, stores, profiles, onRefresh, onCreate,
                         <div className="animate-in fade-in slide-in-from-top-4 duration-500 mb-6">
                             <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-[2rem] overflow-hidden shadow-sm">
                                 {/* Profile Header */}
-                                <div className="p-6 bg-gradient-to-r from-blue-600/5 to-indigo-600/5 border-b border-slate-200 dark:border-slate-700/50 flex items-center justify-between text-black">
+                                <div className="p-6 bg-gradient-to-r from-blue-600/5 to-indigo-600/5 border-b border-slate-200 dark:border-slate-700/50 flex items-center justify-between text-slate-900 dark:text-slate-100">
                                     <div className="flex items-center gap-4">
                                         <div className="p-3 bg-blue-600/10 rounded-2xl">
                                             <Store className="w-6 h-6 text-blue-600" />
@@ -503,7 +502,7 @@ export default function PlanForm({ plans, stores, profiles, onRefresh, onCreate,
                                 </div>
 
                                 {/* Profile Body */}
-                                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-10 text-black">
+                                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-10 text-slate-900 dark:text-slate-100">
                                     {/* Left Column: Core Info */}
                                     <div className="space-y-6">
                                         <div className="flex items-start gap-4">
@@ -642,7 +641,7 @@ export default function PlanForm({ plans, stores, profiles, onRefresh, onCreate,
                     searchPlaceholder="รหัส / ชื่อร้าน / รายละเอียด..."
                 />
 
-                <div className="bg-white text-black dark:bg-slate-900/50 dark:text-white rounded-[2rem] border border-slate-200/50 dark:border-slate-800/50 shadow-xl overflow-hidden">
+                <div className="bg-white text-slate-900 dark:bg-slate-900/50 dark:text-white rounded-[2rem] border border-slate-200/50 dark:border-slate-800/50 shadow-xl overflow-hidden">
                     <Table style={{ tableLayout: 'fixed', width: '100%' }}>
                         <TableHeader className="bg-slate-100/50 dark:bg-slate-800/50">
                             <TableRow className="border-b dark:border-slate-800 hover:bg-transparent">

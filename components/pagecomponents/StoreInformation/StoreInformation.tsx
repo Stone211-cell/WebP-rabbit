@@ -98,7 +98,7 @@ export default function StoreInformation({ stores, visits = [], issues = [], onR
       }
       resetForm()
       setOpen(false)
-      router.refresh()
+      if (onRefresh) onRefresh()
     } catch (error) {
       handleApiError(error)
     } finally {
@@ -110,7 +110,7 @@ export default function StoreInformation({ stores, visits = [], issues = [], onR
     if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบร้านค้า "${name}"?`)) return
     try {
       if (onDelete) await onDelete(id)
-      router.refresh()
+      if (onRefresh) onRefresh()
       toast.success("ลบร้านค้าเรียบร้อยแล้ว!")
     } catch (error) {
       handleApiError(error)
@@ -142,7 +142,12 @@ export default function StoreInformation({ stores, visits = [], issues = [], onR
 
   const startEdit = (store: any) => {
     setEditingId(store.id)
-    setForm({ ...initialForm, ...store })
+    // Clean null values to empty strings for controlled inputs
+    const cleanedStore = Object.entries(store).reduce((acc: any, [key, value]) => {
+      acc[key] = value === null ? "" : value
+      return acc
+    }, {})
+    setForm({ ...initialForm, ...cleanedStore })
     setOpen(true)
   }
 

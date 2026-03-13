@@ -147,7 +147,6 @@ export default function PurchaseDialog({ stores, onSuccess, editingItem }: any) 
                             handleManualSearch={handleManualSearch}
                             isSearching={isSearching}
                             placeholder="ค้นหารหัส หรือ ชื่อร้าน..."
-                            variant="dark"
                         />
                     </div>
 
