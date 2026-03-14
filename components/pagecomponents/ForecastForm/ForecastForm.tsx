@@ -121,7 +121,7 @@ function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onCha
     return (
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-4 relative p-4 bg-slate-50/50 dark:bg-slate-900/40 rounded-[1.5rem] border border-slate-100 dark:border-slate-800/50 shadow-sm">
             <div className="flex-1 flex flex-col gap-1.5 min-w-[200px]">
-                <Label className="text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 px-1 uppercase tracking-wider">สาขาของลูกค้า *</Label>
+                <Label className="text-[18px] sm:text-xs font-black text-slate-400 dark:text-slate-500 px-1 uppercase tracking-wider">สาขาของลูกค้า *</Label>
                 <StoreSearchBox
                     storeSearch={storeSearch}
                     setStoreSearch={setStoreSearch}
@@ -138,29 +138,29 @@ function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onCha
 
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:flex lg:flex-row items-center gap-4 xl:gap-4">
                 <div className="flex flex-col gap-1.5 w-full lg:w-20">
-                    <Label className="text-[10px] sm:text-[11px] font-black text-slate-400 dark:text-slate-500 px-1 lg:text-center uppercase tracking-wider">เป้า (กก.)</Label>
+                    <Label className="text-[12px] sm:text-[12px] font-black text-slate-400 dark:text-slate-500 px-1 lg:text-center uppercase tracking-wider">เป้า (กก.)</Label>
                     <Input
                         type="number"
                         placeholder="0.0"
-                        className="h-10 w-full border-slate-200 dark:border-slate-700/50 text-xs py-0 text-center font-bold bg-white dark:bg-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500/20"
+                        className="h-10 w-full border-slate-200 dark:border-slate-700/50 text-sm py-0 text-center font-bold bg-white dark:bg-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500/20"
                         value={storeItem.target}
                         onChange={(e) => onChangeTarget(index, e.target.value)}
                     />
                 </div>
 
-                <div className="flex flex-col gap-1.5 w-full lg:w-20">
-                    <Label className="text-[10px] sm:text-[11px] font-black text-blue-600 dark:text-blue-400 px-1 lg:text-center uppercase tracking-wider">คาดการณ์</Label>
+                <div className="flex flex-col gap-1.5  w-full lg:w-20">
+                    <Label className="text-[12px] sm:text-[12px] font-black text-blue-600 dark:text-blue-400 px-1 lg:text-center flex flex-row gap-1 uppercase tracking-wider block">คาดการณ์ (กก.)</Label>
                     <Input
                         type="number"
                         placeholder="0.0"
-                        className="h-10 w-full border-blue-200/50 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 text-xs py-0 text-center font-black bg-blue-500/5 dark:bg-blue-500/5 rounded-xl focus:ring-2 focus:ring-blue-500/20"
+                        className="h-10 w-full border-blue-200/50 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 text-sm py-0 text-center font-black bg-blue-500/5 dark:bg-blue-500/5 rounded-xl focus:ring-2 focus:ring-blue-500/20"
                         value={storeItem.forecast}
                         onChange={(e) => onChangeForecast(index, e.target.value)}
                     />
                 </div>
 
-                <div className="flex flex-col gap-1.5 w-full lg:w-20">
-                    <Label className="text-[10px] sm:text-[11px] font-black text-rose-600 dark:text-rose-400 px-1 lg:text-center uppercase tracking-wider">บังคับขาย</Label>
+                <div className="hidden flex-col gap-1.5 w-full lg:w-20">
+                    <Label className="text-[12px] sm:text-[12px] font-black text-rose-600 dark:text-rose-400 px-1 lg:text-center uppercase tracking-wider">บังคับขาย</Label>
                     <Input
                         type="number"
                         placeholder="0.0"
@@ -172,17 +172,17 @@ function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onCha
 
                 <div className="flex flex-col gap-1.5 w-full lg:w-24">
                     <div className="flex justify-between items-center px-1">
-                        <Label className="text-[10px] sm:text-[11px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">ซื้อจริง</Label>
-                        {(storeItem.forecast && safeFloat(storeItem.forecast) > 0 && (storeItem.actual !== undefined && storeItem.actual !== null)) ? (
+                        <Label className="text-[12px] sm:text-[12px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">ซื้อจริง</Label>
+                        {(storeItem.forcedSales && safeFloat(storeItem.forcedSales) > 0 && (storeItem.actual !== undefined && storeItem.actual !== null)) ? (
                             <span className="text-[9px] font-black text-blue-500 bg-blue-500/10 px-1 rounded-full border border-blue-500/20">
-                                {((safeFloat(storeItem.actual) / safeFloat(storeItem.forecast)) * 100).toFixed(0)}%
+                                {((safeFloat(storeItem.actual) / safeFloat(storeItem.forcedSales)) * 100).toFixed(0)}%
                             </span>
                         ) : null}
                     </div>
                     <Input
                         type="number"
                         placeholder="0.0"
-                        className="h-10 w-full border-emerald-200/50 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs py-0 text-center font-black bg-emerald-500/5 dark:bg-emerald-500/5 rounded-xl focus:ring-2 focus:ring-emerald-500/20"
+                        className="h-10 w-full border-emerald-200/50 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-sm py-0 text-center font-black bg-emerald-500/5 dark:bg-emerald-500/5 rounded-xl focus:ring-2 focus:ring-emerald-500/20"
                         value={storeItem.actual === 0 ? '0' : (storeItem.actual || '')}
                         onChange={(e) => onChangeActual(index, e.target.value)}
                     />
@@ -203,7 +203,7 @@ function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onCha
     )
 }
 
-export default function ForecastForm({ stores = [], forecasts, date, setDate, weekStart, weekEnd, onRefresh, onCreate, onUpdate, onDelete, isAdmin }: any) {
+export default function ForecastForm({ stores = [], forecasts, date, setDate, weekStart, weekEnd, onRefresh, onCreate, onUpdate, onDelete, onBatch, isAdmin }: any) {
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [showDialog, setShowDialog] = useState(false)
@@ -366,24 +366,30 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
 
     const handleDeleteGroup = async (group: any) => {
         if (!confirm(`ยืนยันลบคาดการณ์ทั้งหมดของชิ้นส่วน ${group.product}?`)) return
+        setIsSubmitting(true)
         try {
-            const results = await Promise.allSettled(group.items.map((item: any) => {
-                if (onDelete) return onDelete(item.id, { revalidate: false })
-                return Promise.resolve()
+            const ops = group.items.map((item: any) => ({
+                type: 'delete',
+                id: item.id
             }))
 
-            const failures = results.filter(r => r.status === 'rejected')
-            if (failures.length > 0) {
-                console.error("Some deletions failed:", failures)
-                toast.error(`ลบไม่สำเร็จบางรายการ (${failures.length} รายการ)`)
+            if (onBatch) {
+                await onBatch(ops)
             } else {
-                toast.success("ลบข้อมูลสำเร็จ")
+                // Fallback
+                await Promise.allSettled(group.items.map((item: any) => {
+                    if (onDelete) return onDelete(item.id, { revalidate: false })
+                    return Promise.resolve()
+                }))
             }
 
+            toast.success("ลบข้อมูลสำเร็จ")
             if (onRefresh) onRefresh()
         } catch (e: any) {
             console.error("Delete group error:", e)
             toast.error(e?.message || "ลบข้อมูลไม่สำเร็จ")
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -408,9 +414,10 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
         setIsSubmitting(true)
         try {
             const productName = selectedMeatPart?.name || partSearch
+            const ops: any[] = []
 
-            // Optimization: Parallelize all API calls
-            const operations = selectedStores.map((s: any) => {
+            // Collect creates and updates
+            selectedStores.forEach((s: any) => {
                 const payload = {
                     masterId: s.store.id,
                     product: productName,
@@ -424,35 +431,38 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                     weekStart: weekStart.toISOString()
                 }
 
-                // If s.id exists, it's an update, otherwise create
-                if (s.existingId) { // Changed from s.id to s.existingId to match the mappedStores structure
-                    if (onUpdate) return onUpdate(s.existingId, payload)
+                if (s.existingId) {
+                    ops.push({ type: 'update', id: s.existingId, data: payload })
                 } else {
-                    if (onCreate) return onCreate(payload)
+                    ops.push({ type: 'create', data: payload })
                 }
-                return Promise.resolve()
             })
 
-            // Handle deletions for editingGroup
+            // Collect deletions
             if (editingGroup) {
                 const existingIds = new Set(selectedStores.filter(s => s.existingId).map(s => s.existingId));
                 const toDelete = editingGroup.items.filter((x: any) => !existingIds.has(x.id));
                 toDelete.forEach(item => {
-                    if (onDelete) operations.push(onDelete(item.id, { revalidate: false }));
+                    ops.push({ type: 'delete', id: item.id })
                 });
             }
 
-            const results = await Promise.allSettled(operations)
-            const failures = results.filter(r => r.status === 'rejected')
-
-            if (failures.length > 0) {
-                console.error("Batch save failures:", failures)
-                toast.error(`บันทึกไม่สำเร็จบางรายการ (${failures.length} รายการ)`)
+            if (onBatch) {
+                await onBatch(ops)
             } else {
-                toast.success("บันทึกข้อมูลเรียบร้อย")
-                resetForm()
-                if (onRefresh) onRefresh()
+                // Fallback to parallel if onBatch is not provided (defensive)
+                const operations = ops.map(op => {
+                    if (op.type === 'create') return onCreate(op.data, { revalidate: false });
+                    if (op.type === 'update') return onUpdate(op.id, op.data, { revalidate: false });
+                    if (op.type === 'delete') return onDelete(op.id, { revalidate: false });
+                    return Promise.resolve();
+                });
+                await Promise.allSettled(operations)
             }
+
+            toast.success("บันทึกข้อมูลเรียบร้อย")
+            resetForm()
+            if (onRefresh) onRefresh()
         } catch (error: any) {
             console.error("Submit error:", error)
             toast.error(error?.response?.data?.error || error?.message || "เกิดข้อผิดพลาดในการบันทึก")
@@ -507,23 +517,23 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
         })
 
         Object.values(groups).forEach(g => {
-            globalExceed += g.totalActual > g.totalForecast ? g.totalActual - g.totalForecast : 0
-            globalMiss += g.totalActual < g.totalForecast ? g.totalForecast - g.totalActual : 0
+            globalExceed += g.totalActual > g.totalForcedSales ? g.totalActual - g.totalForcedSales : 0
+            globalMiss += g.totalActual < g.totalForcedSales ? g.totalForcedSales - g.totalActual : 0
         })
 
         const sortedGroups = Object.values(groups).sort((a: any, b: any) => a.product.localeCompare(b.product))
 
         return {
             summary: {
-                week: { forecast: sumWeekForecast, actual: sumWeekActual, diff: sumWeekActual - sumWeekForecast, target: sumWeekTarget, forcedSales: sumWeekForcedSales },
-                month: { forecast: sumWeekForecast * 4, actual: sumWeekActual * 4, diff: (sumWeekActual * 4) - (sumWeekForecast * 4), target: sumMonthTarget },
+                week: { forecast: sumWeekForecast, actual: sumWeekActual, diff: sumWeekActual - sumWeekForcedSales, target: sumWeekTarget, forcedSales: sumWeekForcedSales },
+                month: { forecast: sumWeekForecast * 4, actual: sumWeekActual * 4, diff: (sumWeekActual * 4) - (sumWeekForcedSales * 4), target: sumMonthTarget },
                 products: Object.values(groups).map(g => ({ name: g.product, target: g.totalTarget, actual: g.totalActual, forecast: g.totalForecast, forcedSales: g.totalForcedSales }))
             },
             groupedForecasts: sortedGroups,
             globalAggregates: {
                 exceed: globalExceed,
                 miss: globalMiss,
-                percent: sumWeekForecast > 0 ? (sumWeekActual / sumWeekForecast) * 100 : 0
+                percent: sumWeekForcedSales > 0 ? (sumWeekActual / sumWeekForcedSales) * 100 : 0
             },
             totalFilteredItems: filteredByWeek.length
         }
@@ -580,42 +590,42 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                     {new Date() > weekEnd && <div className="absolute top-0 right-0 bg-slate-400/20 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-bl-xl">ข้อมูลย้อนหลัง</div>}
                     {new Date() < weekStart && <div className="absolute top-0 right-0 bg-amber-400/30 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-bl-xl border-b border-l border-amber-400/20">สัปดาห์หน้า</div>}
 
-                    <div className="flex-1 flex flex-col items-center justify-center md:border-r border-blue-400/50 pb-4 md:pb-0 border-b md:border-b-0 border-blue-400/30">
-                        <div className="text-[14px] sm:text-base font-bold opacity-80 flex items-center gap-2 mb-1 text-rose-50">
-                            <Target size={28} /> เป้าบังคับขาย (สัปดาห์)
+                    <div className="flex-1 flex flex-col items-center justify-center md:border-r border-blue-400/50 pb-4 md:pb-0 border-b md:border-b-0 border-blue-400/30 min-w-0">
+                        <div className="text-[14px] sm:text-base font-bold opacity-80 flex items-center gap-2 mb-1 text-rose-50 whitespace-nowrap">
+                            <Target size={28} className="shrink-0" /> <span className="truncate">เป้าบังคับขาย (สัปดาห์)</span>
                         </div>
-                        <div className="text-3xl sm:text-5xl font-black tabular-nums tracking-tighter text-rose-100">
+                        <div className="text-3xl sm:text-4xl lg:text-5xl font-black tabular-nums tracking-tighter text-rose-100 truncate w-full text-center">
                             {summary.week.forcedSales.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                         </div>
                     </div>
 
-                    <div className="flex-1 flex flex-col items-center justify-center md:border-r border-blue-400/50 pb-4 md:pb-0 border-b md:border-b-0 border-blue-400/30">
-                        <div className="text-[14px] sm:text-base font-bold opacity-80 flex items-center gap-2 mb-1 text-emerald-100">
-                            <CheckCircle2 size={18} /> คาดการณ์ (กก.)
+                    <div className="flex-1 flex flex-col items-center justify-center md:border-r border-blue-400/50 pb-4 md:pb-0 border-b md:border-b-0 border-blue-400/30 min-w-0">
+                        <div className="text-[14px] sm:text-base font-bold opacity-80 flex items-center gap-2 mb-1 text-emerald-100 whitespace-nowrap">
+                            <CheckCircle2 size={18} className="shrink-0" /> <span className="truncate">คาดการณ์ (กก.)</span>
                         </div>
-                        <div className="text-3xl sm:text-5xl font-black text-[#5ceaa3] tabular-nums tracking-tighter flex items-baseline gap-2">
+                        <div className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#5ceaa3] tabular-nums tracking-tighter flex items-baseline justify-center gap-2 w-full truncate">
                             {summary.week.forecast.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
-                            <span className="text-[16px] sm:text-xl font-bold opacity-90 text-[#7debb4]">({globalAggregates.percent.toFixed(0)}%)</span>
+                            <span className="text-[16px] sm:text-lg lg:text-xl font-bold opacity-90 text-[#7debb4]">({globalAggregates.percent.toFixed(0)}%)</span>
                         </div>
                     </div>
 
-                    <div className="flex-[1.2] w-full flex flex-row items-center justify-center gap-10 sm:gap-16">
-                        <div className="flex-1 flex flex-col items-center justify-center">
-                            <div className="text-[14px] sm:text-base font-bold opacity-90 mb-1 text-[#5ceaa3]">
+                    <div className="flex-[1.2] w-full flex flex-row items-center justify-center gap-4 sm:gap-10 lg:gap-16 min-w-0">
+                        <div className="flex-1 flex flex-col items-center justify-center min-w-0">
+                            <div className="text-[14px] sm:text-base font-bold opacity-90 mb-1 text-[#5ceaa3] truncate w-full text-center">
                                 ยอดซื้อ (จริง)
                             </div>
-                            <div className="text-2xl sm:text-4xl font-black text-[#5ceaa3] tabular-nums tracking-tighter">
+                            <div className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#5ceaa3] tabular-nums tracking-tighter truncate w-full text-center">
                                 {summary.week.actual.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                             </div>
                         </div>
 
-                        <div className="w-px h-16 sm:h-20 bg-blue-400/30"></div>
+                        <div className="w-px h-12 lg:h-20 bg-blue-400/30 shrink-0"></div>
 
-                        <div className="flex-1 flex flex-col items-center justify-center">
-                            <div className="text-[14px] sm:text-base font-bold opacity-90 mb-1 text-[#ffa3a3]">
+                        <div className="flex-1 flex flex-col items-center justify-center min-w-0">
+                            <div className="text-[14px] sm:text-base font-bold opacity-90 mb-1 text-[#ffa3a3] truncate w-full text-center whitespace-nowrap">
                                 ประมาณการ (เดือน)
                             </div>
-                            <div className="text-2xl sm:text-4xl font-black text-[#ffa3a3] tabular-nums tracking-tighter">
+                            <div className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#ffa3a3] tabular-nums tracking-tighter truncate w-full text-center">
                                 {summary.month.forecast.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                             </div>
                         </div>
@@ -667,12 +677,12 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                 </div>
 
                 {groupedForecasts.length > 0 ? (
-                    <div className="columns-1 lg:columns-2 gap-4 xl:gap-8 space-y-4 xl:space-y-8">
+                    <div className="columns-1 xl:columns-2 gap-4 xl:gap-8 space-y-4 xl:space-y-8">
                         {groupedForecasts.map(group => {
-                            const forecastValue = group.totalForecast || 0;
+                            const forcedSalesValue = group.totalForcedSales || 0;
                             const actualValue = group.totalActual || 0;
-                            const groupExceed = actualValue > forecastValue ? actualValue - forecastValue : 0;
-                            const groupMiss = actualValue < forecastValue ? forecastValue - actualValue : 0;
+                            const groupExceed = actualValue > forcedSalesValue ? actualValue - forcedSalesValue : 0;
+                            const groupMiss = actualValue < forcedSalesValue ? forcedSalesValue - actualValue : 0;
 
                             return (
                                 <Card key={group.product} className="break-inside-avoid relative overflow-hidden bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-800">
@@ -689,35 +699,36 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                         </div>
 
                                         {/* Summaries Card - Refined Look */}
-                                        <div className="bg-[#3A7CF6] p-6 sm:p-7 rounded-[2.5rem] flex flex-col gap-6 border-none shadow-xl shadow-blue-500/20">
-                                            <div className="flex items-center justify-between divide-x divide-white/10">
-                                                <div className="text-center flex-1 px-2 flex flex-col justify-center">
-                                                    <div className="text-[18px] font-black uppercase tracking-[0.2em] text-white mb-2 whitespace-nowrap">เป้าหมาย</div>
-                                                    <div className="text-3xl font-black text-white truncate drop-shadow-sm">{group.totalTarget.toFixed(1)}</div>
+                                        <div className="bg-[#3A7CF6] p-5 sm:p-7 rounded-[2rem] sm:rounded-[2.5rem] flex flex-col gap-6 border-none shadow-xl shadow-blue-500/20">
+                                            <div className="grid grid-cols-3 gap-2 divide-x divide-white/10">
+                                                <div className="text-center flex flex-col justify-center">
+                                                    <div className="text-[10px] sm:text-xs md:text-[14px] font-black uppercase tracking-wider sm:tracking-[0.1em] text-white/90 mb-2 whitespace-nowrap">เป้าหมาย (กก.)</div>
+                                                    <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-white truncate drop-shadow-sm">{group.totalTarget.toFixed(1)}</div>
                                                 </div>
-                                                <div className="text-center flex-1 px-2 flex flex-col justify-center pl-4">
-                                                    <div className="text-[18px] font-black uppercase tracking-[0.2em] text-white mb-2 whitespace-nowrap">คาดการณ์</div>
-                                                    <div className="text-3xl font-black text-emerald-300 truncate drop-shadow-sm">{group.totalForecast.toFixed(1)}
-                                                        ({group.totalForecast > 0 ? ((group.totalActual / group.totalForecast) * 100).toFixed(0) : 0}%)</div>
-
+                                                <div className="text-center flex flex-col justify-center pl-2">
+                                                    <div className="text-[10px] sm:text-xs md:text-[14px] font-black uppercase tracking-wider sm:tracking-[0.1em] text-white/90 mb-2 whitespace-nowrap">คาดการณ์ (กก.)</div>
+                                                    <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-emerald-300 truncate drop-shadow-sm">
+                                                        {group.totalForecast.toFixed(1)}
+                                                        <span className="text-[10px] sm:text-xs opacity-80 block lg:inline ml-1 lg:ml-2">({group.totalForcedSales > 0 ? ((group.totalActual / group.totalForcedSales) * 100).toFixed(0) : 0}%)</span>
+                                                    </div>
                                                 </div>
-                                                <div className="text-center flex-1 px-2 flex flex-col justify-center pl-4">
-                                                    <div className="text-[18px] font-black uppercase tracking-[0.2em] text-white mb-2 whitespace-nowrap">จริง</div>
-                                                    <div className="text-3xl  font-black text-white truncate drop-shadow-sm">{group.totalActual.toFixed(1)}</div>
+                                                <div className="text-center flex flex-col justify-center pl-2">
+                                                    <div className="text-[10px] sm:text-xs md:text-[14px] font-black uppercase tracking-wider sm:tracking-[0.1em] text-white/90 mb-2 whitespace-nowrap">จริง (กก.)</div>
+                                                    <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-white truncate drop-shadow-sm">{group.totalActual.toFixed(1)}</div>
                                                 </div>
                                             </div>
 
                                             <div className="h-px bg-white/10 w-full"></div>
 
-                                            <div className="flex flex-row items-center justify-center gap-8 sm:gap-16">
-                                                <div className="flex flex-col items-center justify-center">
-                                                    <span className="text-[18px] font-black text-emerald-200 uppercase tracking-widest mb-1">รวมเกินคาด</span>
-                                                    <div className="text-3xl sm:text-4xl font-black text-emerald-300">{groupExceed.toFixed(1)}</div>
+                                            <div className="flex flex-row items-center justify-center gap-4 sm:gap-16">
+                                                <div className="flex flex-col items-center justify-center flex-1">
+                                                    <span className="text-[11px] sm:text-sm md:text-base lg:text-[18px] font-black text-emerald-200 uppercase tracking-widest mb-1 whitespace-nowrap">เกินเป้า</span>
+                                                    <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-emerald-300">{groupExceed.toFixed(1)}</div>
                                                 </div>
-                                                <div className="w-px h-10 bg-white/10"></div>
-                                                <div className="flex flex-col items-center justify-center">
-                                                    <span className="text-[18px] font-black text-rose-200 uppercase tracking-widest mb-1">รวมขาดคาด</span>
-                                                    <div className="text-3xl sm:text-4xl font-black text-rose-300">{groupMiss.toFixed(1)}</div>
+                                                <div className="w-px h-10 bg-white/10 shrink-0"></div>
+                                                <div className="flex flex-col items-center justify-center flex-1">
+                                                    <span className="text-[11px] sm:text-sm md:text-base lg:text-[18px] font-black text-rose-200 uppercase tracking-widest mb-1 whitespace-nowrap">ขาดเป้า</span>
+                                                    <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-rose-300">{groupMiss.toFixed(1)}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -748,13 +759,13 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                                                             <span className="text-[16px] font-black text-blue-500 uppercase tracking-tighter mb-1 select-none">คาดการณ์</span>
                                                                             <span className="text-blue-600 dark:text-blue-400 text-3xl font-black">{item.forecast?.toFixed(1) || "0.0"}</span>
                                                                         </div>
-                                                                        <div className="flex flex-col items-center justify-center pl-2">
+                                                                        <div className="hidden flex flex-col items-center justify-center pl-2">
                                                                             <span className="text-[16px] font-black text-rose-500 uppercase tracking-tighter mb-1 select-none">บังคับขาย</span>
                                                                             <span className="text-rose-600 dark:text-rose-400 text-3xl font-black">{item.forcedSales?.toFixed(1) || "0.0"}</span>
                                                                         </div>
                                                                         <div className="flex flex-col items-center justify-center pl-2">
-                                                                            <span className="text-[16px] font-black text-emerald-500 uppercase tracking-tighter mb-1 select-none">จริง</span>
-                                                                            <span className={cn("text-3xl font-black", tActual > 0 ? "text-emerald-900" : "text-gray-500")}>{tActual.toFixed(1)}</span>
+                                                                            <span className="text-[14px] sm:text-[16px] font-black text-emerald-500 uppercase tracking-tighter mb-1 select-none">จริง</span>
+                                                                            <span className={cn("text-2xl sm:text-3xl font-black", tActual > 0 ? "text-emerald-900" : "text-gray-500")}>{tActual.toFixed(1)}</span>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -763,15 +774,15 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                                                     {/* Accuracy % */}
                                                                     <div>
                                                                         <div className="flex justify-between items-end mb-1.5 px-1">
-                                                                            <span className="text-[18px] font-black text-blue-500 uppercase tracking-widest">สัดส่วนเป้าหมาย</span>
-                                                                            <span className="text-[18px] font-black text-blue-600 dark:text-blue-400">
-                                                                                {item.forecast && item.forecast > 0 ? ((tActual / item.forecast) * 100).toFixed(0) : 0}%
+                                                                            <span className="text-[14px] sm:text-base lg:text-[18px] font-black text-blue-500 uppercase tracking-widest truncate">สภาวะการคาดการณ์</span>
+                                                                            <span className="text-[14px] sm:text-base lg:text-[18px] font-black text-blue-600 dark:text-blue-400 shrink-0 ml-2">
+                                                                                {item.forcedSales && item.forcedSales > 0 ? ((tActual / item.forcedSales) * 100).toFixed(0) : 0}%
                                                                             </span>
                                                                         </div>
                                                                         <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[1px]">
                                                                             <div
                                                                                 className="h-full bg-blue-500 rounded-full transition-all duration-1000"
-                                                                                style={{ width: `${Math.min(item.forecast && item.forecast > 0 ? (tActual / item.forecast) * 100 : 0, 100)}%` }}
+                                                                                style={{ width: `${Math.min(item.forcedSales && item.forcedSales > 0 ? (tActual / item.forcedSales) * 100 : 0, 100)}%` }}
                                                                             />
                                                                         </div>
                                                                     </div>
@@ -779,8 +790,8 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                                                     {/* Success % */}
                                                                     <div>
                                                                         <div className="flex justify-between items-end mb-1.5 px-1">
-                                                                            <span className="text-[18px] font-black text-emerald-500 uppercase tracking-widest">สัดส่วนยอดซื้อจริง</span>
-                                                                            <span className="text-[18px] font-black text-emerald-600 dark:text-emerald-400">
+                                                                            <span className="text-[14px] sm:text-base lg:text-[18px] font-black text-emerald-500 uppercase tracking-widest truncate">สภาวะยอดซื้อจริง</span>
+                                                                            <span className="text-[14px] sm:text-base lg:text-[18px] font-black text-emerald-600 dark:text-emerald-400 shrink-0 ml-2">
                                                                                 {item.forcedSales && item.forcedSales > 0 ? ((tActual / item.forcedSales) * 100).toFixed(0) : 0}%
                                                                             </span>
                                                                         </div>
@@ -825,7 +836,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                         {/* Section 1: Product Selection */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50/50 dark:bg-slate-900/30 rounded-[2rem] border border-slate-100 dark:border-slate-800/50">
                             <div className="space-y-2">
-                                <Label className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">เลือกกลุ่ม/ประเภท</Label>
+                                <Label className="text-[18px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">เลือกกลุ่ม/ประเภท</Label>
                                 <Select value={partCategoryFilter} onValueChange={setPartCategoryFilter} disabled={!!selectedMeatPart}>
                                     <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700/50 font-medium rounded-xl shadow-sm">
                                         <SelectValue placeholder="-- ทั้งหมด --" />
@@ -840,7 +851,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                             </div>
 
                             <div className="md:col-span-2 space-y-2">
-                                <Label className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">ชิ้นส่วน/สินค้า *</Label>
+                                <Label className="text-[18px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">ชิ้นส่วน/สินค้า *</Label>
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
                                         <Input
@@ -910,7 +921,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                         {/* Section 2: Details and Summary */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 p-4 sm:p-5 bg-slate-50 dark:bg-slate-950/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 shadow-inner">
                             <div className="space-y-2 min-w-0">
-                                <Label className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">
+                                <Label className="text-[18px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">
                                     <ShoppingBag size={12} /> ชนิดสินค้า
                                 </Label>
                                 <Select value={selectedProductType} onValueChange={setSelectedProductType}>
@@ -926,7 +937,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                             </div>
 
                             <div className="space-y-2 min-w-0">
-                                <Label className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">
+                                <Label className="text-[18px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">
                                     <Target size={12} /> เป้าหมายรวม (กก.)
                                 </Label>
                                 <div className="relative group">
@@ -940,7 +951,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                             </div>
 
                             <div className="space-y-2 min-w-0">
-                                <Label className="text-[11px] font-black uppercase tracking-wider text-blue-500/80 flex items-center gap-1.5 ml-1">
+                                <Label className="text-[18px] font-black uppercase flex flex-row tracking-wider text-blue-500/80 flex items-center gap-1.5 ml-1">
                                     <TrendingUp size={12} /> คาดการณ์รวม (กก.)
                                 </Label>
                                 <div className="relative">
@@ -954,14 +965,36 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                             </div>
 
                             <div className="space-y-2 min-w-0">
-                                <Label className="text-[11px] font-black uppercase tracking-wider text-rose-500/80 flex items-center gap-1.5 ml-1">
+                                <Label className="text-[18px] font-black uppercase tracking-wider text-rose-500/80 flex items-center gap-1.5 ml-1">
                                     <CheckCircle2 size={12} /> บังคับขายรวม (กก.)
                                 </Label>
                                 <div className="relative">
                                     <Input
-                                        readOnly
-                                        className="h-11 w-full bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-rose-900/30 cursor-not-allowed font-black text-rose-600 dark:text-rose-400 rounded-2xl text-lg pl-10"
-                                        value={autoTotalForcedSales || '0'}
+                                        className="h-11 w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-rose-900/30 font-black text-rose-600 dark:text-rose-400 rounded-2xl text-lg pl-10 focus:ring-rose-500/20"
+                                        value={autoTotalForcedSales || ''}
+                                        placeholder="0"
+                                        type="number"
+                                        onChange={(e) => {
+                                            const newVal = e.target.value;
+                                            if (selectedStores.length > 0) {
+                                                setSelectedStores(prev => {
+                                                    const newArr = [...prev];
+                                                    // Distribute the total to the first store, others to 0 (or keep as is)
+                                                    // Based on request: "บังคับขายร่วม10 ซื้อจริง1 = 9 จากบังคับขายร่วมนะ"
+                                                    // We'll put the whole joint value in the first store for now.
+                                                    newArr[0] = { ...newArr[0], forcedSales: newVal };
+                                                    // Set others to 0 to maintain the total correctly if they were already 0
+                                                    for (let i = 1; i < newArr.length; i++) {
+                                                        if (!newArr[i].forcedSales) newArr[i] = { ...newArr[i], forcedSales: '0' };
+                                                    }
+                                                    return newArr;
+                                                });
+                                            } else {
+                                                // If no stores, add a dummy one to hold the value? 
+                                                // Usually user adds stores first.
+                                                toast.error("กรุณาเพิ่มร้านค้าก่อนกำหนดเป้าบังคับขายรวม");
+                                            }
+                                        }}
                                     />
                                     <CheckCircle2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-rose-400 dark:text-rose-600" size={18} />
                                 </div>
@@ -972,7 +1005,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                         <div className="space-y-6">
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center px-1">
-                                    <Label className="text-sm font-black text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                    <Label className="text-xl font-black text-slate-700 dark:text-slate-300 flex items-center gap-2">
                                         <ShoppingBag size={18} className="text-blue-500" /> ร้านเป้าหมายและการกระจายตัวเลข
                                     </Label>
                                     <Button
@@ -1043,7 +1076,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                         </div>
                         {/* Notes */}
                         <div className="space-y-3 p-5 bg-slate-50 dark:bg-slate-950/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50">
-                            <Label className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">หมายเหตุ / บันทึกเพิ่มเติม</Label>
+                            <Label className="text-[18px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">หมายเหตุ / บันทึกเพิ่มเติม</Label>
                             <Textarea
                                 placeholder="ใส่ข้อมูลเพิ่มเติมที่ต้องการระบุ..."
                                 value={notes}

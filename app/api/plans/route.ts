@@ -28,9 +28,7 @@ export async function GET(request: NextRequest) {
       orderBy: [{ store: { code: "asc" } }, { date: "asc" }],
     });
 
-    return NextResponse.json(data, {
-      headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
-    });
+    return NextResponse.json(data);
   } catch (error) {
     return renderError(error);
   }

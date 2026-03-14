@@ -208,7 +208,7 @@ function CalendarDayButton({ day, modifiers, getPlansForDate, getVisitsForDate, 
 
 export default function Dashboard({ stores: initialStores, visits: initialVisits, summary, profiles: propProfiles, isAdmin }: any) {
   // --- REAL DATA INTEGRATION ---
-  const { stores, visits, setVisits, plans, issues, profiles: crmProfiles, fetchVisits, fetchPlans, fetchStores, loading } = useCRM()
+  const { stores, visits, setVisits, plans, issues, profiles: crmProfiles, fetchVisits, fetchPlans, fetchStores, loading, batchVisits, batchPlans } = useCRM()
 
   // Use provided initial props if hook data is empty (SSR/prop hydration)
   const displayStores = stores.length > 0 ? stores : (initialStores || [])
@@ -576,24 +576,23 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
 
         if (visitsData.length > 0) {
           toast.loading(`นำเข้าการเข้าพบ ${visitsData.length} รายการ...`, { id: 'import-toast' })
-          const newVisits: any[] = []
+          
+          const visitOps = visitsData.map((row, idx) => {
+            const storeCode = getExcelValue(row, ['รหัส', 'code', 'store_code', 'รหัสร้าน', 'รหัสลูกค้า'])
+            const storeId = storeCode ? storeMap.get(storeCode.toLowerCase()) : undefined
+            if (!storeId) {
+              failedReasons.push(`[Visits แถว ${idx + 2}] ไม่พบร้าน: "${storeCode}"`)
+              errCount++
+              return null
+            }
 
-          await Promise.all(visitsData.map(async (row, idx) => {
-            try {
-              const storeCode = getExcelValue(row, ['รหัส', 'code', 'store_code', 'รหัสร้าน', 'รหัสลูกค้า'])
-              const storeId = storeCode ? storeMap.get(storeCode.toLowerCase()) : undefined
-              if (!storeId) {
-                failedReasons.push(`[Visits แถว ${idx + 2}] ไม่พบร้าน: "${storeCode}"`)
-                errCount++
-                return
-              }
+            let salesName = getExcelValue(row, ['เซลล์', 'sales', 'sale', 'sales_name', 'พนักงานขาย', 'ชื่อเซลล์']) || 'ไม่ระบุ'
+            const rawDate = getExcelValue(row, ['วันที่', 'date', 'visit_date', 'Date'])
+            const finalDate = parseExcelDate(rawDate)
 
-              let salesName = getExcelValue(row, ['เซลล์', 'sales', 'sale', 'sales_name', 'พนักงานขาย', 'ชื่อเซลล์']) || 'ไม่ระบุ'
-
-              const rawDate = getExcelValue(row, ['วันที่', 'date', 'visit_date', 'Date'])
-              const finalDate = parseExcelDate(rawDate)
-
-              const visitData = {
+            return {
+              type: 'create',
+              data: {
                 date: finalDate,
                 sales: salesName,
                 storeRef: storeCode,
@@ -605,36 +604,41 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
                 notes: { text: getExcelValue(row, ['บันทึกเข้าพบ', 'notes', 'note', 'details', 'บันทึก', 'หมายเหตุ']) || '-' },
                 order: getExcelValue(row, ['คำสั่งซื้อ', 'order', 'order_amount', 'ยอดสั่งซื้อ', 'ยอด', 'จำนวน']) || '0'
               }
+            }
+          }).filter(op => op !== null)
 
-              const res = await fetch('/api/visits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(visitData) })
-              if (res.ok) { newVisits.push(await res.json()); vSuccess++ }
-              else { failedReasons.push(`[Visits แถว ${idx + 2}] API Error`); errCount++ }
-            } catch { errCount++ }
-          }))
-          if (newVisits.length > 0) setVisits((prev: any) => [...newVisits, ...prev])
+          if (visitOps.length > 0) {
+            try {
+              const res = await batchVisits(visitOps, { revalidate: false })
+              vSuccess += res.results.filter((r: any) => r.status === 'success').length
+              errCount += res.results.filter((r: any) => r.status !== 'success').length
+            } catch (err) {
+              console.error('Visit batch error:', err)
+              errCount += visitOps.length
+            }
+          }
         }
 
         // ─── Step 4: Create plans ──────────────────────────────────────────────
         if (plansData.length > 0) {
           toast.loading(`นำเข้าแผนงาน ${plansData.length} รายการ...`, { id: 'import-toast' })
-          const newPlans: any[] = []
+          
+          const planOps = plansData.map((row, idx) => {
+            const storeCode = getExcelValue(row, ['รหัส', 'code', 'store_code', 'รหัสร้าน', 'รหัสลูกค้า'])
+            const storeId = storeCode ? storeMap.get(storeCode.toLowerCase()) : undefined
+            if (!storeId) {
+              failedReasons.push(`[Plans แถว ${idx + 2}] ไม่พบร้าน: "${storeCode}"`)
+              errCount++
+              return null
+            }
 
-          await Promise.all(plansData.map(async (row, idx) => {
-            try {
-              const storeCode = getExcelValue(row, ['รหัส', 'code', 'store_code', 'รหัสร้าน', 'รหัสลูกค้า'])
-              const storeId = storeCode ? storeMap.get(storeCode.toLowerCase()) : undefined
-              if (!storeId) {
-                failedReasons.push(`[Plans แถว ${idx + 2}] ไม่พบร้าน: "${storeCode}"`)
-                errCount++
-                return
-              }
+            let salesName = getExcelValue(row, ['เซลล์', 'sales', 'sale', 'sales_name', 'พนักงานขาย', 'ชื่อเซลล์']) || 'ไม่ระบุ'
+            const rawDate = getExcelValue(row, ['วันที่', 'date', 'plan_date', 'Date', 'วันที่นัด'])
+            const finalDate = parseExcelDate(rawDate)
 
-              let salesName = getExcelValue(row, ['เซลล์', 'sales', 'sale', 'sales_name', 'พนักงานขาย', 'ชื่อเซลล์']) || 'ไม่ระบุ'
-
-              const rawDate = getExcelValue(row, ['วันที่', 'date', 'plan_date', 'Date', 'วันที่นัด'])
-              const finalDate = parseExcelDate(rawDate)
-
-              const planData = {
+            return {
+              type: 'create',
+              data: {
                 date: finalDate,
                 sales: salesName,
                 masterId: storeId,
@@ -642,13 +646,19 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
                 notes: getExcelValue(row, ['บันทึก', 'notes', 'note', 'details', 'หมายเหตุ']) || null,
                 order: getExcelValue(row, ['คำสั่งซื้อ', 'order', 'order_amount', 'ยอดสั่งซื้อ', 'ยอด']) || null
               }
+            }
+          }).filter(op => op !== null)
 
-              const res = await fetch('/api/plans', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(planData) })
-              if (res.ok) pSuccess++
-              else { failedReasons.push(`[Plans แถว ${idx + 2}] API Error`); errCount++ }
-            } catch { errCount++ }
-          }))
-          await fetchPlans()
+          if (planOps.length > 0) {
+            try {
+              const res = await batchPlans(planOps, { revalidate: false })
+              pSuccess += res.results.filter((r: any) => r.status === 'success').length
+              errCount += res.results.filter((r: any) => r.status !== 'success').length
+            } catch (err) {
+              console.error('Plan batch error:', err)
+              errCount += planOps.length
+            }
+          }
         }
 
         // Summary

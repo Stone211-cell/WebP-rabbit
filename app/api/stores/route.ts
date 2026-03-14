@@ -39,9 +39,7 @@ export async function GET(request: NextRequest) {
       take: limitInt,
     });
 
-    return NextResponse.json(stores, {
-      headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
-    });
+    return NextResponse.json(stores);
   } catch (error) {
     return renderError(error);
   }

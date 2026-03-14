@@ -13,7 +13,7 @@ export default function ForecastPage() {
     const weekEnd = endOfWeek(date, { weekStartsOn: 0 });
     const weekStartStr = weekStart.toISOString();
 
-    const { stores, forecasts, fetchForecasts, createForecast, updateForecast, deleteForecast, isLoading: crmLoading, isValidating } = useCRM({ 
+    const { stores, forecasts, fetchForecasts, createForecast, updateForecast, deleteForecast, batchForecasts, isLoading: crmLoading, isValidating } = useCRM({ 
         forecastWeekStart: weekStartStr 
     });
     const { isAdmin, isLoaded } = useCRMSession();
@@ -52,6 +52,7 @@ export default function ForecastPage() {
                 onCreate={createForecast}
                 onUpdate={updateForecast}
                 onDelete={deleteForecast}
+                onBatch={batchForecasts}
                 isAdmin={isAdmin}
             />
         </div>

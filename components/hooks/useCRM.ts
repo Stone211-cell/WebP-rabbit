@@ -122,6 +122,12 @@ export function useCRM(filters?: {
     if (options?.revalidate !== false) await revalidateResource('visits');
   };
 
+  const batchVisits = async (operations: any[], options?: { revalidate?: boolean }) => {
+    const res = await axios.post('/api/visits/batch', { operations });
+    if (options?.revalidate !== false) await revalidateResource('visits');
+    return res.data;
+  };
+
   // ─── PLANS mutations ───────────────────────────────────────────────────────
   const createPlan = async (plan: Omit<Plan, 'id' | 'createdAt' | 'updatedAt'>) => {
     const res = await axios.post<Plan>('/api/plans', plan);
@@ -140,22 +146,34 @@ export function useCRM(filters?: {
     if (options?.revalidate !== false) await revalidateResource('plans');
   };
 
-  // ─── FORECASTS mutations ───────────────────────────────────────────────────
-  const createForecast = async (forecast: Omit<Forecast, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const res = await axios.post<Forecast>('/api/forecasts', forecast);
-    await revalidateResource('forecasts');
+  const batchPlans = async (operations: any[], options?: { revalidate?: boolean }) => {
+    const res = await axios.post('/api/plans/batch', { operations });
+    if (options?.revalidate !== false) await revalidateResource('plans');
     return res.data;
   };
 
-  const updateForecast = async (id: string, forecast: Partial<Forecast>) => {
+  // ─── FORECASTS mutations ───────────────────────────────────────────────────
+  const createForecast = async (forecast: Omit<Forecast, 'id' | 'createdAt' | 'updatedAt'>, options?: { revalidate?: boolean }) => {
+    const res = await axios.post<Forecast>('/api/forecasts', forecast);
+    if (options?.revalidate !== false) await revalidateResource('forecasts');
+    return res.data;
+  };
+
+  const updateForecast = async (id: string, forecast: Partial<Forecast>, options?: { revalidate?: boolean }) => {
     const res = await axios.patch<Forecast>(`/api/forecasts/${id}`, forecast);
-    await revalidateResource('forecasts');
+    if (options?.revalidate !== false) await revalidateResource('forecasts');
     return res.data;
   };
 
   const deleteForecast = async (id: string, options?: { revalidate?: boolean }) => {
     await axios.delete(`/api/forecasts/${id}`);
     if (options?.revalidate !== false) await revalidateResource('forecasts');
+  };
+
+  const batchForecasts = async (operations: any[], options?: { revalidate?: boolean }) => {
+    const res = await axios.post('/api/forecasts/batch', { operations });
+    if (options?.revalidate !== false) await revalidateResource('forecasts');
+    return res.data;
   };
 
   // ─── ISSUES mutations ──────────────────────────────────────────────────────
@@ -201,9 +219,9 @@ export function useCRM(filters?: {
     setVisits,
     fetchStores, fetchVisits, fetchPlans, fetchForecasts, fetchIssues, fetchProfiles,
     createStore, updateStore, deleteStore,
-    createVisit, updateVisit, deleteVisit,
-    createPlan, updatePlan, deletePlan,
-    createForecast, updateForecast, deleteForecast,
+    createVisit, updateVisit, deleteVisit, batchVisits,
+    createPlan, updatePlan, deletePlan, batchPlans,
+    createForecast, updateForecast, deleteForecast, batchForecasts,
     createIssue, updateIssue, deleteIssue,
   };
 }

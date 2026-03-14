@@ -37,9 +37,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(forecasts, {
-      headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
-    });
+    return NextResponse.json(forecasts);
   } catch (error) {
     return renderError(error);
   }
