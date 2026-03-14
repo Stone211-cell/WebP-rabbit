@@ -1,7 +1,7 @@
 'use client';
 
 import OrderTracking from '@/components/pagecomponents/OrderTracking/OrderTracking';
-import { useStores, useVisits } from '@/components/hooks/useCRMHooks';
+import { useStores, useVisits } from '@/components/hooks/useCRM';
 import { useCRMSession } from '@/components/hooks/useCRMSession';
 
 export default function OrderTrackingPage() {

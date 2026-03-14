@@ -1,7 +1,7 @@
 'use client';
 
 import JobCard from '@/components/pagecomponents/JobCard/JobCard';
-import { useVisits, usePlans } from '@/components/hooks/useCRMHooks';
+import { useVisits, usePlans } from '@/components/hooks/useCRM';
 import { useCRMSession } from '@/components/hooks/useCRMSession';
 
 export default function JobCardPage() {

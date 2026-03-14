@@ -1,7 +1,7 @@
 'use client';
 
 import Fine from '@/components/pagecomponents/Fine/Fine';
-import { useStores, useVisits, usePlans, useIssues } from '@/components/hooks/useCRMHooks';
+import { useIssues, usePlans, useStores, useVisits } from '@/components/hooks/useCRM';
 
 export default function FinePage() {
     const { stores, isLoading: storesLoading } = useStores();

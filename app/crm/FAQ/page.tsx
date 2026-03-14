@@ -1,8 +1,9 @@
 'use client';
 
 import FAQ from '@/components/pagecomponents/FAQ/FAQ';
-import { useStores, useIssues } from '@/components/hooks/useCRMHooks';
+
 import { useCRMSession } from '@/components/hooks/useCRMSession';
+import { useIssues, useStores } from '@/components/hooks/useCRM';
 
 export default function FAQPage() {
     const { stores, isLoading: storesLoading } = useStores();

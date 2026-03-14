@@ -1,7 +1,8 @@
 'use client';
 
 import Alerts from '@/components/pagecomponents/Alerts/Alerts';
-import { useStores, useVisits, useForecasts } from '@/components/hooks/useCRMHooks';
+
+import { useForecasts, useIssues, useStores, useVisits } from '@/components/hooks/useCRM';
 
 export default function AlertsPage() {
     const { stores, isLoading: storesLoading } = useStores();

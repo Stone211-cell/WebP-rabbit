@@ -3,28 +3,28 @@
 import { useState } from 'react';
 import { startOfWeek, endOfWeek } from 'date-fns';
 import ForecastFormStore from '@/components/pagecomponents/ForecastFormStore/ForecastForm';
-import { useStores, useForecasts } from '@/components/hooks/useCRMHooks';
+import { useForecasts, useStores } from '@/components/hooks/useCRM';
 import { useCRMSession } from '@/components/hooks/useCRMSession';
 
 export default function ForecastStorePage() {
     const [date, setDate] = useState<Date>(new Date());
-    
+
     // Calculate week bounds for the list view
     const weekStart = startOfWeek(date, { weekStartsOn: 0 });
     const weekEnd = endOfWeek(date, { weekStartsOn: 0 });
-    
+
     // Calculate month bounds for the summary banner
     const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
     const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-    
+
     const monthStartStr = monthStart.toISOString();
     const monthEndStr = monthEnd.toISOString();
 
     const { stores, isLoading: storesLoading } = useStores();
     // Fetch the entire month by setting weekStart to monthStart and endDate to monthEnd
-    const { forecasts, fetchForecasts, createForecast, updateForecast, deleteForecast, isLoading: forecastsLoading } = useForecasts({ 
-        weekStart: monthStartStr, 
-        endDate: monthEndStr 
+    const { forecasts, fetchForecasts, createForecast, updateForecast, deleteForecast, isLoading: forecastsLoading } = useForecasts({
+        weekStart: monthStartStr,
+        endDate: monthEndStr
     });
     const { isAdmin, isLoaded } = useCRMSession();
 
