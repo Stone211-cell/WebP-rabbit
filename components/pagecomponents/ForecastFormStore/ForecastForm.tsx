@@ -553,7 +553,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                 </div>
 
                 {groupedForecasts.length > 0 ? (
-                    <div className="flex flex-col gap-10">
+                    <div className="grid grid-cols-2 gap-6 lg:gap-10">
                         {groupedForecasts.map((group: any) => (
                             <div key={group.store?.id || Math.random()} className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 sm:p-8 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-500 group/store-container">
                                 {/* Store Group Header */}
@@ -587,31 +587,41 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                     const groupForecast = group.items.reduce((acc: number, item: any) => acc + (item.forecast || 0), 0);
                                     const groupActual = group.items.reduce((acc: number, item: any) => acc + (item.actual || 0), 0);
                                     const groupForced = group.items.reduce((acc: number, item: any) => acc + (item.forcedSales || 0), 0);
-                                    const groupExceed = groupActual > groupForecast ? groupActual - groupForecast : 0;
-                                    const groupMiss = groupActual < groupForecast ? groupForecast - groupActual : 0;
+                                    const groupExceed = groupActual > groupForced ? groupActual - groupForced : 0;
+                                    const groupMiss = groupActual < groupForced ? groupForced - groupActual : 0;
 
                                     return (
                                         <div className="bg-slate-50/50 dark:bg-slate-950/30 p-6 rounded-[2rem] border border-slate-50 dark:border-slate-800 mb-8">
-                                            <div className="grid grid-cols-2 md:grid-cols-5 gap-6 divide-x lg:divide-x divide-slate-200 dark:divide-slate-800/50">
-                                                <div className="flex flex-col items-center justify-center text-center">
-                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">บังคับขายรวม</span>
-                                                    <span className="text-2xl font-black text-slate-900 dark:text-white">{groupForced.toLocaleString()}</span>
+                                            <div className="grid grid-cols-2 gap-y-6 sm:gap-y-8 divide-x divide-slate-200 dark:divide-slate-800/50">
+                                                <div className="flex flex-col items-center justify-center text-center px-2">
+                                                    <span className="text-[14px] font-black text-slate-400 uppercase tracking-widest mb-1.5">จริงรวม</span>
+                                                    <span className="text-3xl font-black text-slate-900 dark:text-white">{groupActual.toFixed(1)}</span>
                                                 </div>
-                                                <div className="flex flex-col items-center justify-center text-center pl-4 border-l lg:border-l-0">
-                                                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">คาดการณ์รวม</span>
-                                                    <span className="text-2xl font-black text-blue-600 dark:text-blue-400">{groupForecast.toLocaleString()}</span>
+                                                <div className="flex flex-col items-center justify-center text-center pl-4 border-l border-slate-200 dark:border-slate-800/50 px-2">
+                                                    <span className="text-[14px] font-black text-blue-500 uppercase tracking-widest mb-1.5">คาดการณ์รวม</span>
+                                                    <span className="text-3xl font-black text-blue-600 dark:text-blue-400">{groupForecast.toFixed(1)}</span>
                                                 </div>
-                                                <div className="flex flex-col items-center justify-center text-center pl-4 border-l lg:border-l-0">
-                                                    <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">ซื้อจริงรวม</span>
-                                                    <span className="text-2xl font-black text-emerald-500">{groupActual.toLocaleString()}</span>
+                                                <div className="flex flex-col items-center justify-center text-center pt-4 border-t border-slate-200 dark:border-slate-800/50 px-2">
+                                                    <span className="text-[14px] font-black text-rose-500 uppercase tracking-widest mb-1.5">บังคับขายรวม</span>
+                                                    <span className="text-3xl font-black text-rose-600">{groupForced.toFixed(1)}</span>
                                                 </div>
-                                                <div className="flex flex-col items-center justify-center text-center pl-4 border-l lg:border-l-0">
-                                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">ส่วนต่างเกิน</span>
-                                                    <span className="text-2xl font-black text-emerald-600">+{groupExceed.toLocaleString()}</span>
+                                                <div className="flex flex-col items-center justify-center text-center pl-4 pt-4 border-t border-l border-slate-200 dark:border-slate-800/50 px-2">
+                                                    <span className="text-[14px] font-black text-slate-400 uppercase tracking-widest mb-1.5">เป้าหมายรวม</span>
+                                                    <span className="text-3xl font-black text-slate-400/50">{(group.items.reduce((acc: number, item: any) => acc + (item.targetWeek || 0), 0)).toFixed(1)}</span>
                                                 </div>
-                                                <div className="flex flex-col items-center justify-center text-center pl-4 border-l lg:border-l-0">
-                                                    <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-1">ส่วนต่างขาด</span>
-                                                    <span className="text-2xl font-black text-rose-500">-{groupMiss.toLocaleString()}</span>
+                                            </div>
+
+                                            <div className="h-px bg-slate-200 dark:bg-slate-800/50 w-full my-6"></div>
+
+                                            <div className="flex flex-row items-center justify-center gap-12 sm:gap-20">
+                                                <div className="flex flex-col items-center justify-center flex-1 min-w-0">
+                                                    <span className="text-[16px] font-black text-emerald-500 uppercase tracking-widest mb-1.5 whitespace-nowrap">เกินเป้า</span>
+                                                    <div className="text-3xl font-black text-emerald-500 truncate">{groupExceed.toFixed(1)}</div>
+                                                </div>
+                                                <div className="w-px h-10 bg-slate-200 dark:bg-slate-800/50 shrink-0"></div>
+                                                <div className="flex flex-col items-center justify-center flex-1 min-w-0">
+                                                    <span className="text-[16px] font-black text-rose-500 uppercase tracking-widest mb-1.5 whitespace-nowrap">ขาดเป้า</span>
+                                                    <div className="text-3xl font-black text-rose-500 truncate">{groupMiss.toFixed(1)}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -619,7 +629,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                 })()}
 
                                 {/* Items Grid */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 gap-5">
                                     {group.items.map((f: any) => {
                                         const diff = (f.actual || 0) - (f.forecast || 0);
                                         const tActual = safeFloat(f.actual);
