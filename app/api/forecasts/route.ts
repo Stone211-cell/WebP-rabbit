@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     if (weekStart) {
       const start = new Date(weekStart);
       start.setHours(0, 0, 0, 0);
-      
+
       const end = endDateParam ? new Date(endDateParam) : new Date(start);
       if (!endDateParam) {
         end.setDate(start.getDate() + 6);
@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
   }
   try {
     const body = await request.json();
+    console.log(body)
     const validatedData = forecastSchema.parse(body);
 
     const forecast = await prisma.forecast.create({

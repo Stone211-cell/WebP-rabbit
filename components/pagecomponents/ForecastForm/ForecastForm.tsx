@@ -416,6 +416,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                     product: productName,
                     productType: selectedProductType,
                     targetWeek: safeFloat(s.target),
+                    targetMonth: safeFloat(s.targetMonth),
                     forecast: safeFloat(s.forecast),
                     forcedSales: safeFloat(s.forcedSales),
                     actual: s.actual === undefined ? null : safeFloat(s.actual),
