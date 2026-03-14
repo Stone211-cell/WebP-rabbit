@@ -66,6 +66,7 @@ export const forecastSchema = z.object({
     productType: z.string().optional().nullable(),
     targetWeek: z.number().min(0, "เป้าหมายรายสัปดาห์ต้องมากกว่า 0"),
     targetMonth: z.number().min(0, "เป้าหมายรายเดือนต้องมากกว่า 0"),
+    forcedSales: z.number().optional().nullable(),
     weekStart: z.coerce.date(), // Auto convert string/number to Date
     notes: z.string().optional().nullable(),
 })

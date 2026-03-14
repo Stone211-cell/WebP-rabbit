@@ -45,8 +45,10 @@ export async function PATCH(
       where: { id },
       data: {
         product: body.product,
+        productType: body.productType,
         targetWeek: body.targetWeek ? parseFloat(body.targetWeek) : undefined,
         targetMonth: body.targetMonth ? parseFloat(body.targetMonth) : undefined,
+        forcedSales: body.forcedSales !== undefined ? (body.forcedSales ? parseFloat(body.forcedSales) : null) : undefined,
         forecast: body.forecast ? parseFloat(body.forecast) : undefined,
         actual: body.actual ? parseFloat(body.actual) : undefined,
         notes: body.notes,

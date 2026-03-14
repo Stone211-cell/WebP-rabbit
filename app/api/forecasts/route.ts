@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
     const forecast = await prisma.forecast.create({
       data: {
         ...validatedData,
+        forcedSales: body.forcedSales ? parseFloat(body.forcedSales) : null,
         forecast: body.forecast ? parseFloat(body.forecast) : null,
         actual: body.actual ? parseFloat(body.actual) : null,
         weekStart: validatedData.weekStart, // Date is already a Date object from Zod

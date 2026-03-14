@@ -85,6 +85,7 @@ model Forecast {
   productType String? // สด, เก่าสด, ขึ้นรูป, สไลด์, แพ็ค, เสต็ก
   targetWeek  Float
   targetMonth Float
+  forcedSales Float?
   forecast    Float?
   actual      Float?
   notes       String?

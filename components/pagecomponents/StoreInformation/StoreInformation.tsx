@@ -124,7 +124,6 @@ export default function StoreInformation({ stores, visits = [], issues = [], onR
     try {
       const res = await axiosInstance.delete('/stores')
       toast.success(res.data.message || "ลบข้อมูลทั้งหมดเรียบร้อยแล้ว")
-      router.refresh()
       if (onRefresh) onRefresh()
     } catch (error) {
       handleApiError(error)

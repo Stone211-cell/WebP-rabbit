@@ -107,9 +107,8 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
     // Form State
     const [formData, setFormData] = useState({
         productType: "",
-        targetWeek: "",
-        targetMonth: "",
         forecast: "",
+        forcedSales: "",
         actual: "",
         notes: ""
     })
@@ -159,10 +158,10 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
 
     const WeekNavigator = ({ className }: { className?: string }) => (
         <div className={cn("flex items-center justify-between bg-slate-100/80 dark:bg-slate-800/80 p-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm", className)}>
-            <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={goPrevWeek} 
+            <Button
+                variant="ghost"
+                size="icon"
+                onClick={goPrevWeek}
                 className="rounded-full h-10 w-10 hover:bg-white dark:hover:bg-slate-600 text-blue-600 dark:text-blue-400 active:scale-90 transition-transform"
             >
                 <ChevronLeft size={24} />
@@ -177,10 +176,10 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                     <Calendar mode="single" selected={date} onSelect={(d) => d && setDate(d)} initialFocus />
                 </PopoverContent>
             </Popover>
-            <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={goNextWeek} 
+            <Button
+                variant="ghost"
+                size="icon"
+                onClick={goNextWeek}
                 className="rounded-full h-10 w-10 hover:bg-white dark:hover:bg-slate-600 text-blue-600 dark:text-blue-400 active:scale-90 transition-transform"
             >
                 <ChevronRight size={24} />
@@ -192,9 +191,8 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
     const resetForm = () => {
         setFormData({
             productType: "",
-            targetWeek: "",
-            targetMonth: "",
             forecast: "",
+            forcedSales: "",
             actual: "",
             notes: ""
         })
@@ -212,9 +210,8 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
         // Clear form data but keep store
         setFormData({
             productType: "",
-            targetWeek: "",
-            targetMonth: "",
             forecast: "",
+            forcedSales: "",
             actual: "",
             notes: ""
         })
@@ -236,9 +233,8 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
         setEditingItem(item)
         setFormData({
             productType: item.productType || "",
-            targetWeek: item.targetWeek?.toString() || "",
-            targetMonth: item.targetMonth?.toString() || "",
             forecast: item.forecast?.toString() || "",
+            forcedSales: item.forcedSales?.toString() || "0",
             actual: item.actual?.toString() || "",
             notes: item.notes || ""
         })
@@ -261,8 +257,6 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
         const ok = validateFields([
             { label: "ร้านค้า", value: selectedStore },
             { label: "ชื่อสินค้า", value: productName, invalid: !productName },
-            { label: "เป้าหมายรายสัปดาห์", value: formData.targetWeek, invalid: formData.targetWeek === "" },
-            { label: "เป้าหมายรายเดือน", value: formData.targetMonth, invalid: formData.targetMonth === "" },
         ], toast.error)
         if (!ok) return
 
@@ -272,9 +266,8 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                 masterId: selectedStore.id,
                 product: productName,
                 productType: formData.productType,
-                targetWeek: safeFloat(formData.targetWeek),
-                targetMonth: safeFloat(formData.targetMonth),
                 forecast: safeFloat(formData.forecast),
+                forcedSales: safeFloat(formData.forcedSales),
                 actual: safeFloat(formData.actual),
                 notes: formData.notes,
                 weekStart: weekStart.toISOString()
@@ -305,57 +298,63 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
             if (onRefresh) onRefresh()
             toast.success("ลบรายการเรียบร้อย")
         } catch (error: any) {
-            toast.error(error?.response?.data?.error || "ลบไม่สำเร็จ")
+            console.error("Delete error:", error)
+            toast.error(error?.response?.data?.error || error?.message || "ลบไม่สำเร็จ")
         }
     }
 
     // --- Calculations ---
     const summary = useMemo<{
-        week: { target: number, forecast: number, actual: number, diff: number },
-        month: { target: number, forecast: number, actual: number, diff: number },
-        products: { name: string, target: number, actual: number, forecast: number }[]
+        week: { target: number, forecast: number, forcedSales: number, actual: number, diff: number },
+        month: { target: number, forecast: number, forcedSales: number, actual: number, diff: number },
+        products: { name: string, target: number, actual: number, forecast: number, forcedSales: number }[]
     }>(() => {
-        let weekTarget = 0, weekForecast = 0, weekActual = 0;
-        let monthTarget = 0, monthForecast = 0, monthActual = 0;
-        const productsMap = new Map<string, { name: string, target: number, actual: number, forecast: number }>();
+        let weekTarget = 0, weekForecast = 0, weekForcedSales = 0, weekActual = 0;
+        let monthTarget = 0, monthForecast = 0, monthForcedSales = 0, monthActual = 0;
+        const productsMap = new Map<string, { name: string, target: number, actual: number, forecast: number, forcedSales: number }>();
 
         // The 'forecasts' prop now contains data for the ENTIRE month
         (forecasts || []).forEach((f: any) => {
             const fDate = new Date(f.weekStart);
             const wTarget = f.targetWeek || 0;
             const wForecast = f.forecast || 0;
+            const wForcedSales = f.forcedSales || 0;
             const wActual = f.actual || 0;
 
             // Monthly aggregation (True Sum)
             monthTarget += wTarget;
             monthForecast += wForecast;
+            monthForcedSales += wForcedSales;
             monthActual += wActual;
 
             // Weekly aggregation (Strictly for the selected week)
             if (fDate >= weekStart && fDate <= weekEnd) {
                 weekTarget += wTarget;
                 weekForecast += wForecast;
+                weekForcedSales += wForcedSales;
                 weekActual += wActual;
 
                 // Product Grouping (for the selected week)
                 const pName = f.product || "Other";
                 if (!productsMap.has(pName)) {
-                    productsMap.set(pName, { name: pName, target: 0, actual: 0, forecast: 0 });
+                    productsMap.set(pName, { name: pName, target: 0, actual: 0, forecast: 0, forcedSales: 0 });
                 }
                 const p = productsMap.get(pName)!;
                 p.target += wTarget;
                 p.actual += wActual;
                 p.forecast += wForecast;
+                p.forcedSales += wForcedSales;
             }
         });
 
         return {
-            week: { target: weekTarget, forecast: weekForecast, actual: weekActual, diff: weekActual - weekForecast },
-            month: { 
-                target: monthTarget, 
-                actual: monthActual, 
-                forecast: monthForecast, 
-                diff: monthActual - monthForecast 
+            week: { target: weekTarget, forecast: weekForecast, forcedSales: weekForcedSales, actual: weekActual, diff: weekActual - weekForecast },
+            month: {
+                target: monthTarget,
+                actual: monthActual,
+                forecast: monthForecast,
+                forcedSales: monthForcedSales,
+                diff: monthActual - monthForecast
             },
             products: Array.from(productsMap.values())
         };
@@ -420,83 +419,65 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
             </div>
 
             {/* --- MONTHLY SUMMARY (Purple) --- */}
-            <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-violet-600 to-purple-800 p-8 text-white shadow-2xl shadow-purple-900/40">
+            <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#6366f1] to-[#4f46e5] p-8 text-white shadow-2xl shadow-indigo-500/20">
                 <div className="absolute top-0 right-0 p-32 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
 
-                <h3 className="flex items-center gap-2 font-black text-lg opacity-90 mb-6">
-                    <CalendarIcon size={20} /> สรุปรายเดือน (ประมาณการ 4 สัปดาห์)
-                    {/* Background indicator for past/future */}
+                <h3 className="flex items-center gap-2 font-black text-lg opacity-90 mb-8 px-1">
+                    <CalendarIcon size={20} className="text-indigo-200" /> สรุปรายเดือน (ประมาณการ 4 สัปดาห์)
                     <div className="ml-auto flex gap-2">
-                        {new Date() > weekEnd && <span className="bg-slate-400/20 px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border border-white/10">ข้อมูลย้อนหลัง</span>}
-                        {new Date() < weekStart && <span className="bg-amber-400/30 px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border border-amber-400/20">สัปดาห์หน้า</span>}
+                        {new Date() > weekEnd && <span className="bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border border-white/10 backdrop-blur-sm">ข้อมูลย้อนหลัง</span>}
+                        {new Date() < weekStart && <span className="bg-amber-400/20 px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border border-amber-400/20 backdrop-blur-sm">สัปดาห์หน้า</span>}
                     </div>
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-                    <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/10 text-center">
-                        <div className="text-sm opacity-70 mb-1">คาดการณ์รวม</div>
-                        <div className="text-4xl font-black tracking-tight">{summary.month.forecast.toLocaleString()}</div>
-                        <div className="text-xs opacity-50 mt-1">กิโลกรัม/เดือน</div>
+                    <div className="bg-white/10 backdrop-blur-md rounded-[2rem] p-7 border border-white/10 text-center flex flex-col justify-center">
+                        <div className="text-xs font-black uppercase tracking-[0.2em] text-indigo-100/60 mb-2">คาดการณ์รวม</div>
+                        <div className="text-4xl sm:text-5xl font-black tracking-tight drop-shadow-sm">{summary.month.forecast.toLocaleString()}</div>
+                        <div className="text-[10px] font-black text-indigo-200/50 mt-2 uppercase tracking-widest">Kg / Month</div>
                     </div>
-                    <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/10 text-center">
-                        <div className="flex items-center justify-center gap-2 text-sm opacity-70 mb-1">
-                            <CheckCircle2 size={14} className="text-emerald-300" /> ซื้อรวมได้
-                        </div>
-                        <div className="text-4xl font-black tracking-tight">{summary.month.actual.toLocaleString()}</div>
-                        <div className="text-xs opacity-50 mt-1">กิโลกรัม/เดือน</div>
+                    
+                    <div className="bg-white/10 backdrop-blur-md rounded-[2rem] p-7 border border-white/10 text-center flex flex-col justify-center">
+                        <div className="text-xs font-black uppercase tracking-[0.2em] text-emerald-100/60 mb-2">ซื้อรวมได้</div>
+                        <div className="text-4xl sm:text-5xl font-black tracking-tight text-white drop-shadow-sm">{summary.month.actual.toLocaleString()}</div>
+                        <div className="text-[10px] font-black text-emerald-200/50 mt-2 uppercase tracking-widest">Kg / Month</div>
                     </div>
-                    <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/10 text-center relative overflow-hidden">
-                        <div className={cn("absolute inset-0 opacity-20", summary.month.diff >= 0 ? "bg-emerald-500" : "bg-rose-500")} />
+
+                    <div className="bg-white/10 backdrop-blur-md rounded-[2rem] p-7 border border-white/10 text-center relative overflow-hidden flex flex-col justify-center">
+                        <div className={cn("absolute inset-0 opacity-20", summary.month.diff >= 0 ? "bg-emerald-400" : "bg-rose-400")} />
                         <div className="relative z-10">
-                            <div className="text-sm opacity-70 mb-1">ส่วนต่าง</div>
-                            <div className="text-4xl font-black tracking-tight flex items-center justify-center gap-2">
-                                {summary.month.diff > 0 ? "▲" : "▼"} {Math.abs(summary.month.diff).toLocaleString()}
+                            <div className="text-xs font-black uppercase tracking-[0.2em] text-indigo-100/60 mb-2">ส่วนต่าง</div>
+                            <div className="text-4xl sm:text-5xl font-black tracking-tight flex items-center justify-center gap-2 drop-shadow-sm">
+                                {summary.month.diff > 0 ? <TrendingUp size={32} className="text-emerald-300" /> : <AlertCircle size={32} className="text-rose-300" />}
+                                {Math.abs(summary.month.diff).toLocaleString()}
                             </div>
-                            <div className="text-xs opacity-50 mt-1">
-                                {summary.month.target > 0
-                                    ? `เกินเป้า ${((summary.month.actual / summary.month.target) * 100).toFixed(0)}%`
-                                    : "ไม่มีเป้าหมาย"
-                                }
-                            </div>
+                            <div className="text-[10px] font-black text-indigo-200/50 mt-2 uppercase tracking-widest">Analysis Monthly</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* --- WEEKLY SUMMARY (Blue/Green) --- */}
-            <div className="space-y-4">
-                <h3 className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-300 ml-2">
-                    <div className="w-1.5 h-6 bg-blue-500 rounded-full" /> สรุปรายสัปดาห์นี้
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="bg-blue-500 text-white border-0 shadow-lg shadow-blue-500/20 rounded-[2rem]">
-                        <CardContent className="p-6 text-center">
-                            <div className="text-sm opacity-80 mb-1">คาดการณ์รวม</div>
-                            <div className="text-3xl font-black">{summary.week.forecast.toLocaleString()}</div>
-                            <div className="text-[10px] opacity-60">กิโลกรัม</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-emerald-500 text-white border-0 shadow-lg shadow-emerald-500/20 rounded-[2rem]">
-                        <CardContent className="p-6 text-center">
-                            <div className="text-sm opacity-80 mb-1">ซื้อจริง</div>
-                            <div className="text-3xl font-black">{summary.week.actual.toLocaleString()}</div>
-                            <div className="text-[10px] opacity-60">กิโลกรัม</div>
-                        </CardContent>
-                    </Card>
-                    <Card className={cn("text-white border-0 shadow-lg rounded-[2rem]", summary.week.diff >= 0 ? "bg-emerald-600 shadow-emerald-600/20" : "bg-rose-500 shadow-rose-500/20")}>
-                        <CardContent className="p-6 text-center">
-                            <div className="text-sm opacity-80 mb-1">ส่วนต่าง</div>
-                            <div className="text-3xl font-black flex items-center justify-center gap-2">
-                                {summary.week.diff > 0 ? "▲" : "▼"} {Math.abs(summary.week.diff).toLocaleString()}
-                            </div>
-                            <div className="text-[10px] opacity-60">
-                                {summary.week.target > 0
-                                    ? `${((summary.week.actual / summary.week.target) * 100).toFixed(0)}% จากเป้า`
-                                    : "ไม่มีเป้าหมาย"
-                                }
-                            </div>
-                        </CardContent>
-                    </Card>
+            {/* --- WEEKLY SUMMARY --- */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-[#3A7CF6] p-7 rounded-[2.5rem] text-white shadow-xl shadow-blue-500/20 flex flex-col items-center justify-center text-center">
+                    <div className="text-xs font-black uppercase tracking-[0.2em] text-blue-100/60 mb-2">คาดการณ์สัปดาห์นี้</div>
+                    <div className="text-4xl font-black drop-shadow-sm">{summary.week.forecast.toLocaleString()}</div>
+                    <div className="text-[10px] font-black text-blue-200/50 mt-2 uppercase">Kilograms</div>
+                </div>
+
+                <div className="bg-emerald-500 p-7 rounded-[2.5rem] text-white shadow-xl shadow-emerald-500/20 flex flex-col items-center justify-center text-center">
+                    <div className="text-xs font-black uppercase tracking-[0.2em] text-emerald-100/60 mb-2">ยอดซื้อจริง</div>
+                    <div className="text-4xl font-black drop-shadow-sm">{summary.week.actual.toLocaleString()}</div>
+                    <div className="text-[10px] font-black text-emerald-100/50 mt-2 uppercase">Kilograms</div>
+                </div>
+
+                <div className={cn("p-7 rounded-[2.5rem] text-white shadow-xl flex flex-col items-center justify-center text-center transition-all duration-500", 
+                    summary.week.diff >= 0 ? "bg-indigo-500 shadow-indigo-500/20" : "bg-rose-500 shadow-rose-500/20")}>
+                    <div className="text-xs font-black uppercase tracking-[0.2em] text-white/50 mb-2">ส่วนต่างสุทธิ</div>
+                    <div className="text-4xl font-black flex items-center gap-2 drop-shadow-sm">
+                        {summary.week.diff >= 0 ? "▲" : "▼"} {Math.abs(summary.week.diff).toLocaleString()}
+                    </div>
+                    <div className="text-[10px] font-black text-white/40 mt-2 uppercase tracking-widest">Weekly Evaluation</div>
                 </div>
             </div>
 
@@ -572,21 +553,22 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                 </div>
 
                 {groupedForecasts.length > 0 ? (
-                    <div className="flex flex-col gap-8">
+                    <div className="flex flex-col gap-10">
                         {groupedForecasts.map((group: any) => (
-                            <div key={group.store?.id || Math.random()} className="bg-slate-50/50 dark:bg-slate-900/30 backdrop-blur-md rounded-[2rem] p-4 md:p-6 border border-white/20 dark:border-slate-800 shadow-sm">
+                            <div key={group.store?.id || Math.random()} className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 sm:p-8 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-500 group/store-container">
                                 {/* Store Group Header */}
-                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 px-2">
+                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 px-1">
                                     <div className="flex items-center gap-4">
-                                        <div className="h-12 w-12 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-lg shadow-indigo-500/20">
+                                        <div className="h-14 w-14 bg-[#3A7CF6] rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-blue-500/20">
                                             {group.store?.name?.charAt(0) || "?"}
                                         </div>
                                         <div>
-                                            <h4 className="text-2xl font-black text-slate-900 dark:text-white leading-none mb-1.5">{group.store?.name}</h4>
-                                            <div className="flex gap-2 text-xs font-mono text-slate-500 items-center">
-                                                <span className="bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-md text-slate-700 dark:text-slate-300 font-bold">{group.store?.code}</span>
-                                                <span className="opacity-70">| {group.store?.name}</span>
-                                                <span className="opacity-50">({group.items.length} รายการ)</span>
+                                            <h4 className="text-3xl font-black text-slate-900 dark:text-white leading-tight mb-1">{group.store?.name}</h4>
+                                            <div className="flex items-center gap-3">
+                                                <Badge variant="outline" className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono text-[11px] font-black uppercase tracking-wider">
+                                                    {group.store?.code}
+                                                </Badge>
+                                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{group.items.length} สินค้าในรายการ</span>
                                             </div>
                                         </div>
                                     </div>
@@ -594,101 +576,128 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                         <Button
                                             onClick={() => handleAddProduct(group.store)}
                                             size="sm"
-                                            className="bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white font-bold rounded-full px-5 shadow-sm hover:shadow-md transition-all border border-indigo-100 dark:border-indigo-500"
+                                            className="bg-slate-50 dark:bg-slate-800 hover:bg-blue-500 hover:text-white text-blue-600 dark:text-blue-400 font-black rounded-xl px-6 h-11 transition-all border border-slate-100 dark:border-slate-700 shadow-sm"
                                         >
-                                            <Plus size={16} className="mr-1" /> เพิ่มสินค้า
+                                            <Plus size={18} className="mr-1.5" /> เพิ่มสินค้า
                                         </Button>
                                     )}
                                 </div>
 
+                                {(() => {
+                                    const groupForecast = group.items.reduce((acc: number, item: any) => acc + (item.forecast || 0), 0);
+                                    const groupActual = group.items.reduce((acc: number, item: any) => acc + (item.actual || 0), 0);
+                                    const groupForced = group.items.reduce((acc: number, item: any) => acc + (item.forcedSales || 0), 0);
+                                    const groupExceed = groupActual > groupForecast ? groupActual - groupForecast : 0;
+                                    const groupMiss = groupActual < groupForecast ? groupForecast - groupActual : 0;
+
+                                    return (
+                                        <div className="bg-slate-50/50 dark:bg-slate-950/30 p-6 rounded-[2rem] border border-slate-50 dark:border-slate-800 mb-8">
+                                            <div className="grid grid-cols-2 md:grid-cols-5 gap-6 divide-x lg:divide-x divide-slate-200 dark:divide-slate-800/50">
+                                                <div className="flex flex-col items-center justify-center text-center">
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">บังคับขายรวม</span>
+                                                    <span className="text-2xl font-black text-slate-900 dark:text-white">{groupForced.toLocaleString()}</span>
+                                                </div>
+                                                <div className="flex flex-col items-center justify-center text-center pl-4 border-l lg:border-l-0">
+                                                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">คาดการณ์รวม</span>
+                                                    <span className="text-2xl font-black text-blue-600 dark:text-blue-400">{groupForecast.toLocaleString()}</span>
+                                                </div>
+                                                <div className="flex flex-col items-center justify-center text-center pl-4 border-l lg:border-l-0">
+                                                    <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">ซื้อจริงรวม</span>
+                                                    <span className="text-2xl font-black text-emerald-500">{groupActual.toLocaleString()}</span>
+                                                </div>
+                                                <div className="flex flex-col items-center justify-center text-center pl-4 border-l lg:border-l-0">
+                                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">ส่วนต่างเกิน</span>
+                                                    <span className="text-2xl font-black text-emerald-600">+{groupExceed.toLocaleString()}</span>
+                                                </div>
+                                                <div className="flex flex-col items-center justify-center text-center pl-4 border-l lg:border-l-0">
+                                                    <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-1">ส่วนต่างขาด</span>
+                                                    <span className="text-2xl font-black text-rose-500">-{groupMiss.toLocaleString()}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+
                                 {/* Items Grid */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                                     {group.items.map((f: any) => {
-                                        const progressWeek = f.targetWeek > 0 ? (f.actual / f.targetWeek) * 100 : 0
-                                        const progressMonth = f.targetMonth > 0 ? (f.actual / f.targetMonth) * 100 : 0
-                                        const diff = (f.actual || 0) - (f.forecast || 0)
-
+                                        const diff = (f.actual || 0) - (f.forecast || 0);
+                                        const tActual = safeFloat(f.actual);
                                         return (
-                                            <Card key={f.id} className="relative overflow-hidden border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 backdrop-blur-sm rounded-[1.2rem] hover:shadow-lg transition-all group">
-                                                <div className="p-4 space-y-1">
-                                                    {/* Top Row: Product Name & Edit */}
-                                                    <div className="flex justify-between items-start">
-                                                        <div>
-                                                            <h4 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-                                                                {f.product}
-                                                            </h4>
+                                            <div key={f.id} className="relative flex flex-col p-6 rounded-[2rem] bg-slate-50/50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/80 shadow-sm hover:shadow-xl hover:border-blue-500/20 transition-all duration-300 group/item-row">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div>
+                                                        <h4 className="text-xl font-black text-slate-800 dark:text-slate-100 leading-tight mb-1">{f.product}</h4>
+                                                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{f.productType}</div>
+                                                    </div>
+                                                    {isAdmin && (
+                                                        <div className="flex gap-2">
+                                                            <Button size="icon" variant="ghost" className="h-9 w-9 bg-white dark:bg-slate-900 rounded-xl text-blue-500 border border-slate-100 dark:border-slate-800" onClick={() => handleEdit(f)}>
+                                                                <Edit2 size={16} />
+                                                            </Button>
+                                                            <Button size="icon" variant="ghost" className="h-9 w-9 bg-white dark:bg-slate-900 rounded-xl text-rose-500 border border-slate-100 dark:border-slate-800 hover:bg-rose-50 dark:hover:bg-rose-500/10" onClick={() => handleDelete(f.id)}>
+                                                                <Trash2 size={16} />
+                                                            </Button>
                                                         </div>
-                                                        {isAdmin ? (
-                                                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                <Button size="sm" variant="outline" className="h-8 rounded-lg" onClick={() => handleEdit(f)}>
-                                                                    แก้ไข
-                                                                </Button>
-                                                                <Button size="sm" variant="ghost" className="h-8 w-8 text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg" onClick={() => handleDelete(f.id)}>
-                                                                    ลบ
-                                                                </Button>
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-[10px] text-slate-400 italic opacity-0 group-hover:opacity-100 transition-opacity">View Only</span>
-                                                        )}
+                                                    )}
+                                                </div>
+
+                                                <div className="grid grid-cols-3 gap-2 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 mb-5 text-center">
+                                                    <div>
+                                                        <span className="block text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">คาดการณ์</span>
+                                                        <span className="text-lg font-black text-blue-500">{f.forecast?.toFixed(1) || "0.0"}</span>
+                                                    </div>
+                                                    <div className="border-x border-slate-100 dark:border-slate-800">
+                                                        <span className="block text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">ซื้อจริง</span>
+                                                        <span className="text-lg font-black text-emerald-500">{f.actual?.toFixed(1) || "0.0"}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="block text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">ส่วนต่าง</span>
+                                                        <span className={cn("text-lg font-black", diff >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                                            {diff > 0 ? "+" : ""}{diff.toFixed(1)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-4">
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex justify-between items-end px-1">
+                                                            <span className="text-[10px] font-black text-blue-500/80 uppercase tracking-widest">ความแม่นยำ</span>
+                                                            <span className="text-xs font-black text-blue-600 dark:text-blue-400">
+                                                                {f.forecast && f.forecast > 0 ? ((tActual / f.forecast) * 100).toFixed(0) : 0}%
+                                                            </span>
+                                                        </div>
+                                                        <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[1px]">
+                                                            <div
+                                                                className="h-full bg-blue-500 rounded-full transition-all duration-1000"
+                                                                style={{ width: `${Math.min(f.forecast && f.forecast > 0 ? (tActual / f.forecast) * 100 : 0, 100)}%` }}
+                                                            />
+                                                        </div>
                                                     </div>
 
-                                                    {/* Progress Bars Row */}
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        {/* Week Target */}
-                                                        <div className="space-y-2">
-                                                            <div className="flex justify-between text-xs font-bold">
-                                                                <span className="flex items-center gap-1 text-blue-500"><Target size={12} /> เป้าหมายสัปดาห์</span>
-                                                                <span>{f.targetWeek?.toLocaleString()} กก.</span>
-                                                            </div>
-                                                            <Progress value={progressWeek} className="h-2.5 bg-slate-200 dark:bg-slate-700" />
-                                                            <div className="flex justify-between text-[10px] font-medium">
-                                                                <span className="text-slate-500">ซื้อแล้ว {f.actual?.toLocaleString()} ({progressWeek.toFixed(0)}%)</span>
-                                                                {progressWeek >= 100 ? (
-                                                                    <span className="text-emerald-500 font-bold">บรรลุเป้าแล้ว!</span>
-                                                                ) : (
-                                                                    <span className="text-slate-400">เหลืออีก {(f.targetWeek - f.actual).toLocaleString()}</span>
-                                                                )}
-                                                            </div>
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex justify-between items-end px-1">
+                                                            <span className="text-[10px] font-black text-emerald-500/80 uppercase tracking-widest">ความสำเร็จ</span>
+                                                            <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
+                                                                {f.forcedSales && f.forcedSales > 0 ? ((tActual / f.forcedSales) * 100).toFixed(0) : 0}%
+                                                            </span>
                                                         </div>
-
-                                                        {/* Month Target */}
-                                                        <div className="space-y-2">
-                                                            <div className="flex justify-between text-xs font-bold">
-                                                                <span className="flex items-center gap-1 text-purple-500"><Target size={12} /> เป้าหมายเดือน</span>
-                                                                <span>{f.targetMonth?.toLocaleString()} กก.</span>
-                                                            </div>
-                                                            <Progress value={progressMonth} className="h-2.5 bg-slate-200 dark:bg-slate-700" />
-                                                            <div className="flex justify-between text-[10px] font-medium">
-                                                                <span className="text-slate-500">สะสม {f.actual?.toLocaleString()} ({progressMonth.toFixed(0)}%)</span>
-                                                                {progressMonth >= 100 ? (
-                                                                    <span className="text-emerald-500 font-bold">บรรลุเป้าแล้ว!</span>
-                                                                ) : (
-                                                                    <span className="text-rose-400">ยังขาดอีก {(f.targetMonth - f.actual).toLocaleString()}</span>
-                                                                )}
-                                                            </div>
+                                                        <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[1px]">
+                                                            <div
+                                                                className="h-full bg-emerald-500 rounded-full transition-all duration-1000"
+                                                                style={{ width: `${Math.min(f.forcedSales && f.forcedSales > 0 ? (tActual / f.forcedSales) * 100 : 0, 100)}%` }}
+                                                            />
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                {/* Bottom Stats Footer */}
-                                                <div className="bg-slate-50/50 dark:bg-black/20 px-4 py-3 flex justify-between items-center text-[10px] border-t border-slate-100 dark:border-slate-800">
-                                                    <div className="text-center w-1/3 border-r border-slate-200 dark:border-slate-800">
-                                                        <div className="opacity-50 mb-0.5">คาดการณ์</div>
-                                                        <div className="font-bold text-blue-500 text-sm">{f.forecast?.toLocaleString()}</div>
+                                                {f.notes && (
+                                                    <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800/50">
+                                                        <div className="text-[10px] font-medium text-slate-400 italic">“ {f.notes} ”</div>
                                                     </div>
-                                                    <div className="text-center w-1/3 border-r border-slate-200 dark:border-slate-800">
-                                                        <div className="opacity-50 mb-0.5">ซื้อจริง</div>
-                                                        <div className="font-bold text-emerald-500 text-sm">{f.actual?.toLocaleString()}</div>
-                                                    </div>
-                                                    <div className="text-center w-1/3">
-                                                        <div className="opacity-50 mb-0.5">ส่วนต่าง</div>
-                                                        <div className={cn("font-bold text-sm", diff >= 0 ? "text-emerald-500" : "text-rose-500")}>
-                                                            {diff > 0 ? "+" : ""}{diff.toLocaleString()}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </Card>
-                                        )
+                                                )}
+                                            </div>
+                                        );
                                     })}
                                 </div>
                             </div>
@@ -703,7 +712,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
 
             {/* --- ADD/EDIT DIALOG --- */}
             <Dialog open={showDialog} onOpenChange={(o) => { if (!o) resetForm(); else setShowDialog(o); }}>
-                <DialogContent className="max-w-xl md:max-w-2xl lg:max-w-4xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-3xl p-0 overflow-hidden flex flex-col max-h-[90vh]">
+                <DialogContent className="max-w-xl md:max-w-3xl lg:max-w-5xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-3xl p-0 overflow-hidden flex flex-col max-h-[90vh]">
                     <DialogHeader className="p-6 bg-slate-50 dark:bg-slate-950/50 border-b border-slate-100 dark:border-slate-800">
                         <DialogTitle className="text-xl font-black flex items-center gap-2">
                             {editingItem ? <Edit2 className="text-blue-500" /> : <Plus className="text-blue-500" />}
@@ -829,44 +838,37 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                             </div>
                         </div>
 
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <div className="space-y-2">
-                                <Label className="text-xs text-slate-400 flex items-center gap-1"><Target size={12} className="text-blue-500" /> เป้าหมายสัปดาห์ (กก.) *</Label>
-                                <Input
-                                    type="number"
-                                    value={formData.targetWeek}
-                                    onChange={(e) => setFormData({ ...formData, targetWeek: e.target.value })}
-                                    className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl h-11 text-slate-900 dark:text-white"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs text-slate-400 flex items-center gap-1"><Target size={12} className="text-purple-500" /> เป้าหมายเดือน (กก.) *</Label>
-                                <Input
-                                    type="number"
-                                    value={formData.targetMonth}
-                                    onChange={(e) => setFormData({ ...formData, targetMonth: e.target.value })}
-                                    className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl h-11 text-slate-900 dark:text-white"
-                                />
-                            </div>
-                        </div>
+                        {/* Removed Target Fields as requested */}
 
-                        <div className="grid grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-blue-50/30 dark:bg-blue-900/10 rounded-2xl border border-blue-100/50 dark:border-blue-900/20">
                             <div className="space-y-1.5">
-                                <Label className="text-xs text-slate-400">คาดการณ์ (กก./สัปดาห์)</Label>
+                                <Label className="text-sm font-bold text-slate-600 dark:text-slate-300">คาดการณ์ (กก./สัปดาห์)</Label>
                                 <Input
                                     type="number"
+                                    placeholder="0.00"
                                     value={formData.forecast}
                                     onChange={(e) => setFormData({ ...formData, forecast: e.target.value })}
-                                    className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl h-11 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/20"
+                                    className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl h-11 text-base font-black text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500/20 shadow-sm"
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <Label className="text-xs text-slate-400">ยอดซื้อจริง (กก.)</Label>
+                                <Label className="text-sm font-bold text-slate-600 dark:text-slate-300">บังคับขาย (กก./สัปดาห์)</Label>
                                 <Input
                                     type="number"
+                                    placeholder="0.00"
+                                    value={formData.forcedSales}
+                                    onChange={(e) => setFormData({ ...formData, forcedSales: e.target.value })}
+                                    className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl h-11 text-base font-black text-rose-600 dark:text-rose-400 focus:ring-2 focus:ring-rose-500/20 shadow-sm"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-sm font-bold text-slate-600 dark:text-slate-300">ยอดซื้อจริง (กก.)</Label>
+                                <Input
+                                    type="number"
+                                    placeholder="0.00"
                                     value={formData.actual}
                                     onChange={(e) => setFormData({ ...formData, actual: e.target.value })}
-                                    className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl h-11 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/20"
+                                    className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl h-11 text-base font-black text-emerald-600 dark:text-emerald-400 focus:ring-2 focus:ring-emerald-500/20 shadow-sm"
                                 />
                             </div>
                         </div>
@@ -882,7 +884,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                         </div>
                     </div>
 
-                     <DialogFooter className="p-4 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-100 dark:border-slate-800 flex gap-2 justify-end">
+                    <DialogFooter className="p-4 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-100 dark:border-slate-800 flex gap-2 justify-end">
                         <Button variant="ghost" onClick={resetForm} className="hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">ยกเลิก</Button>
                         <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-500 text-white min-w-[100px]">
                             {isSubmitting ? "บันทึก..." : "บันทึก"}

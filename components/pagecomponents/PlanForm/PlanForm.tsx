@@ -327,7 +327,6 @@ export default function PlanForm({ plans, stores, profiles, onRefresh, onCreate,
                     const info = await res.json();
                     if (res.ok) {
                         toast.success(info.message || "นำเข้าข้อมูลสำเร็จ", { id: 'import-plan' })
-                        router.refresh()
                         if (onRefresh) onRefresh()
                     } else {
                         toast.error(info.error || "เกิดข้อผิดพลาดในการนำเข้า", { id: 'import-plan' });

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { getIsAdminAction } from '@/lib/auth';
-import { useProfiles } from './useCRMHooks';
+import { useProfiles } from './useCRM';
 
 export function useCRMSession() {
   const { user, isLoaded: userLoaded } = useUser();

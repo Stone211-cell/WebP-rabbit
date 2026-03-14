@@ -111,7 +111,6 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
     if (!confirmDelete(name || "รายการนี้")) return
     try {
       await onDelete(id)
-      router.refresh()
       if (onRefresh) onRefresh()
       toast.success("ลบรายการเรียบร้อยแล้ว")
     } catch (error) {
@@ -207,7 +206,6 @@ export default function FAQ({ stores, issues, profiles, onRefresh, onCreate, onU
           const info = await res.json();
           if (res.ok) {
             toast.success(info.message || "นำเข้าข้อมูลสำเร็จ", { id: 'import-faq' });
-            router.refresh()
             if (onRefresh) onRefresh();
           } else {
             toast.error(info.error || "เกิดข้อผิดพลาดในการนำเข้า", { id: 'import-faq' });

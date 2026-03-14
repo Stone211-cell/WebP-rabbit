@@ -86,11 +86,13 @@ const MEAT_CATEGORIES = [
 interface SelectedTargetStore {
     store: any;
     target: string;
+    forecast: string;
+    forcedSales: string;
     existingId?: string;
     actual?: number;
 }
 
-function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onChangeActual, onRemove }: any) {
+function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onChangeForecast, onChangeForcedSales, onChangeActual, onRemove }: any) {
     const {
         storeSearch,
         setStoreSearch,
@@ -117,7 +119,7 @@ function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onCha
     }, [])
 
     return (
-        <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-4 relative p-4 bg-slate-50/50 dark:bg-slate-900/40 rounded-[1.5rem] border border-slate-100 dark:border-slate-800/50 shadow-sm">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-4 relative p-4 bg-slate-50/50 dark:bg-slate-900/40 rounded-[1.5rem] border border-slate-100 dark:border-slate-800/50 shadow-sm">
             <div className="flex-1 flex flex-col gap-1.5 min-w-[200px]">
                 <Label className="text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 px-1 uppercase tracking-wider">สาขาของลูกค้า *</Label>
                 <StoreSearchBox
@@ -133,46 +135,67 @@ function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onCha
                     placeholder="พิมพ์ชื่อหรือรหัสร้าน..."
                 />
             </div>
-            
-            <div className="flex flex-wrap items-center gap-4 xl:gap-6">
-                <div className="flex flex-col gap-1.5 sm:w-28">
-                    <Label className="text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 px-1 text-center uppercase tracking-wider">เป้า (กก.)</Label>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:flex lg:flex-row items-center gap-4 xl:gap-4">
+                <div className="flex flex-col gap-1.5 w-full lg:w-20">
+                    <Label className="text-[10px] sm:text-[11px] font-black text-slate-400 dark:text-slate-500 px-1 lg:text-center uppercase tracking-wider">เป้า (กก.)</Label>
                     <Input
                         type="number"
                         placeholder="0.0"
-                        className="h-11 w-full border-slate-200 dark:border-slate-700/50 text-sm py-0 text-center font-bold bg-white dark:bg-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500/20"
+                        className="h-10 w-full border-slate-200 dark:border-slate-700/50 text-xs py-0 text-center font-bold bg-white dark:bg-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500/20"
                         value={storeItem.target}
                         onChange={(e) => onChangeTarget(index, e.target.value)}
                     />
                 </div>
-                
-                <div className="flex flex-col gap-1.5 sm:w-32">
+
+                <div className="flex flex-col gap-1.5 w-full lg:w-20">
+                    <Label className="text-[10px] sm:text-[11px] font-black text-blue-600 dark:text-blue-400 px-1 lg:text-center uppercase tracking-wider">คาดการณ์</Label>
+                    <Input
+                        type="number"
+                        placeholder="0.0"
+                        className="h-10 w-full border-blue-200/50 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 text-xs py-0 text-center font-black bg-blue-500/5 dark:bg-blue-500/5 rounded-xl focus:ring-2 focus:ring-blue-500/20"
+                        value={storeItem.forecast}
+                        onChange={(e) => onChangeForecast(index, e.target.value)}
+                    />
+                </div>
+
+                <div className="flex flex-col gap-1.5 w-full lg:w-20">
+                    <Label className="text-[10px] sm:text-[11px] font-black text-rose-600 dark:text-rose-400 px-1 lg:text-center uppercase tracking-wider">บังคับขาย</Label>
+                    <Input
+                        type="number"
+                        placeholder="0.0"
+                        className="h-10 w-full border-rose-200/50 dark:border-rose-900/30 text-rose-600 dark:text-rose-400 text-xs py-0 text-center font-black bg-rose-500/5 dark:bg-rose-500/5 rounded-xl focus:ring-2 focus:ring-rose-500/20"
+                        value={storeItem.forcedSales}
+                        onChange={(e) => onChangeForcedSales(index, e.target.value)}
+                    />
+                </div>
+
+                <div className="flex flex-col gap-1.5 w-full lg:w-24">
                     <div className="flex justify-between items-center px-1">
-                        <Label className="text-[10px] sm:text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">ซื้อจริง</Label>
-                        {storeItem.target && parseFloat(storeItem.target) > 0 && storeItem.actual ? (
-                            <span className="text-[10px] font-black text-emerald-500 bg-emerald-500/10 px-1.5 rounded-full border border-emerald-500/20">
-                                {((parseFloat(storeItem.actual) / parseFloat(storeItem.target)) * 100).toFixed(0)}%
+                        <Label className="text-[10px] sm:text-[11px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">ซื้อจริง</Label>
+                        {(storeItem.forecast && safeFloat(storeItem.forecast) > 0 && (storeItem.actual !== undefined && storeItem.actual !== null)) ? (
+                            <span className="text-[9px] font-black text-blue-500 bg-blue-500/10 px-1 rounded-full border border-blue-500/20">
+                                {((safeFloat(storeItem.actual) / safeFloat(storeItem.forecast)) * 100).toFixed(0)}%
                             </span>
                         ) : null}
                     </div>
                     <Input
                         type="number"
                         placeholder="0.0"
-                        className="h-11 w-full border-emerald-200/50 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-sm py-0 text-center font-black bg-emerald-500/5 dark:bg-emerald-500/5 rounded-xl focus:ring-2 focus:ring-emerald-500/20"
-                        value={storeItem.actual || ''}
+                        className="h-10 w-full border-emerald-200/50 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs py-0 text-center font-black bg-emerald-500/5 dark:bg-emerald-500/5 rounded-xl focus:ring-2 focus:ring-emerald-500/20"
+                        value={storeItem.actual === 0 ? '0' : (storeItem.actual || '')}
                         onChange={(e) => onChangeActual(index, e.target.value)}
                     />
                 </div>
 
-                <div className="flex flex-col gap-1.5 justify-end">
-                    <div className="h-[14px] sm:h-[16px] hidden sm:block"></div>
+                <div className="flex flex-col gap-1.5 justify-end col-span-2 sm:col-span-1 lg:w-10">
                     <Button
-                        variant="ghost"
+                        variant="outline"
                         size="icon"
-                        className="h-11 w-11 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl shrink-0 transition-all active:scale-95 border border-transparent hover:border-rose-100 dark:hover:border-rose-500/20"
+                        className="h-10 w-10 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl shrink-0 transition-all active:scale-95 border border-transparent hover:border-rose-100 dark:hover:border-rose-500/20"
                         onClick={() => onRemove(index)}
                     >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} />
                     </Button>
                 </div>
             </div>
@@ -238,7 +261,6 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
 
     // Dialog form states
     const [selectedStores, setSelectedStores] = useState<SelectedTargetStore[]>([])
-    const [totalForecastInput, setTotalForecastInput] = useState<string>("")
     const [notes, setNotes] = useState<string>("")
 
     const autoTotalTarget = useMemo(() => {
@@ -247,15 +269,27 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
         return sum;
     }, [selectedStores])
 
+    const autoTotalForecast = useMemo(() => {
+        let sum = 0;
+        selectedStores.forEach(s => sum += safeFloat(s.forecast));
+        return sum;
+    }, [selectedStores])
+
+    const autoTotalForcedSales = useMemo(() => {
+        let sum = 0;
+        selectedStores.forEach(s => sum += safeFloat(s.forcedSales));
+        return sum;
+    }, [selectedStores])
+
     const goPrevWeek = () => setDate(subWeeks(date, 1))
     const goNextWeek = () => setDate(addWeeks(date, 1))
 
     const WeekNavigator = ({ className }: { className?: string }) => (
         <div className={cn("flex items-center justify-between bg-slate-100/80 dark:bg-slate-800/80 p-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm", className)}>
-            <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={goPrevWeek} 
+            <Button
+                variant="ghost"
+                size="icon"
+                onClick={goPrevWeek}
                 className="rounded-full h-10 w-10 hover:bg-white dark:hover:bg-slate-600 text-blue-600 dark:text-blue-400 active:scale-90 transition-transform"
             >
                 <ChevronLeft size={24} />
@@ -270,10 +304,10 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                     <Calendar mode="single" selected={date} onSelect={(d) => d && setDate(d)} initialFocus />
                 </PopoverContent>
             </Popover>
-            <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={goNextWeek} 
+            <Button
+                variant="ghost"
+                size="icon"
+                onClick={goNextWeek}
                 className="rounded-full h-10 w-10 hover:bg-white dark:hover:bg-slate-600 text-blue-600 dark:text-blue-400 active:scale-90 transition-transform"
             >
                 <ChevronRight size={24} />
@@ -283,7 +317,6 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
 
     const resetForm = () => {
         setEditingGroup(null)
-        setTotalForecastInput("")
         setSelectedStores([])
         setNotes("")
         setSelectedProductType("")
@@ -308,9 +341,6 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
         const fp = tempParts.find(p => p.name === group.product) || { id: 'temp', name: group.product, category: 'เนื้อแดง' }
         selectMeatPart(fp)
 
-        // Auto calculate existing inputs
-        setTotalForecastInput(group.totalForecast.toString())
-
         // Product Type
         if (group.items.length > 0 && group.items[0].productType) {
             setSelectedProductType(group.items[0].productType)
@@ -320,6 +350,8 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
         const mappedStores = group.items.map((item: any) => ({
             store: item.store,
             target: item.targetWeek.toString(),
+            forecast: (item.forecast || 0).toString(),
+            forcedSales: (item.forcedSales || 0).toString(),
             existingId: item.id,
             actual: item.actual
         }))
@@ -335,121 +367,103 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
     const handleDeleteGroup = async (group: any) => {
         if (!confirm(`ยืนยันลบคาดการณ์ทั้งหมดของชิ้นส่วน ${group.product}?`)) return
         try {
-            for (const item of group.items) {
-                if (onDelete) await onDelete(item.id)
+            const results = await Promise.allSettled(group.items.map((item: any) => {
+                if (onDelete) return onDelete(item.id, { revalidate: false })
+                return Promise.resolve()
+            }))
+
+            const failures = results.filter(r => r.status === 'rejected')
+            if (failures.length > 0) {
+                console.error("Some deletions failed:", failures)
+                toast.error(`ลบไม่สำเร็จบางรายการ (${failures.length} รายการ)`)
+            } else {
+                toast.success("ลบข้อมูลสำเร็จ")
             }
+
             if (onRefresh) onRefresh()
-            toast.success("ลบข้อมูลสำเร็จ")
-        } catch (e) {
-            toast.error("ลบข้อมูลไม่สำเร็จ")
+        } catch (e: any) {
+            console.error("Delete group error:", e)
+            toast.error(e?.message || "ลบข้อมูลไม่สำเร็จ")
         }
     }
 
     const handleSubmit = async () => {
-        if (!selectedMeatPart && !partSearch) return toast.error("กรุณาเลือกชิ้นส่วน/สินค้า")
-        if (selectedStores.length === 0) return toast.error("กรุณาเพิ่มร้านเป้าหมายอย่างน้อย 1 ร้าน")
-
-        const productName = selectedMeatPart ? selectedMeatPart.name : partSearch
-        const pType = selectedProductType || ""
-
-        let valid = true
-        for (let i = 0; i < selectedStores.length; i++) {
-            if (!selectedStores[i].store?.id) {
-                toast.error(`กรุณาเลือกร้านค้าในรายการที่ ${i + 1}`)
-                valid = false; break;
-            }
-            if (!selectedStores[i].target || parseFloat(selectedStores[i].target) <= 0) {
-                toast.error(`กรุณาระบุเป้า(กก.)ให้ครบถ้วน`)
-                valid = false; break;
-            }
+        if (!selectedMeatPart && !partSearch) {
+            toast.error("กรุณาระบุชิ้นส่วนสินค้า")
+            return
         }
-        if (!valid) return
 
-        const tForecast = safeFloat(totalForecastInput)
-        const tTarget = autoTotalTarget
+        if (selectedStores.length === 0) {
+            toast.error("กรุณาเพิ่มอย่างน้อย 1 ร้านค้า")
+            return
+        }
+
+        // Validation
+        const invalidStores = selectedStores.filter((s: any) => !s.store)
+        if (invalidStores.length > 0) {
+            toast.error("กรุณาระบุสาขาให้ครบทุกแถว")
+            return
+        }
 
         setIsSubmitting(true)
-
         try {
+            const productName = selectedMeatPart?.name || partSearch
+
+            // Optimization: Parallelize all API calls
+            const operations = selectedStores.map((s: any) => {
+                const payload = {
+                    masterId: s.store.id,
+                    product: productName,
+                    productType: selectedProductType,
+                    targetWeek: safeFloat(s.target),
+                    forecast: safeFloat(s.forecast),
+                    forcedSales: safeFloat(s.forcedSales),
+                    actual: s.actual === undefined ? null : safeFloat(s.actual),
+                    notes: notes,
+                    weekStart: weekStart.toISOString()
+                }
+
+                // If s.id exists, it's an update, otherwise create
+                if (s.existingId) { // Changed from s.id to s.existingId to match the mappedStores structure
+                    if (onUpdate) return onUpdate(s.existingId, payload)
+                } else {
+                    if (onCreate) return onCreate(payload)
+                }
+                return Promise.resolve()
+            })
+
+            // Handle deletions for editingGroup
             if (editingGroup) {
-                const existingItems = editingGroup.items;
-                const newIds: string[] = []
-
-                for (const row of selectedStores) {
-                    const targetVal = safeFloat(row.target)
-                    const forecastVal = tTarget > 0 ? (targetVal / tTarget) * tForecast : 0
-                    const actualVal = safeFloat(row.actual)
-
-                    if (row.existingId) {
-                        newIds.push(row.existingId)
-                        const original = existingItems.find((x: any) => x.id === row.existingId)
-                        if (original) {
-                            if (onUpdate) await onUpdate(original.id, {
-                                ...original,
-                                masterId: row.store.id,
-                                targetWeek: targetVal,
-                                targetMonth: targetVal * 4,
-                                forecast: forecastVal,
-                                actual: actualVal,
-                                notes: notes
-                            })
-                        }
-                    } else {
-                        if (onCreate) await onCreate({
-                            masterId: row.store.id,
-                            product: productName,
-                            productType: pType,
-                            targetWeek: targetVal,
-                            targetMonth: targetVal * 4,
-                            forecast: forecastVal,
-                            actual: actualVal,
-                            notes: notes,
-                            weekStart: weekStart.toISOString()
-                        })
-                    }
-                }
-
-                const toDelete = existingItems.filter((x: any) => !newIds.includes(x.id))
-                for (const item of toDelete) {
-                    if (onDelete) await onDelete(item.id)
-                }
-
-                toast.success("อัปเดตข้อมูลคาดการณ์สำเร็จ")
-
-            } else {
-                for (const row of selectedStores) {
-                    const targetVal = safeFloat(row.target)
-                    const forecastVal = tTarget > 0 ? (targetVal / tTarget) * tForecast : 0
-                    const actualVal = safeFloat(row.actual)
-
-                    if (onCreate) await onCreate({
-                        masterId: row.store.id,
-                        product: productName,
-                        productType: pType,
-                        targetWeek: targetVal,
-                        targetMonth: targetVal * 4,
-                        forecast: forecastVal,
-                        actual: actualVal,
-                        notes: notes,
-                        weekStart: weekStart.toISOString()
-                    })
-                }
-                toast.success("เพิ่มข้อมูลคาดการณ์สำเร็จ")
+                const existingIds = new Set(selectedStores.filter(s => s.existingId).map(s => s.existingId));
+                const toDelete = editingGroup.items.filter((x: any) => !existingIds.has(x.id));
+                toDelete.forEach(item => {
+                    if (onDelete) operations.push(onDelete(item.id, { revalidate: false }));
+                });
             }
 
-            resetForm()
-            if (onRefresh) onRefresh()
-        } catch (e: any) {
-            toast.error(e?.message || "เกิดข้อผิดพลาดในการบันทึก")
+            const results = await Promise.allSettled(operations)
+            const failures = results.filter(r => r.status === 'rejected')
+
+            if (failures.length > 0) {
+                console.error("Batch save failures:", failures)
+                toast.error(`บันทึกไม่สำเร็จบางรายการ (${failures.length} รายการ)`)
+            } else {
+                toast.success("บันทึกข้อมูลเรียบร้อย")
+                resetForm()
+                if (onRefresh) onRefresh()
+            }
+        } catch (error: any) {
+            console.error("Submit error:", error)
+            toast.error(error?.response?.data?.error || error?.message || "เกิดข้อผิดพลาดในการบันทึก")
         } finally {
             setIsSubmitting(false)
         }
     }
 
     const { summary, groupedForecasts, globalAggregates, totalFilteredItems } = useMemo(() => {
-        let sumWeekTarget = 0, sumWeekForecast = 0, sumWeekActual = 0, sumMonthTarget = 0
+        let sumWeekTarget = 0, sumWeekForecast = 0, sumWeekActual = 0, sumMonthTarget = 0, sumWeekForcedSales = 0
         let globalExceed = 0, globalMiss = 0
-        const groups: Record<string, { product: string, items: any[], totalTarget: number, totalForecast: number, totalActual: number }> = {}
+        const groups: Record<string, { product: string, items: any[], totalTarget: number, totalForecast: number, totalActual: number, totalForcedSales: number }> = {}
 
         // Strict Week Filtering: Only include items that fall within the selected week range
         const filteredByWeek = (forecasts || []).filter((f: any) => {
@@ -469,22 +483,25 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
 
             const wTarget = f.targetWeek || 0
             const wForecast = f.forecast || 0
+            const wForcedSales = f.forcedSales || 0
             const wActual = f.actual || 0
             const mTarget = f.targetMonth || 0
 
             sumWeekTarget += wTarget
             sumWeekForecast += wForecast
+            sumWeekForcedSales += wForcedSales
             sumWeekActual += wActual
-            
+
             // Re-calculate monthly target reactively (Target Week * 4) for consistent summary
             sumMonthTarget += (wTarget * 4)
 
             const pName = f.product || 'ไม่ระบุชิ้นส่วน'
-            if (!groups[pName]) groups[pName] = { product: pName, items: [], totalTarget: 0, totalForecast: 0, totalActual: 0 }
+            if (!groups[pName]) groups[pName] = { product: pName, items: [], totalTarget: 0, totalForecast: 0, totalActual: 0, totalForcedSales: 0 }
 
             groups[pName].items.push(f)
             groups[pName].totalTarget += wTarget
             groups[pName].totalForecast += wForecast
+            groups[pName].totalForcedSales += wForcedSales
             groups[pName].totalActual += wActual
         })
 
@@ -497,15 +514,15 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
 
         return {
             summary: {
-                week: { forecast: sumWeekForecast, actual: sumWeekActual, diff: sumWeekActual - sumWeekForecast, target: sumWeekTarget },
-                month: { forecast: sumWeekForecast * 4, actual: sumWeekActual * 4, diff: (sumWeekActual * 4) - sumMonthTarget, target: sumMonthTarget },
-                products: Object.values(groups).map(g => ({ name: g.product, target: g.totalTarget, actual: g.totalActual, forecast: g.totalForecast }))
+                week: { forecast: sumWeekForecast, actual: sumWeekActual, diff: sumWeekActual - sumWeekForecast, target: sumWeekTarget, forcedSales: sumWeekForcedSales },
+                month: { forecast: sumWeekForecast * 4, actual: sumWeekActual * 4, diff: (sumWeekActual * 4) - (sumWeekForecast * 4), target: sumMonthTarget },
+                products: Object.values(groups).map(g => ({ name: g.product, target: g.totalTarget, actual: g.totalActual, forecast: g.totalForecast, forcedSales: g.totalForcedSales }))
             },
             groupedForecasts: sortedGroups,
             globalAggregates: {
                 exceed: globalExceed,
                 miss: globalMiss,
-                percent: sumWeekTarget > 0 ? (sumWeekForecast / sumWeekTarget) * 100 : 0
+                percent: sumWeekForecast > 0 ? (sumWeekActual / sumWeekForecast) * 100 : 0
             },
             totalFilteredItems: filteredByWeek.length
         }
@@ -563,11 +580,11 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                     {new Date() < weekStart && <div className="absolute top-0 right-0 bg-amber-400/30 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-bl-xl border-b border-l border-amber-400/20">สัปดาห์หน้า</div>}
 
                     <div className="flex-1 flex flex-col items-center justify-center md:border-r border-blue-400/50 pb-4 md:pb-0 border-b md:border-b-0 border-blue-400/30">
-                        <div className="text-[14px] sm:text-base font-bold opacity-80 flex items-center gap-2 mb-1 text-blue-50">
-                            <Target size={18} /> เป้าขาย (สัปดาห์นี้)
+                        <div className="text-[14px] sm:text-base font-bold opacity-80 flex items-center gap-2 mb-1 text-rose-50">
+                            <Target size={28} /> เป้าบังคับขาย (สัปดาห์)
                         </div>
-                        <div className="text-3xl sm:text-5xl font-black tabular-nums tracking-tighter">
-                            {summary.week.target.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                        <div className="text-3xl sm:text-5xl font-black tabular-nums tracking-tighter text-rose-100">
+                            {summary.week.forcedSales.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                         </div>
                     </div>
 
@@ -649,133 +666,128 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                 </div>
 
                 {groupedForecasts.length > 0 ? (
-                    <div className="columns-2 xl:columns-2 gap-4 xl:gap-8 space-y-4 xl:space-y-8">
+                    <div className="columns-1 lg:columns-2 gap-4 xl:gap-8 space-y-4 xl:space-y-8">
                         {groupedForecasts.map(group => {
-                            const percent = group.totalTarget > 0 ? (group.totalForecast / group.totalTarget) * 100 : 0
                             const forecastValue = group.totalForecast || 0;
                             const actualValue = group.totalActual || 0;
                             const groupExceed = actualValue > forecastValue ? actualValue - forecastValue : 0;
                             const groupMiss = actualValue < forecastValue ? forecastValue - actualValue : 0;
 
                             return (
-                                <Card key={group.product} className="break-inside-avoid mb-4 xl:mb-8 relative overflow-hidden bg-white dark:bg-slate-900 rounded-[1.2rem] shadow-sm border border-slate-200 dark:border-slate-800">
-                                    <div className="p-5 space-y-4">
+                                <Card key={group.product} className="break-inside-avoid relative overflow-hidden bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-800">
+                                    <div className="p-6 sm:p-8 space-y-6">
                                         {/* Header */}
-                                        <div className="flex justify-between items-center">
-                                            <h4 className="text-2xl font-black flex items-center gap-2 text-slate-800 dark:text-slate-100">🥩 {group.product}</h4>
+                                        <div className="flex justify-between items-center px-1">
+                                            <h4 className="text-2xl sm:text-3xl font-black flex items-center gap-2 text-slate-800 dark:text-slate-100">🥩 {group.product}</h4>
                                             {isAdmin && (
-                                                <div className="flex gap-1.5">
-                                                    <Button size="sm" variant="outline" className="h-7 px-3 rounded-md text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-0" onClick={() => handleEditGroup(group)}>แก้ไข</Button>
-                                                    <Button size="sm" variant="ghost" className="h-7 px-3 rounded-md text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:text-rose-600 hover:bg-rose-100" onClick={() => handleDeleteGroup(group)}>ลบ</Button>
+                                                <div className="flex gap-2">
+                                                    <Button size="sm" variant="outline" className="h-9 px-4 rounded-xl text-xs font-black bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-100 dark:border-slate-700/50" onClick={() => handleEditGroup(group)}>แก้ไข</Button>
+                                                    <Button size="sm" variant="ghost" className="h-9 px-4 rounded-xl text-xs font-black text-slate-600 dark:text-slate-300 hover:text-rose-600 hover:bg-rose-50" onClick={() => handleDeleteGroup(group)}>ลบ</Button>
                                                 </div>
                                             )}
                                         </div>
 
-                                        {/* Blue Card */}
-                                        <div className="bg-blue-600 text-white p-2.5 sm:p-4 rounded-xl flex items-center justify-between shadow-inner gap-1 sm:gap-2 mt-2 divide-x divide-blue-500/50">
-                                            <div className="text-center flex-1 px-1 flex flex-col justify-center">
-                                                <div className="text-[10px] sm:text-xs font-bold opacity-80 flex flex-col xl:flex-row items-center justify-center gap-1 mb-1 leading-tight"><Target size={14} className="opacity-80 shrink-0 hidden sm:block" /> <span className="whitespace-nowrap">เป้าหมาย</span> </div>
-                                                <div className="text-base sm:text-2xl font-black leading-tight mt-auto truncate w-full">{group.totalTarget.toFixed(1)}</div>
-                                            </div>
-                                            <div className="text-center flex-1 px-1 flex flex-col justify-center">
-                                                <div className="text-[10px] sm:text-xs font-bold opacity-80 flex flex-col xl:flex-row items-center justify-center gap-1 mb-1 leading-tight"><CheckCircle2 size={12} className="opacity-80 shrink-0 hidden sm:block" /> <span className="whitespace-nowrap">คาดการณ์</span> </div>
-                                                <div className="text-base flex flex-col sm:flex-row items-center justify-center gap-0 sm:gap-1 sm:text-2xl font-black text-emerald-300 leading-tight mt-auto truncate w-full">{group.totalForecast.toFixed(1)}
-                                                    <div className="text-[9px] sm:text-xs text-emerald-200 opacity-90 font-bold sm:mt-1 truncate ">({percent.toFixed(0)}%)</div>
+                                        {/* Summaries Card - Refined Look */}
+                                        <div className="bg-[#3A7CF6] p-6 sm:p-7 rounded-[2.5rem] flex flex-col gap-6 border-none shadow-xl shadow-blue-500/20">
+                                            <div className="flex items-center justify-between divide-x divide-white/10">
+                                                <div className="text-center flex-1 px-2 flex flex-col justify-center">
+                                                    <div className="text-[18px] font-black uppercase tracking-[0.2em] text-white mb-2 whitespace-nowrap">เป้าหมาย</div>
+                                                    <div className="text-3xl font-black text-white truncate drop-shadow-sm">{group.totalTarget.toFixed(1)}</div>
                                                 </div>
+                                                <div className="text-center flex-1 px-2 flex flex-col justify-center pl-4">
+                                                    <div className="text-[18px] font-black uppercase tracking-[0.2em] text-white mb-2 whitespace-nowrap">คาดการณ์</div>
+                                                    <div className="text-3xl font-black text-emerald-300 truncate drop-shadow-sm">{group.totalForecast.toFixed(1)}
+                                                        ({group.totalForecast > 0 ? ((group.totalActual / group.totalForecast) * 100).toFixed(0) : 0}%)</div>
 
-                                            </div>
-                                            <div className="flex-1 px-1 flex flex-row items-center justify-center border-l border-blue-500/50 gap-4 sm:gap-6 py-1">
-                                                <div className="flex flex-col items-center justify-center min-w-[3rem]">
-                                                    <span className="whitespace-nowrap text-[12px] sm:text-[14px] font-bold opacity-80 mb-0.5 leading-tight text-emerald-200">เกินเป้า</span>
-                                                    <div className="text-xl sm:text-2xl font-black leading-tight text-emerald-300">
-                                                        {groupExceed.toFixed(1)}
-                                                    </div>
                                                 </div>
-
-                                                <div className="w-px h-8 sm:h-10 bg-blue-400/30"></div>
-
-                                                <div className="flex flex-col items-center justify-center min-w-[3rem]">
-                                                    <span className="whitespace-nowrap text-[12px] sm:text-[14px] font-bold opacity-80 mb-0.5 leading-tight text-rose-200">ขาดเป้า</span>
-                                                    <div className="text-xl sm:text-2xl font-black leading-tight text-rose-300">
-                                                        {groupMiss.toFixed(1)}
-                                                    </div>
+                                                <div className="text-center flex-1 px-2 flex flex-col justify-center pl-4">
+                                                    <div className="text-[18px] font-black uppercase tracking-[0.2em] text-white mb-2 whitespace-nowrap">จริง</div>
+                                                    <div className="text-3xl  font-black text-white truncate drop-shadow-sm">{group.totalActual.toFixed(1)}</div>
                                                 </div>
                                             </div>
 
+                                            <div className="h-px bg-white/10 w-full"></div>
+
+                                            <div className="flex flex-row items-center justify-center gap-8 sm:gap-16">
+                                                <div className="flex flex-col items-center justify-center">
+                                                    <span className="text-[18px] font-black text-emerald-200 uppercase tracking-widest mb-1">รวมเกินคาด</span>
+                                                    <div className="text-3xl sm:text-4xl font-black text-emerald-300">{groupExceed.toFixed(1)}</div>
+                                                </div>
+                                                <div className="w-px h-10 bg-white/10"></div>
+                                                <div className="flex flex-col items-center justify-center">
+                                                    <span className="text-[18px] font-black text-rose-200 uppercase tracking-widest mb-1">รวมขาดคาด</span>
+                                                    <div className="text-3xl sm:text-4xl font-black text-rose-300">{groupMiss.toFixed(1)}</div>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         {/* Store Target List */}
-                                        <div className="space-y-3 mt-4 pt-2">
-                                            <div className="flex items-center gap-1.5 text-[18px] w-full font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                                                <ShoppingBag size={18} className="shrink-0" /> ร้านเป้าหมาย
+                                        <div className="space-y-4 pt-2">
+                                            <div className="flex items-center gap-2 text-xl font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4 px-1">
+                                                <ShoppingBag size={14} /> รายละเอียดรายร้าน
                                             </div>
-                                            <div className="grid grid-cols-1 gap-2">
+                                            <div className="grid grid-cols-1 gap-4">
                                                 {group.items.map((item: any) => {
-                                                    const tWeek = item.targetWeek || 0;
-                                                    const tActual = item.actual || 0;
-                                                    const itemPercent = group.totalTarget > 0 ? (tWeek / group.totalTarget) * 100 : 0;
-                                                    const actualPercent = tWeek > 0 ? (tActual / tWeek) * 100 : 0;
-                                                    const storeExceed = tActual > tWeek ? tActual - tWeek : 0;
-                                                    const storeMiss = tActual < tWeek ? tWeek - tActual : 0;
+                                                    const tActual = safeFloat(item.actual);
                                                     return (
-                                                        <div key={item.id} className="relative overflow-hidden group/store text-[14px]">
-                                                            <div className="flex flex-col p-2.5 rounded-2xl bg-white dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/60 shadow-sm hover:border-blue-500/30 transition-all duration-300 h-full">
-                                                                <div className="w-full space-y-0.5 relative">
-                                                                    <div className="flex items-baseline justify-between gap-2">
-                                                                        <div className="font-black text-[18px] text-slate-700 dark:text-slate-200 leading-tight truncate">{item.store?.name}</div>
-                                                                        <div className="font-bold text-slate-500 dark:text-slate-400 font-mono tracking-tighter opacity-80 text-[18px] uppercase shrink-0">{item.store?.code}</div>
+                                                        <div key={item.id} className="relative overflow-hidden group/store">
+                                                            <div className="flex flex-col p-5 sm:p-6 rounded-[2rem] bg-slate-50/50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/80 shadow-sm hover:shadow-lg hover:border-blue-500/20 transition-all duration-300">
+                                                                <div className="w-full space-y-2 relative">
+                                                                    <div className="flex items-baseline justify-between gap-3 mb-3">
+                                                                        <div className="font-black text-lg sm:text-xl text-slate-800 dark:text-slate-100 leading-tight truncate">{item.store?.name}</div>
+                                                                        <div className="font-black text-slate-400 dark:text-slate-600 font-mono text-[10px] uppercase shrink-0 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-100 dark:border-slate-800">{item.store?.code}</div>
                                                                     </div>
 
-
-                                                                    <div className="flex gap-2 mt-2 bg-slate-50/50 dark:bg-slate-900/50 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
-                                                                        <div className="flex flex-col items-center flex-1 px-2 sm:px-3 justify-center">
-                                                                            <span className="opacity-80 text-[12px] sm:text-[14px] font-bold text-slate-500 dark:text-slate-400">เป้า</span>
-                                                                            <span className="text-slate-900 text-xl sm:text-2xl dark:text-slate-200 font-black truncate">{tWeek.toFixed(1)}</span>
+                                                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-50 dark:border-slate-800 divide-x divide-slate-100 dark:divide-slate-800">
+                                                                        <div className="flex flex-col items-center justify-center">
+                                                                            <span className="text-[16px] font-black text-slate-500 uppercase tracking-tighter mb-1 select-none">เป้า</span>
+                                                                            <span className="text-slate-900 dark:text-white text-3xl font-black">{item.targetWeek?.toFixed(1) || "0.0"}</span>
                                                                         </div>
-
-                                                                        <div className="w-px bg-slate-200 dark:bg-slate-800"></div>
-
-                                                                        <div className="flex flex-col items-center flex-1 px-2 sm:px-3 justify-center">
-                                                                            <span className="opacity-80 text-[12px] sm:text-[14px] font-bold text-slate-500 dark:text-slate-400">จริง</span>
-                                                                            <span className={cn("font-black text-xl sm:text-2xl truncate", tActual > 0 ? "text-emerald-500" : "text-slate-400")}>{tActual.toFixed(1)}</span>
+                                                                        <div className="flex flex-col items-center justify-center pl-2">
+                                                                            <span className="text-[16px] font-black text-blue-500 uppercase tracking-tighter mb-1 select-none">คาดการณ์</span>
+                                                                            <span className="text-blue-600 dark:text-blue-400 text-3xl font-black">{item.forecast?.toFixed(1) || "0.0"}</span>
+                                                                        </div>
+                                                                        <div className="flex flex-col items-center justify-center pl-2">
+                                                                            <span className="text-[16px] font-black text-rose-500 uppercase tracking-tighter mb-1 select-none">บังคับขาย</span>
+                                                                            <span className="text-rose-600 dark:text-rose-400 text-3xl font-black">{item.forcedSales?.toFixed(1) || "0.0"}</span>
+                                                                        </div>
+                                                                        <div className="flex flex-col items-center justify-center pl-2">
+                                                                            <span className="text-[16px] font-black text-emerald-500 uppercase tracking-tighter mb-1 select-none">จริง</span>
+                                                                            <span className={cn("text-3xl font-black", tActual > 0 ? "text-emerald-900" : "text-gray-500")}>{tActual.toFixed(1)}</span>
                                                                         </div>
                                                                     </div>
                                                                 </div>
 
-                                                                <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2 w-full shrink-0">
-                                                                    {/* Blue Target % */}
+                                                                <div className="mt-5 space-y-5">
+                                                                    {/* Accuracy % */}
                                                                     <div>
-                                                                        <div className="flex justify-between items-end mb-1">
-                                                                            <span className="text-[13px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">สัดส่วนเป้าหมาย</span>
-                                                                            <span className="text-[13px] font-black text-blue-500 dark:text-blue-400 transition-colors duration-500">
-                                                                                {itemPercent.toFixed(0)}%
+                                                                        <div className="flex justify-between items-end mb-1.5 px-1">
+                                                                            <span className="text-[18px] font-black text-blue-500 uppercase tracking-widest">สัดส่วนเป้าหมาย</span>
+                                                                            <span className="text-[18px] font-black text-blue-600 dark:text-blue-400">
+                                                                                {item.forecast && item.forecast > 0 ? ((tActual / item.forecast) * 100).toFixed(0) : 0}%
                                                                             </span>
                                                                         </div>
-                                                                        <div className="flex items-center w-full">
-                                                                            <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner flex items-center">
-                                                                                <div
-                                                                                    className="h-full bg-blue-500 dark:bg-blue-400 transition-all duration-1000 ease-out"
-                                                                                    style={{ width: `${Math.min(itemPercent, 100)}%` }}
-                                                                                />
-                                                                            </div>
+                                                                        <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[1px]">
+                                                                            <div
+                                                                                className="h-full bg-blue-500 rounded-full transition-all duration-1000"
+                                                                                style={{ width: `${Math.min(item.forecast && item.forecast > 0 ? (tActual / item.forecast) * 100 : 0, 100)}%` }}
+                                                                            />
                                                                         </div>
                                                                     </div>
 
-                                                                    {/* Green Actual % */}
+                                                                    {/* Success % */}
                                                                     <div>
-                                                                        <div className="flex justify-between items-end mb-1">
-                                                                            <span className="text-[13px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">สัดส่วนยอดซื้อจริง</span>
-                                                                            <span className="text-[13px] font-black text-emerald-500 dark:text-emerald-400 transition-colors duration-500">
-                                                                                {actualPercent.toFixed(0)}%
+                                                                        <div className="flex justify-between items-end mb-1.5 px-1">
+                                                                            <span className="text-[18px] font-black text-emerald-500 uppercase tracking-widest">สัดส่วนยอดซื้อจริง</span>
+                                                                            <span className="text-[18px] font-black text-emerald-600 dark:text-emerald-400">
+                                                                                {item.forcedSales && item.forcedSales > 0 ? ((tActual / item.forcedSales) * 100).toFixed(0) : 0}%
                                                                             </span>
                                                                         </div>
-                                                                        <div className="flex items-center w-full">
-                                                                            <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner flex items-center">
-                                                                                <div
-                                                                                    className="h-full bg-emerald-500 dark:bg-emerald-400 transition-all duration-1000 ease-out"
-                                                                                    style={{ width: `${Math.min(actualPercent, 100)}%` }}
-                                                                                />
-                                                                            </div>
+                                                                        <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[1px]">
+                                                                            <div
+                                                                                className="h-full bg-emerald-500 rounded-full transition-all duration-1000"
+                                                                                style={{ width: `${Math.min(item.forcedSales && item.forcedSales > 0 ? (tActual / item.forcedSales) * 100 : 0, 100)}%` }}
+                                                                            />
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -799,7 +811,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
 
             {/* --- ADD/EDIT DIALOG --- */}
             <Dialog open={showDialog} onOpenChange={(o) => { if (!o) resetForm(); else setShowDialog(o); }}>
-                <DialogContent className="max-w-5xl bg-white dark:bg-slate-950 border-none shadow-3xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col max-h-[92vh]">
+                <DialogContent className="w-[95vw] md:max-w-6xl bg-white dark:bg-slate-950 border-none shadow-3xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col max-h-[92vh]">
                     <DialogHeader className="p-5 border-b border-slate-100 dark:border-slate-800">
                         <DialogTitle className="text-lg font-black flex items-center gap-2 text-slate-800 dark:text-white">
                             <span className="bg-rose-500 text-white p-1.5 rounded-lg"><Target size={16} /></span>
@@ -895,7 +907,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                         </div>
 
                         {/* Section 2: Details and Summary */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 p-4 sm:p-5 bg-slate-50 dark:bg-slate-950/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 shadow-inner">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 p-4 sm:p-5 bg-slate-50 dark:bg-slate-950/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 shadow-inner">
                             <div className="space-y-2 min-w-0">
                                 <Label className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">
                                     <ShoppingBag size={12} /> ชนิดสินค้า
@@ -913,98 +925,132 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                             </div>
 
                             <div className="space-y-2 min-w-0">
-                                <Label className="text-[11px] font-black uppercase tracking-wider text-rose-500/80 flex items-center gap-1.5 ml-1">
+                                <Label className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">
                                     <Target size={12} /> เป้าหมายรวม (กก.)
                                 </Label>
                                 <div className="relative group">
                                     <Input
                                         readOnly
-                                        className="h-11 w-full bg-rose-50/30 dark:bg-rose-500/5 border-rose-100 dark:border-rose-900/20 cursor-not-allowed font-black text-rose-600 dark:text-rose-400 rounded-2xl text-lg pl-10"
+                                        className="h-11 w-full bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 cursor-not-allowed font-black text-slate-600 dark:text-slate-400 rounded-2xl text-lg pl-10"
                                         value={autoTotalTarget || '0'}
                                     />
-                                    <Target className="absolute left-3.5 top-1/2 -translate-y-1/2 text-rose-400 dark:text-rose-600" size={18} />
+                                    <Target className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-600" size={18} />
                                 </div>
                             </div>
 
                             <div className="space-y-2 min-w-0">
                                 <Label className="text-[11px] font-black uppercase tracking-wider text-blue-500/80 flex items-center gap-1.5 ml-1">
-                                    <TrendingUp size={12} /> คาดการณ์ขายได้
+                                    <TrendingUp size={12} /> คาดการณ์รวม (กก.)
                                 </Label>
                                 <div className="relative">
                                     <Input
-                                        type="number"
-                                        placeholder="0.0"
-                                        value={totalForecastInput}
-                                        onChange={e => setTotalForecastInput(e.target.value)}
-                                        className="h-11 w-full border-blue-200 dark:border-blue-900/30 focus-visible:ring-blue-500 font-black text-blue-600 dark:text-blue-400 rounded-2xl text-lg pl-10 bg-blue-50/10"
+                                        readOnly
+                                        className="h-11 w-full bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700/50 cursor-not-allowed font-black text-blue-600 dark:text-blue-400 rounded-2xl text-lg pl-10"
+                                        value={autoTotalForecast || '0'}
                                     />
                                     <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-400 dark:text-blue-600" size={18} />
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Store List */}
-
-                        <div className="space-y-3">
-                            <div className="flex justify-between items-center">
-                                <Label className="text-sm  font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5"><ShoppingBag size={14} /> ร้านเป้าหมาย</Label>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setSelectedStores([...selectedStores, { store: null, target: '', actual: 0 }])}
-                                    className="h-7 text-xs font-bold bg-slate-100 border-none dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700"
-                                >
-                                    + เพิ่มร้าน
-                                </Button>
+                            <div className="space-y-2 min-w-0">
+                                <Label className="text-[11px] font-black uppercase tracking-wider text-rose-500/80 flex items-center gap-1.5 ml-1">
+                                    <CheckCircle2 size={12} /> บังคับขายรวม (กก.)
+                                </Label>
+                                <div className="relative">
+                                    <Input
+                                        readOnly
+                                        className="h-11 w-full bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-rose-900/30 cursor-not-allowed font-black text-rose-600 dark:text-rose-400 rounded-2xl text-lg pl-10"
+                                        value={autoTotalForcedSales || '0'}
+                                    />
+                                    <CheckCircle2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-rose-400 dark:text-rose-600" size={18} />
+                                </div>
                             </div>
-
-                            {selectedStores.length === 0 ? (
-                                <div className="text-center py-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-xs text-slate-400 border border-slate-100 dark:border-slate-800">
-                                    คลิก "+ เพิ่มร้าน" เพื่อเพิ่มร้านเป้าหมาย
-                                </div>
-                            ) : (
-                                <div className="space-y-2 mt-2">
-                                    {selectedStores.map((s, i) => (
-                                        <TargetStoreRow
-                                            key={i}
-                                            index={i}
-                                            storeItem={s}
-                                            onChangeStore={(idx: number, newStore: any) => {
-                                                const newArr = [...selectedStores]
-                                                newArr[idx].store = newStore
-                                                setSelectedStores(newArr)
-                                            }}
-                                            onChangeTarget={(idx: number, newTarget: string) => {
-                                                const newArr = [...selectedStores]
-                                                newArr[idx].target = newTarget
-                                                setSelectedStores(newArr)
-                                            }}
-                                            onChangeActual={(idx: number, newActual: string) => {
-                                                const newArr = [...selectedStores]
-                                                newArr[idx].actual = safeFloat(newActual)
-                                                setSelectedStores(newArr)
-                                            }}
-                                            onRemove={(idx: number) => {
-                                                setSelectedStores(selectedStores.filter((_, idx2) => idx2 !== idx))
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-                            )}
                         </div>
 
+                        {/* Section 3: Stores & Notes */}
+                        <div className="space-y-6">
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center px-1">
+                                    <Label className="text-sm font-black text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                        <ShoppingBag size={18} className="text-blue-500" /> ร้านเป้าหมายและการกระจายตัวเลข
+                                    </Label>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setSelectedStores([...selectedStores, { store: null, target: '', forecast: '', forcedSales: '', actual: 0 }])}
+                                        className="h-9 px-4 text-xs font-black bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-xl transition-all"
+                                    >
+                                        <Plus size={14} className="mr-1" /> เพิ่มร้านค้า
+                                    </Button>
+                                </div>
+
+                                {selectedStores.length === 0 ? (
+                                    <div className="text-center py-12 bg-slate-50 dark:bg-slate-900/20 rounded-[2rem] text-sm text-slate-400 border-2 border-dashed border-slate-100 dark:border-slate-800">
+                                        <ShoppingBag size={32} className="mx-auto mb-2 opacity-20" />
+                                        คลิก "+ เพิ่มร้านค้า" เพื่อระบุเป้าหมายในแต่ละสาขา
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {selectedStores.map((s, i) => (
+                                            <TargetStoreRow
+                                                key={i}
+                                                index={i}
+                                                storeItem={s}
+                                                onChangeStore={(idx: number, newStore: any) => {
+                                                    setSelectedStores(prev => {
+                                                        const newArr = [...prev]
+                                                        newArr[idx] = { ...newArr[idx], store: newStore }
+                                                        return newArr
+                                                    })
+                                                }}
+                                                onChangeTarget={(idx: number, newTarget: string) => {
+                                                    setSelectedStores(prev => {
+                                                        const newArr = [...prev]
+                                                        newArr[idx] = { ...newArr[idx], target: newTarget }
+                                                        return newArr
+                                                    })
+                                                }}
+                                                onChangeForecast={(idx: number, newForecast: string) => {
+                                                    setSelectedStores(prev => {
+                                                        const newArr = [...prev]
+                                                        newArr[idx] = { ...newArr[idx], forecast: newForecast }
+                                                        return newArr
+                                                    })
+                                                }}
+                                                onChangeForcedSales={(idx: number, newForcedSales: string) => {
+                                                    setSelectedStores(prev => {
+                                                        const newArr = [...prev]
+                                                        newArr[idx] = { ...newArr[idx], forcedSales: newForcedSales }
+                                                        return newArr
+                                                    })
+                                                }}
+                                                onChangeActual={(idx: number, newActual: string) => {
+                                                    setSelectedStores(prev => {
+                                                        const newArr = [...prev]
+                                                        newArr[idx] = { ...newArr[idx], actual: newActual === '' ? undefined : safeFloat(newActual) }
+                                                        return newArr
+                                                    })
+                                                }}
+                                                onRemove={(idx: number) => {
+                                                    setSelectedStores(prev => prev.filter((_, idx2) => idx2 !== idx))
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                         {/* Notes */}
-                        <div className="space-y-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                            <Label className="text-xs font-bold text-slate-500">หมายเหตุ</Label>
+                        <div className="space-y-3 p-5 bg-slate-50 dark:bg-slate-950/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50">
+                            <Label className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">หมายเหตุ / บันทึกเพิ่มเติม</Label>
                             <Textarea
-                                placeholder="บันทึกเพิ่มเติม..."
+                                placeholder="ใส่ข้อมูลเพิ่มเติมที่ต้องการระบุ..."
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
-                                className="h-16 resize-none border-slate-200 dark:border-slate-700 text-sm"
+                                className="min-h-[80px] resize-none border-slate-200 dark:border-slate-800 text-sm bg-white dark:bg-slate-900 rounded-2xl focus:ring-blue-500/20"
                             />
                         </div>
                     </div>
-
                     <DialogFooter className="p-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-2 justify-end bg-slate-50 dark:bg-slate-950/50">
                         <CancelButton onClick={resetForm} className="w-full sm:w-auto" />
                         <SaveButton onClick={handleSubmit} isSubmitting={isSubmitting} className="w-full sm:w-auto" />

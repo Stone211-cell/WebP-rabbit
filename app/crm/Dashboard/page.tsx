@@ -69,7 +69,7 @@ import {
     TableCell,
 } from "@/components/ui/table"
 import ChartCard from "@/components/crmhelper/charts/ChartCard"
-import { useStores, useVisits, usePlans, useIssues } from "@/components/hooks/useCRMHooks"
+import { useCRM } from "@/components/hooks/useCRM"
 
 import { cn, formatThaiDate, normalizeName } from "@/lib/utils"
 import { toast } from "sonner"
@@ -130,12 +130,19 @@ function CalendarDayButton({ day, modifiers, getPlansForDate, getVisitsForDate, 
 }
 
 export default function DashboardPage({ initialStores, initialVisits, summary, propProfiles }: any) {
-    const { stores, fetchStores, isLoading: storesLoading } = useStores()
-    const { visits, fetchVisits, setVisits, isLoading: visitsLoading } = useVisits()
-    const { plans, fetchPlans, isLoading: plansLoading } = usePlans()
-    const { issues, isLoading: issuesLoading } = useIssues()
+    const {
+        stores, fetchStores,
+        visits, fetchVisits, setVisits,
+        plans, fetchPlans,
+        issues,
+        isLoading: crmLoading,
+        isValidating: crmValidating
+    } = useCRM()
     const { profiles: crmProfiles, isAdmin, isLoaded } = useCRMSession()
-    const loading = storesLoading || visitsLoading || plansLoading || issuesLoading || !isLoaded
+    
+    // Show detailed loading overlay only if we have NO data yet
+    const isInitialLoading = (crmLoading && stores.length === 0 && visits.length === 0) || !isLoaded
+    const loading = isInitialLoading // Keep 'loading' variable for compatibility if used elsewhere
 
     // Use provided initial props if hook data is empty (SSR/prop hydration)
     const displayStores = stores.length > 0 ? stores : (initialStores || [])
@@ -168,7 +175,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
             toast.dismiss(id)
 
             if (res.ok) {
-                toast.success(data.message || "ล้างข้อมูลทั้งหมดเรียบร้อยแล้ว")
+                toast.success('ล้างข้อมูลทั้งหมดเรียบร้อยแล้ว')
                 // Refresh all data via hook helpers
                 fetchVisits()
                 fetchPlans()
@@ -943,11 +950,21 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
 
     return (
         <div className="p-6 space-y-6 dark:bg-[#0f172a] min-h-screen text-black relative">
-            {(loading) && (
+            {isInitialLoading && (
                 <div className="absolute inset-0 bg-white/20 dark:bg-slate-950/20 backdrop-blur-[2px] z-[100] flex items-center justify-center rounded-[2.5rem]">
                     <div className="flex flex-col items-center gap-3 p-6 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800">
                         <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                         <p className="text-sm font-bold text-slate-600 dark:text-slate-400">กำลังโหลดข้อมูล...</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Syncing indicator */}
+            {crmValidating && !isInitialLoading && (
+                <div className="fixed bottom-6 right-6 z-[100] animate-in fade-in slide-in-from-bottom-4">
+                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-blue-500/20 flex items-center gap-2">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Syncing...</span>
                     </div>
                 </div>
             )}

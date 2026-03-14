@@ -66,6 +66,7 @@ export interface Forecast {
   product: string;
   targetWeek: number;
   targetMonth: number;
+  forcedSales: number | null;
   forecast: number | null;
   actual: number | null;
   notes: string | null;

@@ -16,18 +16,23 @@ export const KEYS = {
     `/api/visits?search=${search}&sales=${sales}&startDate=${startDate}&endDate=${endDate}`,
   plans: (startDate = '', endDate = '') =>
     `/api/plans?startDate=${startDate}&endDate=${endDate}`,
-  forecasts: (weekStart = '', endDate = '') => `/api/forecasts?weekStart=${weekStart}&endDate=${endDate}`,
+  forecasts: (weekStart = '', endDate = '') =>
+    `/api/forecasts?weekStart=${weekStart}&endDate=${endDate}`,
   issues: (search = '', type = '', status = '') =>
     `/api/issues?search=${search}&type=${type}&status=${status}`,
   profiles: () => `/api/profile`,
 };
 
-// ─── SWR Config ───────────────────────────────────────────────────────────────
 const SWR_CONFIG = {
-  revalidateOnFocus: false,       // ไม่โหลดซ้ำทุกครั้งที่กด tab
-  revalidateOnReconnect: true,    // โหลดใหม่เมื่อเน็ตกลับมา
-  dedupingInterval: 30000,        // dedup requests ภายใน 30 วินาที
-  errorRetryCount: 2,             // retry 2 ครั้งถ้า error
+  revalidateOnFocus: true,        // Enable revalidation on focus for better sync
+  revalidateOnReconnect: true,
+  dedupingInterval: 100,         // Reduced from 2000ms to allow more immediate re-refetches
+  errorRetryCount: 3,
+};
+
+/** Global revalidation helper to sync all cached views of a resource */
+const revalidateResource = (resourceType: string) => {
+  return mutate((key) => typeof key === 'string' && key.startsWith('/api/' + resourceType), undefined, { revalidate: true });
 };
 
 export function useCRM(filters?: {
@@ -52,132 +57,123 @@ export function useCRM(filters?: {
   const forecastKey = KEYS.forecasts(forecastWeekStart, forecastEndDate);
   const issueKey = KEYS.issues(issueSearch, issueType, issueStatus);
 
-  const { data: stores = [], isLoading: storesLoading, mutate: mutateStores } =
+  const { data: stores = [], isLoading: storesLoading, isValidating: storesValidating, mutate: mutateStores } =
     useSWR<Store[]>(storeKey, fetcher, SWR_CONFIG);
 
-  const { data: visits = [], isLoading: visitsLoading, mutate: mutateVisits } =
+  const { data: visits = [], isLoading: visitsLoading, isValidating: visitsValidating, mutate: mutateVisits } =
     useSWR<Visit[]>(visitKey, fetcher, SWR_CONFIG);
 
-  const { data: plans = [], isLoading: plansLoading, mutate: mutatePlans } =
+  const { data: plans = [], isLoading: plansLoading, isValidating: plansValidating, mutate: mutatePlans } =
     useSWR<Plan[]>(planKey, fetcher, SWR_CONFIG);
 
-  const { data: forecasts = [], isLoading: forecastsLoading, mutate: mutateForecasts } =
+  const { data: forecasts = [], isLoading: forecastsLoading, isValidating: forecastsValidating, mutate: mutateForecasts } =
     useSWR<Forecast[]>(forecastKey, fetcher, SWR_CONFIG);
 
-  const { data: issues = [], isLoading: issuesLoading, mutate: mutateIssues } =
+  const { data: issues = [], isLoading: issuesLoading, isValidating: issuesValidating, mutate: mutateIssues } =
     useSWR<any[]>(issueKey, fetcher, SWR_CONFIG);
 
-  const { data: profiles = [], isLoading: profilesLoading, mutate: mutateProfiles } =
+  const { data: profiles = [], isLoading: profilesLoading, isValidating: profilesValidating, mutate: mutateProfiles } =
     useSWR<any[]>(KEYS.profiles(), fetcher, SWR_CONFIG);
 
-  const loading = storesLoading || visitsLoading || plansLoading || forecastsLoading || issuesLoading || profilesLoading;
+  const isLoading = storesLoading || visitsLoading || plansLoading || forecastsLoading || issuesLoading || profilesLoading;
+  const isValidating = storesValidating || visitsValidating || plansValidating || forecastsValidating || issuesValidating || profilesValidating;
 
   // ─── Manual refetch helpers ───────────────────────────────────────────────
-  const fetchStores = useCallback((search?: string, type?: string, status?: string) =>
-    mutate(KEYS.stores(search || storeSearch, type || storeType, status || storeStatus)), [storeSearch, storeType, storeStatus]);
-
-  const fetchVisits = useCallback((search?: string, sales?: string, startDate?: string, endDate?: string) =>
-    mutate(KEYS.visits(search || visitSearch, sales || visitSales, startDate || visitStartDate, endDate || visitEndDate)), [visitSearch, visitSales, visitStartDate, visitEndDate]);
-
-  const fetchPlans = useCallback((startDate?: string, endDate?: string) =>
-    mutate(KEYS.plans(startDate || planStartDate, endDate || planEndDate)), [planStartDate, planEndDate]);
-
-  const fetchForecasts = useCallback((weekStart?: string, endDate?: string) =>
-    mutate(KEYS.forecasts(weekStart || forecastWeekStart, endDate || forecastEndDate)), [forecastWeekStart, forecastEndDate]);
-
-  const fetchIssues = useCallback((search?: string, type?: string, status?: string) =>
-    mutate(KEYS.issues(search || issueSearch, type || issueType, status || issueStatus)), [issueSearch, issueType, issueStatus]);
-
+  const fetchStores = useCallback(() => revalidateResource('stores'), []);
+  const fetchVisits = useCallback(() => revalidateResource('visits'), []);
+  const fetchPlans = useCallback(() => revalidateResource('plans'), []);
+  const fetchForecasts = useCallback(() => revalidateResource('forecasts'), []);
+  const fetchIssues = useCallback(() => revalidateResource('issues'), []);
   const fetchProfiles = useCallback(() => mutate(KEYS.profiles()), []);
 
   // ─── STORES mutations ──────────────────────────────────────────────────────
   const createStore = async (store: Omit<Store, 'id' | 'createdAt' | 'updatedAt'>) => {
     const res = await axios.post<Store>('/api/stores', store);
-    mutateStores((prev = []) => [res.data, ...prev]);
+    await revalidateResource('stores');
     return res.data;
   };
 
   const updateStore = async (id: string, store: Partial<Store>) => {
     const res = await axios.patch<Store>(`/api/stores/${id}`, store);
-    mutateStores((prev = []) => prev.map(s => s.id === id ? res.data : s));
+    await revalidateResource('stores');
     return res.data;
   };
 
-  const deleteStore = async (id: string) => {
+  const deleteStore = async (id: string, options?: { revalidate?: boolean }) => {
     await axios.delete(`/api/stores/${id}`);
-    mutateStores((prev = []) => prev.filter(s => s.id !== id));
+    if (options?.revalidate !== false) await revalidateResource('stores');
   };
 
   // ─── VISITS mutations ──────────────────────────────────────────────────────
   const createVisit = async (visit: Omit<Visit, 'id' | 'createdAt' | 'updatedAt'>) => {
     const res = await axios.post<Visit>('/api/visits', visit);
-    mutateVisits((prev = []) => [res.data, ...prev]);
+    await revalidateResource('visits');
     return res.data;
   };
 
   const updateVisit = async (id: string, visit: Partial<Visit>) => {
     const res = await axios.patch<Visit>(`/api/visits/${id}`, visit);
-    mutateVisits((prev = []) => prev.map(v => v.id === id ? res.data : v));
+    await revalidateResource('visits');
     return res.data;
   };
 
-  const deleteVisit = async (id: string) => {
+  const deleteVisit = async (id: string, options?: { revalidate?: boolean }) => {
     await axios.delete(`/api/visits/${id}`);
-    mutateVisits((prev = []) => prev.filter(v => v.id !== id));
+    if (options?.revalidate !== false) await revalidateResource('visits');
   };
 
   // ─── PLANS mutations ───────────────────────────────────────────────────────
   const createPlan = async (plan: Omit<Plan, 'id' | 'createdAt' | 'updatedAt'>) => {
     const res = await axios.post<Plan>('/api/plans', plan);
-    mutatePlans((prev = []) => [res.data, ...prev]);
+    await revalidateResource('plans');
     return res.data;
   };
 
   const updatePlan = async (id: string, plan: Partial<Plan>) => {
     const res = await axios.patch<Plan>(`/api/plans/${id}`, plan);
-    mutatePlans((prev = []) => prev.map(p => p.id === id ? res.data : p));
+    await revalidateResource('plans');
     return res.data;
   };
 
-  const deletePlan = async (id: string) => {
+  const deletePlan = async (id: string, options?: { revalidate?: boolean }) => {
     await axios.delete(`/api/plans/${id}`);
-    mutatePlans((prev = []) => prev.filter(p => p.id !== id));
+    if (options?.revalidate !== false) await revalidateResource('plans');
   };
 
   // ─── FORECASTS mutations ───────────────────────────────────────────────────
   const createForecast = async (forecast: Omit<Forecast, 'id' | 'createdAt' | 'updatedAt'>) => {
     const res = await axios.post<Forecast>('/api/forecasts', forecast);
-    mutateForecasts((prev = []) => [res.data, ...prev]);
+    await revalidateResource('forecasts');
     return res.data;
   };
 
   const updateForecast = async (id: string, forecast: Partial<Forecast>) => {
     const res = await axios.patch<Forecast>(`/api/forecasts/${id}`, forecast);
-    mutateForecasts((prev = []) => prev.map(f => f.id === id ? res.data : f));
+    await revalidateResource('forecasts');
     return res.data;
   };
 
-  const deleteForecast = async (id: string) => {
+  const deleteForecast = async (id: string, options?: { revalidate?: boolean }) => {
     await axios.delete(`/api/forecasts/${id}`);
-    mutateForecasts((prev = []) => prev.filter(f => f.id !== id));
+    if (options?.revalidate !== false) await revalidateResource('forecasts');
   };
 
   // ─── ISSUES mutations ──────────────────────────────────────────────────────
   const createIssue = async (issue: any) => {
     const res = await axios.post('/api/issues', issue);
-    mutateIssues((prev = []) => [res.data, ...prev]);
+    await revalidateResource('issues');
     return res.data;
   };
 
   const updateIssue = async (id: string, issue: any) => {
     const res = await axios.patch(`/api/issues/${id}`, issue);
-    mutateIssues((prev = []) => prev.map(i => i.id === id ? res.data : i));
+    await revalidateResource('issues');
     return res.data;
   };
 
   const deleteIssue = async (id: string) => {
     await axios.delete(`/api/issues/${id}`);
-    mutateIssues((prev = []) => prev.filter(i => i.id !== id));
+    await revalidateResource('issues');
   };
 
   // ─── Client-side search ────────────────────────────────────────────────────
@@ -193,16 +189,14 @@ export function useCRM(filters?: {
 
   // ─── setVisits (compat for Dashboard import) ─────────────────────────────
   const setVisits = (updater: Visit[] | ((prev: Visit[]) => Visit[])) => {
-    if (typeof updater === 'function') {
-      mutateVisits(prev => updater(prev ?? []));
-    } else {
-      mutateVisits(updater);
-    }
+    mutateVisits(updater, { revalidate: false });
   };
 
   return {
     stores, visits, plans, forecasts, issues, profiles,
-    loading,
+    isLoading,
+    isValidating,
+    loading: isLoading, // compat
     searchStore,
     setVisits,
     fetchStores, fetchVisits, fetchPlans, fetchForecasts, fetchIssues, fetchProfiles,
@@ -212,4 +206,54 @@ export function useCRM(filters?: {
     createForecast, updateForecast, deleteForecast,
     createIssue, updateIssue, deleteIssue,
   };
+}
+
+// ─── Individual export hooks for backwards compatibility/simplicity ────────
+export function useStores(filters?: any) {
+  const { stores, isLoading, fetchStores, createStore, updateStore, deleteStore } = useCRM({
+    storeSearch: filters?.search,
+    storeType: filters?.type,
+    storeStatus: filters?.status,
+  });
+  return { stores, isLoading, fetchStores, createStore, updateStore, deleteStore };
+}
+
+export function useVisits(filters?: any) {
+  const { visits, isLoading, fetchVisits, setVisits, createVisit, updateVisit, deleteVisit } = useCRM({
+    visitSearch: filters?.search,
+    visitSales: filters?.sales,
+    visitStartDate: filters?.startDate,
+    visitEndDate: filters?.endDate,
+  });
+  return { visits, isLoading, fetchVisits, setVisits, createVisit, updateVisit, deleteVisit };
+}
+
+export function usePlans(filters?: any) {
+  const { plans, isLoading, fetchPlans, createPlan, updatePlan, deletePlan } = useCRM({
+    planStartDate: filters?.startDate,
+    planEndDate: filters?.endDate,
+  });
+  return { plans, isLoading, fetchPlans, createPlan, updatePlan, deletePlan };
+}
+
+export function useForecasts(filters?: any) {
+  const { forecasts, isLoading, fetchForecasts, createForecast, updateForecast, deleteForecast } = useCRM({
+    forecastWeekStart: filters?.weekStart,
+    forecastEndDate: filters?.endDate,
+  });
+  return { forecasts, isLoading, fetchForecasts, createForecast, updateForecast, deleteForecast };
+}
+
+export function useIssues(filters?: any) {
+  const { issues, isLoading, fetchIssues, createIssue, updateIssue, deleteIssue } = useCRM({
+    issueSearch: filters?.search,
+    issueType: filters?.type,
+    issueStatus: filters?.status,
+  });
+  return { issues, isLoading, fetchIssues, createIssue, updateIssue, deleteIssue };
+}
+
+export function useProfiles() {
+  const { profiles, isLoading, fetchProfiles } = useCRM();
+  return { profiles, isLoading, fetchProfiles };
 }
