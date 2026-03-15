@@ -85,11 +85,26 @@ export function VisitDetailModal({ visit, onClose }: VisitDetailModalProps) {
                             <DetailRow label="ประเภทเข้าพบ" value={visit.visitType} className="text-slate-900 dark:text-slate-200" />
 
                             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-1 mt-1">
-                                <span className="w-32 shrink-0 text-slate-400 font-medium text-sm">สถานะ:</span>
+                                <span className="w-32 shrink-0 text-slate-400 font-medium text-sm">สถานะร้าน:</span>
                                 <span className={cn("px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 w-max", statusBg, statusColor)}>
                                     {isClosed ? <CheckCircle2 className="w-3 h-3" /> : <div className="w-2 h-2 rounded-full bg-current" />}
                                     {visit.dealStatus}
                                 </span>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-1 mt-1">
+                                <span className="w-32 shrink-0 text-slate-400 font-medium text-sm">การปิดการขาย:</span>
+                                {visit.sellSuccessful ? (
+                                    <span className="px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 w-max bg-emerald-500/10 border-emerald-500/20 text-emerald-600">
+                                        <CheckCircle2 className="w-3 h-3" />
+                                        ขายสำเร็จ (Success)
+                                    </span>
+                                ) : (
+                                    <span className="px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 w-max bg-slate-500/10 border-slate-500/20 text-slate-500">
+                                        <div className="w-2 h-2 rounded-full bg-current" />
+                                        ยังไม่สำเร็จ
+                                    </span>
+                                )}
                             </div>
                         </div>
 

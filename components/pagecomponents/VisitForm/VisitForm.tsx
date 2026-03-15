@@ -21,6 +21,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import {
   Table,
   TableHeader,
@@ -49,6 +50,7 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
     date: new Date().toLocaleDateString('en-CA'),
     visitType: "new",
     dealStatus: "เปิดการขาย",
+    sellSuccessful: false,
     closeReason: "",
     visitCat: "ตรวจเยี่ยมประจำเดือน",
     notes: {}
@@ -133,6 +135,7 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
         date: new Date().toLocaleDateString('en-CA'),
         visitType: "new",
         dealStatus: "เปิดการขาย",
+        sellSuccessful: false,
         closeReason: "",
         visitCat: "ตรวจเยี่ยมประจำเดือน",
         notes: {}
@@ -153,6 +156,7 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
       date: new Date(visit.date).toLocaleDateString('en-CA'),
       visitType: visit.visitType || "new",
       dealStatus: visit.dealStatus || "เปิดการขาย",
+      sellSuccessful: visit.sellSuccessful || false,
       closeReason: visit.closeReason || "",
       visitCat: visit.visitCat || "ตรวจเยี่ยมประจำเดือน",
       notes: typeof visit.notes === 'string' ? { "1": visit.notes } : (visit.notes || {}),
@@ -173,6 +177,7 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
       date: new Date().toLocaleDateString('en-CA'),
       visitType: "new",
       dealStatus: "เปิดการขาย",
+      sellSuccessful: false,
       closeReason: "",
       visitCat: "ตรวจเยี่ยมประจำเดือน",
       notes: {}
@@ -401,12 +406,9 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">สถานะการขาย</Label>
+              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs">สถานะการขาย *</Label>
               <Select value={form.dealStatus} onValueChange={(v) => handleChange("dealStatus", v)}>
-                <SelectTrigger className={cn(
-                  "h-12 rounded-2xl border-2",
-                  form.dealStatus === "เปิดการขาย" ? "bg-emerald-50/50 border-emerald-500/20 text-emerald-600" : "bg-rose-50/50 border-rose-500/20 text-rose-600"
-                )}>
+                <SelectTrigger className="bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-2xl text-black dark:text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -415,6 +417,20 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-1.5 flex flex-col justify-center">
+              <div className="flex items-center justify-between bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 h-14 px-5 rounded-2xl">
+                <div className="flex flex-col">
+                  <Label className="text-slate-700 dark:text-slate-300 font-bold text-xs">sell Successful</Label>
+                  <span className="text-[10px] text-slate-500 font-medium">{form.sellSuccessful ? 'ปิดการขายสำเร็จ' : 'ยังไม่ปิดการขาย'}</span>
+                </div>
+                <Switch 
+                  checked={form.sellSuccessful} 
+                  onCheckedChange={(checked) => handleChange("sellSuccessful", checked)}
+                  className="data-[state=checked]:bg-emerald-500"
+                />
+              </div>
             </div>
           </div>
 
@@ -519,8 +535,8 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
 
           {form.dealStatus === "ปิดการขาย" && (
             <div className="space-y-1.5 animate-in slide-in-from-top-2 duration-300">
-              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs text-rose-500">เหตุผลที่ปิดการขาย *</Label>
-              <Input placeholder="ระบุเหตุผลในการปิดการขาย..." value={form.closeReason} onChange={(e) => handleChange("closeReason", e.target.value)} className="bg-rose-50/50 border-rose-200 h-12 rounded-2xl text-rose-700 font-bold" />
+              <Label className="text-slate-700 dark:text-slate-300 font-bold mb-1.5 block text-xs text-rose-500">เหตุผลที่ปิดร้าน/เลิกขาย *</Label>
+              <Input placeholder="ระบุเหตุผลในการปิดการขาย..." value={form.closeReason} onChange={(e) => handleChange("closeReason", e.target.value)} className="bg-rose-50 border-rose-200 h-12 rounded-2xl text-rose-700 font-bold dark:bg-rose-500/10 dark:border-rose-700 dark:text-white" />
             </div>
           )}
 
@@ -681,13 +697,14 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 min-w-[150px]">ร้านค้า</TableHead>
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 hidden xl:table-cell w-32">พนักงานขาย</TableHead>
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 hidden lg:table-cell min-w-[180px]">สรุปการเข้าพบ</TableHead>
+                  <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-center hidden sm:table-cell w-28">Sellขายได้</TableHead>
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-center hidden sm:table-cell w-28">สถานะ</TableHead>
                   <TableHead className="py-5 font-black uppercase text-[10px] text-slate-400 text-right pr-6 w-36">จัดการ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredVisits.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="h-32 text-center text-slate-400 italic text-xs">ไม่พบข้อมูลประวัติ</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="h-32 text-center text-slate-400 italic text-xs">ไม่พบข้อมูลประวัติ</TableCell></TableRow>
                 ) : (
                   filteredVisits.map((v: any, index: number) => (
                     <TableRow key={v.id} className="hover:bg-blue-500/5 transition-colors border-b dark:border-slate-800/50">
@@ -716,11 +733,22 @@ export default function VisitForm({ visits, stores, profiles, onRefresh, onCreat
                         </div>
                       </TableCell>
                       <TableCell className="w-[120px] text-center hidden sm:table-cell">
+                        {v.sellSuccessful ? (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black shadow-sm bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 whitespace-nowrap">
+                            ✅ Success
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black shadow-sm bg-rose-500/10 text-rose-600 border border-rose-500/20 whitespace-nowrap">
+                            ❌ Unsuccess
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="w-[120px] text-center hidden sm:table-cell">
                         <span className={cn(
                           "px-2.5 py-1 rounded-full text-[10px] font-black shadow-sm whitespace-nowrap",
-                          v.dealStatus === "เปิดการขาย" ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-rose-500/10 text-rose-600 border border-rose-500/20"
+                          v.dealStatus === "ปิดการขาย" ? "bg-rose-500/10 text-rose-600 border border-rose-500/20" : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
                         )}>
-                          {v.dealStatus}
+                          {v.dealStatus || "เปิดการขาย"}
                         </span>
                       </TableCell>
                       <TableCell className="text-right pr-6 align-middle">

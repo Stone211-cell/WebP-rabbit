@@ -96,7 +96,7 @@ function CalendarDayButton({ day, modifiers, getPlansForDate, getVisitsForDate, 
     const dayPlans = getPlansForDate(date)
     const dayVisits = getVisitsForDate(date)
     const hasData = dayPlans.length > 0 || dayVisits.length > 0
-    const hasClosedDeal = dayVisits.some((v: any) => v.dealStatus === 'ปิดการขาย' || v.dealStatus === 'closed')
+    const hasClosedDeal = dayVisits.some((v: any) => v.sellSuccessful === true)
 
     return (
         <div className="relative w-full h-full group/day">
@@ -222,8 +222,8 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
         switch (period) {
             case 'day': return `วันที่: ${formatThaiDate(currentDate, 'd MMM yyyy')}`
             case 'week': {
-                const start = startOfWeek(currentDate, { weekStartsOn: 0 })
-                const end = endOfWeek(currentDate, { weekStartsOn: 0 })
+                const start = startOfWeek(currentDate, { weekStartsOn: 1 })
+                const end = endOfWeek(currentDate, { weekStartsOn: 1 })
                 return `วันที่: ${formatThaiDate(start, 'd MMM yyyy')} - ${formatThaiDate(end, 'd MMM yyyy')}`
             }
             case 'month': return `เดือน: ${formatThaiDate(currentDate, 'MMMM yyyy')}`
@@ -306,7 +306,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
 
             switch (period) {
                 case 'day': return isSameDay(visitDate, currentDate)
-                case 'week': return visitDate >= startOfWeek(currentDate, { weekStartsOn: 0 }) && visitDate <= endOfWeek(currentDate, { weekStartsOn: 0 })
+                case 'week': return visitDate >= startOfWeek(currentDate, { weekStartsOn: 1 }) && visitDate <= endOfWeek(currentDate, { weekStartsOn: 1 })
                 case 'month': return isSameMonth(visitDate, currentDate)
                 case 'year': return visitDate.getFullYear() === currentDate.getFullYear()
                 case 'quarter': return visitDate >= startOfQuarter(currentDate) && visitDate <= endOfQuarter(currentDate)
@@ -322,7 +322,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
 
             switch (period) {
                 case 'day': return isSameDay(planDate, currentDate)
-                case 'week': return planDate >= startOfWeek(currentDate, { weekStartsOn: 0 }) && planDate <= endOfWeek(currentDate, { weekStartsOn: 0 })
+                case 'week': return planDate >= startOfWeek(currentDate, { weekStartsOn: 1 }) && planDate <= endOfWeek(currentDate, { weekStartsOn: 1 })
                 case 'month': return isSameMonth(planDate, currentDate)
                 case 'year': return planDate.getFullYear() === currentDate.getFullYear()
                 case 'quarter': return planDate >= startOfQuarter(currentDate) && planDate <= endOfQuarter(currentDate)
@@ -333,7 +333,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
 
     // --- STATS CALCULATION ---
     const stats = useMemo(() => {
-        const closedDealsCount = filteredVisits.filter((v: any) => v.dealStatus === 'ปิดการขาย' || v.dealStatus === 'closed').length
+        const closedDealsCount = filteredVisits.filter((v: any) => v.sellSuccessful === true).length
         const totalVisitsCount = filteredVisits.length
 
         // New Stores in Period
@@ -341,7 +341,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
             const createDate = new Date(s.createdAt)
             switch (period) {
                 case 'day': return isSameDay(createDate, currentDate)
-                case 'week': return createDate >= startOfWeek(currentDate, { weekStartsOn: 0 }) && createDate <= endOfWeek(currentDate, { weekStartsOn: 0 })
+                case 'week': return createDate >= startOfWeek(currentDate, { weekStartsOn: 1 }) && createDate <= endOfWeek(currentDate, { weekStartsOn: 1 })
                 case 'month': return isSameMonth(createDate, currentDate)
                 case 'year': return createDate.getFullYear() === currentDate.getFullYear()
                 case 'quarter': return createDate >= startOfQuarter(currentDate) && createDate <= endOfQuarter(currentDate)
@@ -681,10 +681,10 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
             }
 
             const cat = visit.visitCat || visit.store?.customerType || ""
-            const status = visit.dealStatus
             const lowerCat = cat.toLowerCase()
+            const isClosed = visit.sellSuccessful === true
 
-            if (status === 'ปิดการขาย' || status === 'closed') {
+            if (isClosed) {
                 rep.closed++
                 if (!rep.closedStores.includes(storeName)) {
                     rep.closedStores.push(storeName)
@@ -775,8 +775,8 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
                 nextEnd = addDays(currentDate, 1)
                 break
             case 'week':
-                nextStart = startOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 0 })
-                nextEnd = endOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 0 })
+                nextStart = startOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 1 })
+                nextEnd = endOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 1 })
                 break
             case 'month':
                 nextStart = addMonths(currentDate, 1)
@@ -792,8 +792,8 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
                 nextEnd = new Date(currentDate.getFullYear() + 1, 11, 31)
                 break
             default:
-                nextStart = startOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 0 })
-                nextEnd = endOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 0 })
+                nextStart = startOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 1 })
+                nextEnd = endOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 1 })
         }
 
         const allRepNames = new Map<string, string>()
@@ -869,7 +869,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
                 stats[type].newVisits++
             }
 
-            if (v.dealStatus === 'ปิดการขาย' || v.dealStatus === 'closed') {
+            if (v.sellSuccessful === true) {
                 stats[type].closed++
             }
         })
@@ -1423,8 +1423,8 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {storeTypePerformance.filter((row: any) => row.totalVisits > 0).length > 0 ? (
-                                storeTypePerformance.filter((row: any) => row.totalVisits > 0).map((row: any, i: number) => (
+                            {storeTypePerformance.length > 0 ? (
+                                storeTypePerformance.map((row: any, i: number) => (
                                     <TableRow key={i} className="dark:border-slate-800 border-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                         <TableCell className="w-[60px] text-center font-bold text-slate-500 hidden md:table-cell">{i + 1}</TableCell>
                                         <TableCell className="min-w-[120px] font-bold dark:text-orange-200 text-orange-700 break-words whitespace-normal">{row.type}</TableCell>

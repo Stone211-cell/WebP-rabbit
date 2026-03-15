@@ -63,6 +63,7 @@ export async function PATCH(
         visitCat: data.visitCat,
         visitType: data.visitType,
         dealStatus: data.dealStatus,
+        sellSuccessful: data.sellSuccessful,
         closeReason: data.closeReason,
         notes: data.notes,
       },

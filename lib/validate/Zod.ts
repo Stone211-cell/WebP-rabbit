@@ -41,6 +41,7 @@ export const visitSchema = z.object({
     masterId: z.string().min(1, "กรุณาเลือกร้านค้า"),
     visitCat: z.string().optional().nullable(),
     dealStatus: z.string().optional().default("เปิดการขาย"),
+    sellSuccessful: z.boolean().optional().default(false),
     notes: z.any().optional().nullable(),
     order: z.any().optional().nullable(),
 })

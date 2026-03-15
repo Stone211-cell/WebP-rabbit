@@ -53,6 +53,7 @@ model Visit {
   visitCat    String?
   visitType   String
   dealStatus  String   @default("เปิดการขาย")
+  sellSuccessful Boolean @default(false)
   closeReason String?
   notes       Json?
   order       String?

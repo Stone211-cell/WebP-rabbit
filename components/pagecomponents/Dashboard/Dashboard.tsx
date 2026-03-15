@@ -96,8 +96,7 @@ function CalendarDayButton({ day, modifiers, getPlansForDate, getVisitsForDate, 
   const dayPlans = getPlansForDate(date)
   const dayVisits = getVisitsForDate(date)
   const hasData = dayPlans.length > 0 || dayVisits.length > 0
-
-  const hasClosedDeal = dayVisits.some((v: any) => v.dealStatus === 'ปิดการขาย' || v.dealStatus === 'closed')
+  const hasClosedDeal = dayVisits.some((v: any) => v.sellSuccessful === true)
   const hasVisit = dayVisits.length > 0
   const hasPlan = dayPlans.length > 0
 
@@ -288,8 +287,8 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
     switch (period) {
       case 'day': return `วันที่: ${formatThaiDate(currentDate, 'd MMM yyyy')}`
       case 'week': {
-        const start = startOfWeek(currentDate, { weekStartsOn: 0 })
-        const end = endOfWeek(currentDate, { weekStartsOn: 0 })
+        const start = startOfWeek(currentDate, { weekStartsOn: 1 })
+        const end = endOfWeek(currentDate, { weekStartsOn: 1 })
         return `วันที่: ${formatThaiDate(start, 'd MMM yyyy')} - ${formatThaiDate(end, 'd MMM yyyy')}`
       }
       case 'month': return `เดือน: ${formatThaiDate(currentDate, 'MMMM yyyy')}`
@@ -372,7 +371,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
 
       switch (period) {
         case 'day': return isSameDay(visitDate, currentDate)
-        case 'week': return visitDate >= startOfWeek(currentDate, { weekStartsOn: 0 }) && visitDate <= endOfWeek(currentDate, { weekStartsOn: 0 })
+        case 'week': return visitDate >= startOfWeek(currentDate, { weekStartsOn: 1 }) && visitDate <= endOfWeek(currentDate, { weekStartsOn: 1 })
         case 'month': return isSameMonth(visitDate, currentDate)
         case 'year': return visitDate.getFullYear() === currentDate.getFullYear()
         case 'quarter': return visitDate >= startOfQuarter(currentDate) && visitDate <= endOfQuarter(currentDate)
@@ -388,7 +387,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
 
       switch (period) {
         case 'day': return isSameDay(planDate, currentDate)
-        case 'week': return planDate >= startOfWeek(currentDate, { weekStartsOn: 0 }) && planDate <= endOfWeek(currentDate, { weekStartsOn: 0 })
+        case 'week': return planDate >= startOfWeek(currentDate, { weekStartsOn: 1 }) && planDate <= endOfWeek(currentDate, { weekStartsOn: 1 })
         case 'month': return isSameMonth(planDate, currentDate)
         case 'year': return planDate.getFullYear() === currentDate.getFullYear()
         case 'quarter': return planDate >= startOfQuarter(currentDate) && planDate <= endOfQuarter(currentDate)
@@ -399,7 +398,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
 
   // --- STATS CALCULATION ---
   const stats = useMemo(() => {
-    const closedDealsCount = filteredVisits.filter((v: any) => v.dealStatus === 'ปิดการขาย' || v.dealStatus === 'closed').length
+    const closedDealsCount = filteredVisits.filter((v: any) => v.sellSuccessful === true).length
     const totalVisitsCount = filteredVisits.length
 
     // New Stores in Period
@@ -407,7 +406,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
       const createDate = new Date(s.createdAt)
       switch (period) {
         case 'day': return isSameDay(createDate, currentDate)
-        case 'week': return createDate >= startOfWeek(currentDate, { weekStartsOn: 0 }) && createDate <= endOfWeek(currentDate, { weekStartsOn: 0 })
+        case 'week': return createDate >= startOfWeek(currentDate, { weekStartsOn: 1 }) && createDate <= endOfWeek(currentDate, { weekStartsOn: 1 })
         case 'month': return isSameMonth(createDate, currentDate)
         case 'year': return createDate.getFullYear() === currentDate.getFullYear()
         case 'quarter': return createDate >= startOfQuarter(currentDate) && createDate <= endOfQuarter(currentDate)
@@ -760,7 +759,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
       const status = visit.dealStatus
       const lowerCat = cat.toLowerCase()
 
-      if (status === 'ปิดการขาย' || status === 'closed') {
+      if (visit.sellSuccessful === true) {
         rep.closed++
         if (!rep.closedStores.includes(storeName)) {
           rep.closedStores.push(storeName)
@@ -945,7 +944,7 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
         stats[type].newVisits++
       }
 
-      if (v.dealStatus === 'ปิดการขาย' || v.dealStatus === 'closed') {
+      if (v.sellSuccessful === true) {
         stats[type].closed++
       }
     })
@@ -1489,31 +1488,31 @@ export default function Dashboard({ stores: initialStores, visits: initialVisits
               </TableRow>
             </TableHeader>
             <TableBody>
-              {storeTypePerformance.filter((row: any) => row.totalVisits > 0).length > 0 ? (
-                storeTypePerformance.filter((row: any) => row.totalVisits > 0).map((row: any, i: number) => (
-                  <TableRow key={i} className="dark:border-slate-800 border-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <TableCell className="w-[60px] text-center font-bold text-slate-500 hidden md:table-cell">{i + 1}</TableCell>
-                    <TableCell className="min-w-[120px] font-bold dark:text-orange-200 text-orange-700 break-words whitespace-normal">{row.type}</TableCell>
-                    <TableCell className="w-[100px] text-center font-bold text-slate-600 dark:text-slate-300">{row.totalVisits}</TableCell>
-                    <TableCell className="w-[100px] text-center text-blue-500 dark:text-blue-400 font-bold hidden sm:table-cell">{row.newVisits}</TableCell>
-                    <TableCell className="w-[100px] text-center text-emerald-500 dark:text-emerald-400 font-bold">{row.closed}</TableCell>
-                    <TableCell className="w-[120px] text-right hidden sm:table-cell">
-                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${row.percent >= 50
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                        }`}>
-                        {row.percent}%
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center h-24 text-slate-500">
-                    ไม่มีข้อมูลสำหรับช่วงเวลานี้
+            {storeTypePerformance.length > 0 ? (
+              storeTypePerformance.map((row: any, i: number) => (
+                <TableRow key={i} className="dark:border-slate-800 border-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                  <TableCell className="w-[60px] text-center font-bold text-slate-500 hidden md:table-cell">{i + 1}</TableCell>
+                  <TableCell className="min-w-[120px] font-bold dark:text-orange-200 text-orange-700 break-words whitespace-normal">{row.type}</TableCell>
+                  <TableCell className="w-[100px] text-center font-bold text-slate-600 dark:text-slate-300">{row.totalVisits}</TableCell>
+                  <TableCell className="w-[100px] text-center text-blue-500 dark:text-blue-400 font-bold hidden sm:table-cell">{row.newVisits}</TableCell>
+                  <TableCell className="w-[100px] text-center text-emerald-500 dark:text-emerald-400 font-bold">{row.closed}</TableCell>
+                  <TableCell className="w-[120px] text-right hidden sm:table-cell">
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${row.percent >= 50
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                      : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                      }`}>
+                      {row.percent}%
+                    </span>
                   </TableCell>
                 </TableRow>
-              )}
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center h-24 text-slate-500">
+                  ไม่มีข้อมูลสำหรับช่วงเวลานี้
+                </TableCell>
+              </TableRow>
+            )}
             </TableBody>
           </Table>
         </CardContent>
