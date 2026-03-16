@@ -202,7 +202,7 @@ function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onCha
         </div>
     )
 }
-
+//
 export default function ForecastForm({ stores = [], forecasts, date, setDate, weekStart, weekEnd, onRefresh, onCreate, onUpdate, onDelete, onBatch, isAdmin }: any) {
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -371,7 +371,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
         if (group.items.length > 0 && group.items[0].notes) {
             setNotes(group.items[0].notes)
         }
-        
+
         const totalInit = group.items.reduce((acc: number, item: any) => acc + (item.forcedSales || 0), 0);
         setJointForcedSales(totalInit === 0 ? '0' : totalInit.toString());
 
@@ -991,9 +991,9 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                         onChange={(e) => {
                                             const newVal = e.target.value.replace(/[^0-9.]/g, '');
                                             if (newVal === jointForcedSales && e.target.value !== newVal) return;
-                                            
+
                                             setJointForcedSales(newVal);
-                                            
+
                                             if (selectedStores.length > 0) {
                                                 setSelectedStores(prev => {
                                                     const newArr = [...prev];
