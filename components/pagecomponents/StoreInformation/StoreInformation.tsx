@@ -51,6 +51,7 @@ export default function StoreInformation({ stores, visits = [], issues = [], onR
   // Filters
   const [filterType, setFilterType] = useState("all")
   const [filterRating, setFilterRating] = useState("all")
+  const [filterStatus, setFilterStatus] = useState("all")
 
   const initialForm = {
     name: "",
@@ -234,7 +235,8 @@ export default function StoreInformation({ stores, visits = [], issues = [], onR
     (s: any) => {
       const matchType = filterType === "all" || s.type === filterType
       const matchRating = filterRating === "all" || String(s.paymentScore) === filterRating
-      return matchType && matchRating
+      const matchStatus = filterStatus === "all" || s.status === filterStatus
+      return matchType && matchRating && matchStatus
     }
   )
 
@@ -431,7 +433,7 @@ export default function StoreInformation({ stores, visits = [], issues = [], onR
                 placeholder="ค้นหารหัสร้าน, ชื่อร้าน หรือ เจ้าของ..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-14 pl-12 rounded-2xl bg-white/50 border-slate-200 shadow-sm focus:ring-2 focus:ring-blue-500/20 transition-all font-bold"
+                className="h-14 pl-12 rounded-2xl bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 shadow-sm focus:ring-2 focus:ring-blue-500/20 transition-all font-bold"
               />
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl grayscale opacity-50">🔍</span>
             </div>
@@ -439,7 +441,7 @@ export default function StoreInformation({ stores, visits = [], issues = [], onR
             {/* Filter: Type */}
             <div className="w-full md:w-[200px]">
               <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="h-14 rounded-2xl font-bold bg-white/50 border-slate-200 w-full [&>span]:line-clamp-1">
+                <SelectTrigger className="h-14 rounded-2xl font-bold bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 w-full [&>span]:line-clamp-1">
                   <SelectValue placeholder="ประเภทร้าน" />
                 </SelectTrigger>
                 <SelectContent>
@@ -449,17 +451,31 @@ export default function StoreInformation({ stores, visits = [], issues = [], onR
               </Select>
             </div>
 
-            {/* Filter: Rating/Status */}
+            {/* Filter: Rating/Credit */}
             <div className="w-full md:w-[200px]">
               <Select value={filterRating} onValueChange={setFilterRating}>
-                <SelectTrigger className="h-14 rounded-2xl font-bold bg-white/50 border-slate-200 w-full [&>span]:line-clamp-1">
-                  <SelectValue placeholder="สถานะ/คะแนน" />
+                <SelectTrigger className="h-14 rounded-2xl font-bold bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 w-full [&>span]:line-clamp-1">
+                  <SelectValue placeholder="เครดิต/คะแนน" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">ทั้งหมด</SelectItem>
+                  <SelectItem value="all">ทั้งหมด (เครดิต)</SelectItem>
                   {CreditRatings.map(c => (
                     <SelectItem key={c.value} value={c.value}>{c.label} ({c.stars}⭐)</SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filter: Sales Status */}
+            <div className="w-full md:w-[200px]">
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="h-14 rounded-2xl font-black bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 w-full [&>span]:line-clamp-1">
+                  <SelectValue placeholder="สถานะการขาย" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">ทั้งหมด (สถานะ)</SelectItem>
+                  <SelectItem value="เปิดการขาย">🟢 เปิดการขาย</SelectItem>
+                  <SelectItem value="ปิดการขาย">🔴 ปิดการขาย</SelectItem>
                 </SelectContent>
               </Select>
             </div>

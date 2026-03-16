@@ -74,10 +74,10 @@ import { useCRM } from "@/components/hooks/useCRM"
 import { cn, formatThaiDate, normalizeName } from "@/lib/utils"
 import { toast } from "sonner"
 import { ActionButton, FilterButton } from "@/components/crmhelper/helper"
-import { StoreTypes, VisitTopics } from "@/lib/types/manu"
+import { StoreTypes, VisitTopics, CustomerGroups } from "@/lib/types/manu"
 import { useCRMSession } from "@/components/hooks/useCRMSession"
 
-type Period = 'day' | 'week' | 'month' | 'quarter' | 'year'
+type Period = 'day' | 'week' | 'month' | 'quarter' | 'year' | 'all'
 
 // =====================================================================
 // CalendarDayButton — pure CSS group-hover tooltip
@@ -229,6 +229,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
             case 'month': return `เดือน: ${formatThaiDate(currentDate, 'MMMM yyyy')}`
             case 'quarter': return `ไตรมาส: ${formatThaiDate(startOfQuarter(currentDate), 'd MMM')} - ${formatThaiDate(endOfQuarter(currentDate), 'd MMM yyyy')}`
             case 'year': return `ปี: ${formatThaiDate(currentDate, 'yyyy')}`
+            case 'all': return 'ข้อมูลทั้งหมด'
             default: return formatThaiDate(currentDate, 'd MMM yyyy')
         }
     }
@@ -310,6 +311,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
                 case 'month': return isSameMonth(visitDate, currentDate)
                 case 'year': return visitDate.getFullYear() === currentDate.getFullYear()
                 case 'quarter': return visitDate >= startOfQuarter(currentDate) && visitDate <= endOfQuarter(currentDate)
+                case 'all': return true
                 default: return true
             }
         })
@@ -631,9 +633,10 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
         typeA: { label: "ร้านเดิม A", color: "#ef4444" }, // Red
         typeB: { label: "ร้านเดิม B", color: "#f97316" }, // Orange
         new: { label: "ร้านใหม่ N", color: "#3b82f6" },   // Blue
-        closed: { label: "ปิดการขาย", color: "#22c55e" },  // Green
+        typeS: { label: "ร้านเก่าหยุดซื้อ S", color: "#64748b" }, // Slate
         typeT: { label: "พัฒนาออเดอร์ T", color: "#eab308" }, // Yellow
         typeD: { label: "ตัวแทนจำหน่าย D", color: "#a855f7" }, // Purple
+        closed: { label: "ปิดการขาย", color: "#22c55e" },  // Green
         general: { label: "ทั่วไป", color: "#94a3b8" }     // Slate
     }
 
@@ -653,7 +656,8 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
         const initialStats = Array.from(allRepNames.values()).map(name => ({
             name,
             total: 0,
-            typeA: 0, typeB: 0, new: 0, closed: 0, typeT: 0, typeD: 0, general: 0,
+            typeA: 0, typeB: 0, new: 0, typeS: 0, typeT: 0, typeD: 0, general: 0,
+            closed: 0,
             visitedStores: [] as string[],
             closedStores: [] as string[]
         }))
@@ -667,7 +671,8 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
                 rep = {
                     name,
                     total: 0,
-                    typeA: 0, typeB: 0, new: 0, closed: 0, typeT: 0, typeD: 0, general: 0,
+                    typeA: 0, typeB: 0, new: 0, typeS: 0, typeT: 0, typeD: 0, general: 0,
+                    closed: 0,
                     visitedStores: [] as string[],
                     closedStores: [] as string[]
                 }
@@ -697,6 +702,8 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
                 rep.typeB++
             } else if (cat.includes('ร้านใหม่ N') || lowerCat.includes('type n') || visit.visitType === 'new') {
                 rep.new++
+            } else if (cat.includes('หยุดซื้อ') || cat.includes('S')) {
+                rep.typeS++
             } else if (cat.includes('พัฒนา') || cat.includes('T')) {
                 rep.typeT++
             } else if (cat.includes('ตัวแทน') || cat.includes('D')) {
@@ -750,11 +757,11 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
 
             const topic = (visit.visitCat || "").trim()
             if (topic.includes("ตรวจเยี่ยม") || topic.includes("ประจำเดือน")) rep.topic1++
-            else if (topic.includes("ร้านค้าใหม่")) rep.topic2++
+            else if (topic.includes("ค้าใหม่") || topic.includes("ร้านใหม่")) rep.topic2++
             else if (topic.includes("ติดตามผล")) rep.topic3++
             else if (topic.includes("เสนอราคา")) rep.topic4++
             else if (topic.includes("ยอดชำระ")) rep.topic5++
-            else if (topic.includes("สินค้าตัวอย่าง") || topic.includes("เสนอสินค้า")) rep.topic6++
+            else if (topic.includes("สินค้าตัวอย่าง") || topic.includes("เสนอสินค้า") || topic.includes("ตัวอย่าง")) rep.topic6++
             else rep.other++
 
             return acc
@@ -764,38 +771,8 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
     // Merge Plans Count to salesPerformance (for Table view if needed)
     // But strictly for the "Future Plans" Chart, we need a separate structure grouped by Rep -> Type
 
-    // --- NEW: Next Period Plans Stats (Combined from Plans and future Visits) ---
-    const nextPeriodPlansStats = useMemo(() => {
-        let nextStart: Date
-        let nextEnd: Date
-
-        switch (period) {
-            case 'day':
-                nextStart = addDays(currentDate, 1)
-                nextEnd = addDays(currentDate, 1)
-                break
-            case 'week':
-                nextStart = startOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 1 })
-                nextEnd = endOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 1 })
-                break
-            case 'month':
-                nextStart = addMonths(currentDate, 1)
-                nextStart.setDate(1) // Start of next month
-                nextEnd = new Date(nextStart.getFullYear(), nextStart.getMonth() + 1, 0) // End of next month
-                break
-            case 'quarter':
-                nextStart = startOfQuarter(addQuarters(currentDate, 1))
-                nextEnd = endOfQuarter(addQuarters(currentDate, 1))
-                break
-            case 'year':
-                nextStart = new Date(currentDate.getFullYear() + 1, 0, 1)
-                nextEnd = new Date(currentDate.getFullYear() + 1, 11, 31)
-                break
-            default:
-                nextStart = startOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 1 })
-                nextEnd = endOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 1 })
-        }
-
+    // --- NEW: Current Period Plans Stats (Same as visits filtering) ---
+    const currentPeriodPlansStats = useMemo(() => {
         const allRepNames = new Map<string, string>()
         profiles.forEach(p => allRepNames.set(normalizeName(p.name), p.name))
         displayVisits.forEach(v => {
@@ -811,17 +788,8 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
             plannedStores: [] as string[]
         }))
 
-        // Combine both models
-        const combinedSource = [
-            ...(plans || []).map(p => ({ ...p, isPlan: true })),
-            ...(displayVisits || []).map(v => ({ ...v, isPlan: false }))
-        ]
-
-        return combinedSource.filter((item: any) => {
-            const date = new Date(item.date || item.startDate || item.createdAt)
-            return date >= nextStart && date <= nextEnd
-        }).reduce((acc: any[], item: any) => {
-            const name = (item.sales || "ไม่ระบุ").trim()
+        return filteredPlans.reduce((acc: any[], plan: any) => {
+            const name = (plan.sales || "ไม่ระบุ").trim()
             const normName = normalizeName(name)
             let rep = acc.find((r: any) => normalizeName(r.name) === normName)
 
@@ -831,42 +799,51 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
             }
 
             rep.total++
-            const storeName = item.store?.name || item.storeRef || item.storeCode || "ไม่ระบุร้าน"
+            const storeName = plan.store?.name || plan.storeRef || plan.storeCode || "ไม่ระบุร้าน"
             if (!rep.plannedStores.includes(storeName)) {
                 rep.plannedStores.push(storeName)
             }
 
-            const topic = (item.visitCat || "").trim()
+            const topic = (plan.visitCat || "").trim()
             if (topic.includes("ตรวจเยี่ยม") || topic.includes("ประจำเดือน")) rep.topic1++
-            else if (topic.includes("ร้านค้าใหม่")) rep.topic2++
+            else if (topic.includes("ค้าใหม่") || topic.includes("ร้านใหม่")) rep.topic2++
             else if (topic.includes("ติดตามผล")) rep.topic3++
             else if (topic.includes("เสนอราคา")) rep.topic4++
             else if (topic.includes("ยอดชำระ")) rep.topic5++
-            else if (topic.includes("สินค้าตัวอย่าง") || topic.includes("เสนอสินค้า")) rep.topic6++
+            else if (topic.includes("สินค้าตัวอย่าง") || topic.includes("เสนอสินค้า") || topic.includes("ตัวอย่าง")) rep.topic6++
             else rep.other++
 
             return acc
         }, initialStats)
-    }, [plans, displayVisits, currentDate, period, profiles])
+    }, [filteredPlans, displayVisits, profiles])
 
     // --- NEW: Summary by Store Type ---
     const storeTypePerformance = useMemo(() => {
-        // 1. Initialize result with all store types from StoreTypes
+        // 1. Initialize result with all customer groups from CustomerGroups
         const stats: any = {}
-        StoreTypes.forEach((type: string) => {
+        CustomerGroups.forEach((type: string) => {
             stats[type] = { type, totalVisits: 0, newVisits: 0, closed: 0 }
         })
-        stats["อื่นๆ"] = { type: "อื่นๆ", totalVisits: 0, newVisits: 0, closed: 0 }
 
         filteredVisits.forEach((v: any) => {
-            const type = v.store?.type || "อื่นๆ"
-            if (!stats[type]) stats[type] = { type, totalVisits: 0, newVisits: 0, closed: 0 }
+            const type = v.store?.customerType || v.visitCat || "ทั่วไป"
+            
+            // Try to match with our defined groups
+            let matchedType = "ทั่วไป"
+            if (type.includes('ร้านเดิม A')) matchedType = "ร้านเดิม A"
+            else if (type.includes('ร้านเดิม B')) matchedType = "ร้านเดิม B"
+            else if (type.includes('ร้านใหม่ N')) matchedType = "ร้านใหม่ N"
+            else if (type.includes('หยุดซื้อ') || type.includes('S')) matchedType = "ร้านเก่าหยุดซื้อ S"
+            else if (type.includes('พัฒนา') || type.includes('T')) matchedType = "พัฒนาออเดอร์ T"
+            else if (type.includes('ตัวแทน') || type.includes('D')) matchedType = "ตัวแทนจำหน่าย D"
 
-            stats[type].totalVisits++
+            if (!stats[matchedType]) stats[matchedType] = { type: matchedType, totalVisits: 0, newVisits: 0, closed: 0 }
+
+            stats[matchedType].totalVisits++
 
             const cat = v.visitCat || v.store?.customerType || ""
             if (cat.includes('ร้านใหม่ N') || v.visitType === 'new') {
-                stats[type].newVisits++
+                stats[matchedType].newVisits++
             }
 
             if (v.sellSuccessful === true) {
@@ -886,10 +863,11 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
             new: acc.new + row.new,
             typeA: acc.typeA + row.typeA,
             typeB: acc.typeB + row.typeB,
+            typeS: acc.typeS + row.typeS,
             typeT: acc.typeT + row.typeT,
             typeD: acc.typeD + row.typeD,
             closed: acc.closed + row.closed,
-        }), { total: 0, new: 0, typeA: 0, typeB: 0, typeT: 0, typeD: 0, closed: 0 });
+        }), { total: 0, new: 0, typeA: 0, typeB: 0, typeS: 0, typeT: 0, typeD: 0, closed: 0 });
     }, [salesPerformance]);
 
     const totalPercent = performanceTotals.total > 0 ? Math.round((performanceTotals.closed / performanceTotals.total) * 100) : 0;
@@ -902,6 +880,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
             "ร้านใหม่ N": row.new,
             "ร้านเดิม A": row.typeA,
             "ร้านเดิม B": row.typeB,
+            "ร้านเก่าหยุดซื้อ S": row.typeS,
             "พัฒนาออเดอร์ T": row.typeT,
             "ตัวแทนจำหน่าย D": row.typeD,
             "ปิดการขาย": row.closed,
@@ -916,6 +895,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
             "ร้านใหม่ N": performanceTotals.new,
             "ร้านเดิม A": performanceTotals.typeA,
             "ร้านเดิม B": performanceTotals.typeB,
+            "ร้านเก่าหยุดซื้อ S": performanceTotals.typeS,
             "พัฒนาออเดอร์ T": performanceTotals.typeT,
             "ตัวแทนจำหน่าย D": performanceTotals.typeD,
             "ปิดการขาย": performanceTotals.closed,
@@ -972,15 +952,13 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
             <div className="flex flex-col gap-4">
                 {/* Navigation & Filters Row */}
                 {/* Navigation & Filters Row */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 bg-slate-100 dark:bg-[#0f172a] p-3 rounded-2xl shadow-sm border border-slate-800">
-                    {['day', 'week', 'month', 'quarter', 'year'].map(p => (
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-2 bg-slate-100 dark:bg-[#0f172a] p-3 rounded-2xl shadow-sm border border-slate-800">
+                    {['day', 'week', 'month', 'quarter', 'year', 'all'].map(p => (
                         <button
                             key={p}
                             onClick={() => {
                                 setPeriod(p as Period);
-                                if (p === 'day' || p === 'week' || p === 'month') {
-                                    setCurrentDate(new Date());
-                                }
+                                setCurrentDate(new Date());
                             }}
                             className={cn(
                                 "flex items-center justify-center gap-2 py-3 px-4 text-sm font-bold rounded-xl transition-all border",
@@ -990,7 +968,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
                             )}
                         >
                             <CalendarIcon className="w-4 h-4 opacity-70" />
-                            {p === 'day' ? 'วันนี้' : p === 'week' ? 'สัปดาห์นี้' : p === 'month' ? 'เดือนนี้' : p === 'quarter' ? 'ไตรมาสนี้' : 'ปีนี้'}
+                            {p === 'day' ? 'วันนี้' : p === 'week' ? 'สัปดาห์นี้' : p === 'month' ? 'เดือนนี้' : p === 'quarter' ? 'ไตรมาสนี้' : p === 'year' ? 'ปีนี้' : 'บันทึกทั้งหมด'}
                         </button>
                     ))}
                 </div>
@@ -1220,10 +1198,10 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
                 </div>
                 <div className="lg:col-span-1 min-h-[600px]">
                     <ChartCard
-                        title={`แผนเข้าพบ${getNextPeriodLabel()}`}
-                        detail={`แผนงานล่วงหน้าแยกตามวัตถุประสงค์ (${getNextPeriodLabel()})`}
+                        title={`แผนเข้าพบ${period === 'all' ? 'ทั้งหมด' : period === 'day' ? 'วันนี้' : period === 'week' ? 'สัปดาห์นี้' : period === 'month' ? 'เดือนนี้' : period === 'quarter' ? 'ไตรมาสนี้' : 'ปีนี้'}`}
+                        detail={`แผนงานล่วงหน้าแยกตามวัตถุประสงค์ (${period === 'all' ? 'ประวัติทั้งหมด' : period === 'day' ? 'วันนี้' : period === 'week' ? 'สัปดาห์นี้' : period === 'month' ? 'เดือนนี้' : period === 'quarter' ? 'ไตรมาสนี้' : 'ปีนี้'})`}
                         ran="ทั้งหมด"
-                        data={nextPeriodPlansStats}
+                        data={currentPeriodPlansStats}
                         nameKey="name"
                         config={topicConfig}
                         type="grouped"
@@ -1338,6 +1316,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
                                     <TableHead className="dark:text-slate-400 font-semibold text-center text-blue-500 hidden md:table-cell">ร้านใหม่ N</TableHead>
                                     <TableHead className="dark:text-slate-400 font-semibold text-center hidden md:table-cell">ร้านเดิม A</TableHead>
                                     <TableHead className="dark:text-slate-400 font-semibold text-center hidden md:table-cell">ร้านเดิม B</TableHead>
+                                    <TableHead className="dark:text-slate-400 font-semibold text-center hidden md:table-cell text-slate-400">ร้านเก่าหยุดซื้อ S</TableHead>
                                     <TableHead className="dark:text-slate-400 font-semibold text-center hidden lg:table-cell">พัฒนาออเดอร์ T</TableHead>
                                     <TableHead className="dark:text-slate-400 font-semibold text-center hidden lg:table-cell">ตัวแทนจำหน่าย D</TableHead>
                                     <TableHead className="dark:text-slate-400 font-semibold text-center text-emerald-500">ปิดการขาย</TableHead>
@@ -1355,6 +1334,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
                                                 <TableCell className="w-[80px] text-center text-blue-500 dark:text-blue-400 font-bold hidden md:table-cell">{row.new}</TableCell>
                                                 <TableCell className="w-[80px] text-center text-slate-600 dark:text-slate-400 font-medium hidden md:table-cell">{row.typeA}</TableCell>
                                                 <TableCell className="w-[80px] text-center text-slate-600 dark:text-slate-400 font-medium hidden md:table-cell">{row.typeB}</TableCell>
+                                                <TableCell className="w-[80px] text-center text-slate-400 dark:text-slate-500 font-medium hidden md:table-cell">{row.typeS}</TableCell>
                                                 <TableCell className="w-[80px] text-center text-slate-600 dark:text-slate-400 font-medium hidden lg:table-cell">{row.typeT}</TableCell>
                                                 <TableCell className="w-[80px] text-center text-slate-600 dark:text-slate-400 font-medium hidden lg:table-cell">{row.typeD}</TableCell>
                                                 <TableCell className="w-[80px] text-center text-emerald-500 dark:text-emerald-400 font-bold">{row.closed}</TableCell>
@@ -1376,6 +1356,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
                                             <TableCell className="text-center text-blue-600 hidden md:table-cell">{performanceTotals.new}</TableCell>
                                             <TableCell className="text-center hidden md:table-cell">{performanceTotals.typeA}</TableCell>
                                             <TableCell className="text-center hidden md:table-cell">{performanceTotals.typeB}</TableCell>
+                                            <TableCell className="text-center hidden md:table-cell text-slate-500">{performanceTotals.typeS}</TableCell>
                                             <TableCell className="text-center hidden lg:table-cell">{performanceTotals.typeT}</TableCell>
                                             <TableCell className="text-center hidden lg:table-cell">{performanceTotals.typeD}</TableCell>
                                             <TableCell className="text-center text-emerald-600">{performanceTotals.closed}</TableCell>
@@ -1407,7 +1388,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
                 <CardHeader className="py-4 border-b dark:border-slate-800 flex flex-row items-center justify-between">
                     <div className="flex items-center gap-2">
                         <LayoutGrid className="w-5 h-5 text-orange-400" />
-                        <CardTitle className="text-lg dark:text-orange-100 text-slate-800">📈 สรุปตามประเภทร้าน</CardTitle>
+                        <CardTitle className="text-lg dark:text-orange-100 text-slate-800">📈 สรุปตามประเภทกลุ่มลูกค้า</CardTitle>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -1415,7 +1396,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
                         <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
                             <TableRow className="dark:border-slate-800 border-slate-100">
                                 <TableHead className="dark:text-slate-400 font-semibold text-center w-16 hidden md:table-cell">ลำดับ</TableHead>
-                                <TableHead className="dark:text-slate-400 font-semibold min-w-[120px]">ประเภทร้าน</TableHead>
+                                <TableHead className="dark:text-slate-400 font-semibold min-w-[120px]">กลุ่มลูกค้า</TableHead>
                                 <TableHead className="dark:text-slate-400 font-semibold text-center">จำนวนเข้าพบ</TableHead>
                                 <TableHead className="dark:text-slate-400 font-semibold text-center text-blue-500 hidden sm:table-cell">ร้านใหม่ N</TableHead>
                                 <TableHead className="dark:text-slate-400 font-semibold text-center text-emerald-500">ปิดการขาย</TableHead>

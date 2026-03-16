@@ -143,7 +143,7 @@ function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onCha
                         type="number"
                         placeholder="0.0"
                         className="h-10 w-full border-slate-200 dark:border-slate-700/50 text-sm py-0 text-center font-bold bg-white dark:bg-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500/20"
-                        value={storeItem.target}
+                        value={storeItem.target === 0 ? '0' : (storeItem.target || '')}
                         onChange={(e) => onChangeTarget(index, e.target.value)}
                     />
                 </div>
@@ -154,18 +154,18 @@ function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onCha
                         type="number"
                         placeholder="0.0"
                         className="h-10 w-full border-blue-200/50 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 text-sm py-0 text-center font-black bg-blue-500/5 dark:bg-blue-500/5 rounded-xl focus:ring-2 focus:ring-blue-500/20"
-                        value={storeItem.forecast}
+                        value={storeItem.forecast === 0 ? '0' : (storeItem.forecast || '')}
                         onChange={(e) => onChangeForecast(index, e.target.value)}
                     />
                 </div>
 
-                <div className="hidden flex-col gap-1.5 w-full lg:w-20">
+                <div className="flex flex-col gap-1.5 w-full lg:w-20">
                     <Label className="text-[12px] sm:text-[12px] font-black text-rose-600 dark:text-rose-400 px-1 lg:text-center uppercase tracking-wider">บังคับขาย</Label>
                     <Input
                         type="number"
                         placeholder="0.0"
-                        className="h-10 w-full border-rose-200/50 dark:border-rose-900/30 text-rose-600 dark:text-rose-400 text-xs py-0 text-center font-black bg-rose-500/5 dark:bg-rose-500/5 rounded-xl focus:ring-2 focus:ring-rose-500/20"
-                        value={storeItem.forcedSales}
+                        className="h-10 w-full border-rose-200/50 dark:border-rose-900/30 text-rose-600 dark:text-rose-400 text-sm py-0 text-center font-black bg-rose-500/5 dark:bg-rose-500/5 rounded-xl focus:ring-2 focus:ring-rose-500/20"
+                        value={storeItem.forcedSales === 0 ? '0' : (storeItem.forcedSales || '')}
                         onChange={(e) => onChangeForcedSales(index, e.target.value)}
                     />
                 </div>
@@ -214,6 +214,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
     // Form inputs state additions
     const [selectedProductType, setSelectedProductType] = useState<string>("")
     const [newPartCategory, setNewPartCategory] = useState<string>("")
+    const [jointForcedSales, setJointForcedSales] = useState<string>("")
 
     // Search & Filter State
     const [searchTerm, setSearchTerm] = useState("")
@@ -281,6 +282,15 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
         return sum;
     }, [selectedStores])
 
+    // Sync joint value when total changes from outside typing (e.g. adding/removing stores)
+    useEffect(() => {
+        if (!showDialog) return;
+        // Only update if the numerical value changed from outside (to prevent jumping when typing "10.")
+        if (safeFloat(jointForcedSales) !== autoTotalForcedSales) {
+            setJointForcedSales(autoTotalForcedSales === 0 ? '0' : autoTotalForcedSales.toString());
+        }
+    }, [autoTotalForcedSales, showDialog])
+
     const goPrevWeek = () => setDate(subWeeks(date, 1))
     const goNextWeek = () => setDate(addWeeks(date, 1))
 
@@ -321,6 +331,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
         setNotes("")
         setSelectedProductType("")
         setNewPartCategory("")
+        setJointForcedSales("")
         clearMeatPart()
         setPartSearch("")
         setPartCategoryFilter("all")
@@ -360,6 +371,9 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
         if (group.items.length > 0 && group.items[0].notes) {
             setNotes(group.items[0].notes)
         }
+        
+        const totalInit = group.items.reduce((acc: number, item: any) => acc + (item.forcedSales || 0), 0);
+        setJointForcedSales(totalInit === 0 ? '0' : totalInit.toString());
 
         setShowDialog(true)
     }
@@ -760,7 +774,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                                                             <span className="text-[10px] sm:text-[16px] font-black text-blue-500 uppercase tracking-tighter mb-1 select-none">คาดการณ์</span>
                                                                             <span className="text-blue-600 dark:text-blue-400 text-lg sm:text-3xl font-black">{item.forecast?.toFixed(1) || "0.0"}</span>
                                                                         </div>
-                                                                        <div className="hidden flex flex-col items-center justify-center pl-1 sm:pl-2">
+                                                                        <div className="flex flex-col items-center justify-center pl-1 sm:pl-2">
                                                                             <span className="text-[10px] sm:text-[16px] font-black text-rose-500 uppercase tracking-tighter mb-1 select-none whitespace-nowrap">บังคับขาย</span>
                                                                             <span className="text-rose-600 dark:text-rose-400 text-lg sm:text-3xl font-black">{item.forcedSales?.toFixed(1) || "0.0"}</span>
                                                                         </div>
@@ -972,27 +986,25 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                 <div className="relative">
                                     <Input
                                         className="h-11 w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-rose-900/30 font-black text-rose-600 dark:text-rose-400 rounded-2xl text-lg pl-10 focus:ring-rose-500/20"
-                                        value={autoTotalForcedSales || ''}
-                                        placeholder="0"
-                                        type="number"
+                                        value={jointForcedSales}
+                                        placeholder="0.0"
                                         onChange={(e) => {
-                                            const newVal = e.target.value;
+                                            const newVal = e.target.value.replace(/[^0-9.]/g, '');
+                                            if (newVal === jointForcedSales && e.target.value !== newVal) return;
+                                            
+                                            setJointForcedSales(newVal);
+                                            
                                             if (selectedStores.length > 0) {
                                                 setSelectedStores(prev => {
                                                     const newArr = [...prev];
-                                                    // Distribute the total to the first store, others to 0 (or keep as is)
-                                                    // Based on request: "บังคับขายร่วม10 ซื้อจริง1 = 9 จากบังคับขายร่วมนะ"
-                                                    // We'll put the whole joint value in the first store for now.
+                                                    // Set whole joint value in the FIRST store, others to 0
                                                     newArr[0] = { ...newArr[0], forcedSales: newVal };
-                                                    // Set others to 0 to maintain the total correctly if they were already 0
                                                     for (let i = 1; i < newArr.length; i++) {
-                                                        if (!newArr[i].forcedSales) newArr[i] = { ...newArr[i], forcedSales: '0' };
+                                                        newArr[i] = { ...newArr[i], forcedSales: '0' };
                                                     }
                                                     return newArr;
                                                 });
-                                            } else {
-                                                // If no stores, add a dummy one to hold the value? 
-                                                // Usually user adds stores first.
+                                            } else if (newVal && newVal !== '0') {
                                                 toast.error("กรุณาเพิ่มร้านค้าก่อนกำหนดเป้าบังคับขายรวม");
                                             }
                                         }}
