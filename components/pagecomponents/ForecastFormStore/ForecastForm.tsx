@@ -652,18 +652,18 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                                     )}
                                                 </div>
 
-                                                <div className="grid grid-cols-3 gap-2 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 mb-5 text-center">
+                                                <div className="grid grid-cols-3 gap-1 bg-white dark:bg-slate-900 p-2 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 mb-5 text-center">
                                                     <div>
-                                                        <span className="block text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">คาดการณ์</span>
-                                                        <span className="text-lg font-black text-blue-500">{f.forecast?.toFixed(1) || "0.0"}</span>
+                                                        <span className="block text-[10px] sm:text-[12px] font-black text-slate-400 uppercase tracking-tighter mb-1">คาดการณ์</span>
+                                                        <span className="text-sm sm:text-xl font-black text-blue-500 tabular-nums">{f.forecast?.toFixed(1) || "0.0"}</span>
                                                     </div>
                                                     <div className="border-x border-slate-100 dark:border-slate-800">
-                                                        <span className="block text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">ซื้อจริง</span>
-                                                        <span className="text-lg font-black text-emerald-500">{f.actual?.toFixed(1) || "0.0"}</span>
+                                                        <span className="block text-[10px] sm:text-[12px] font-black text-slate-400 uppercase tracking-tighter mb-1">ซื้อจริง</span>
+                                                        <span className="text-sm sm:text-xl font-black text-emerald-500 tabular-nums">{f.actual?.toFixed(1) || "0.0"}</span>
                                                     </div>
                                                     <div>
-                                                        <span className="block text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">ส่วนต่าง</span>
-                                                        <span className={cn("text-lg font-black", diff >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                                        <span className="block text-[10px] sm:text-[12px] font-black text-slate-400 uppercase tracking-tighter mb-1">ส่วนต่าง</span>
+                                                        <span className={cn("text-sm sm:text-xl font-black tabular-nums", diff >= 0 ? "text-emerald-500" : "text-rose-500")}>
                                                             {diff > 0 ? "+" : ""}{diff.toFixed(1)}
                                                         </span>
                                                     </div>
