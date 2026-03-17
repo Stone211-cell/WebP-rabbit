@@ -41,6 +41,7 @@ export function useCRM(filters?: {
   planStartDate?: string; planEndDate?: string;
   forecastWeekStart?: string; forecastEndDate?: string;
   issueSearch?: string; issueType?: string; issueStatus?: string;
+  include?: ('stores' | 'visits' | 'plans' | 'forecasts' | 'issues' | 'profiles')[];
 }) {
   const {
     storeSearch = '', storeType = '', storeStatus = '',
@@ -48,14 +49,19 @@ export function useCRM(filters?: {
     planStartDate = '', planEndDate = '',
     forecastWeekStart = '', forecastEndDate = '',
     issueSearch = '', issueType = '', issueStatus = '',
+    include = [],
   } = filters || {};
 
+  // If include is empty, assume we want everything (backwards compat)
+  const shouldInclude = (key: string) => include.length === 0 || include.includes(key as any);
+
   // ─── SWR Data hooks ───────────────────────────────────────────────────────
-  const storeKey = KEYS.stores(storeSearch, storeType, storeStatus);
-  const visitKey = KEYS.visits(visitSearch, visitSales, visitStartDate, visitEndDate);
-  const planKey = KEYS.plans(planStartDate, planEndDate);
-  const forecastKey = KEYS.forecasts(forecastWeekStart, forecastEndDate);
-  const issueKey = KEYS.issues(issueSearch, issueType, issueStatus);
+  const storeKey = shouldInclude('stores') ? KEYS.stores(storeSearch, storeType, storeStatus) : null;
+  const visitKey = shouldInclude('visits') ? KEYS.visits(visitSearch, visitSales, visitStartDate, visitEndDate) : null;
+  const planKey = shouldInclude('plans') ? KEYS.plans(planStartDate, planEndDate) : null;
+  const forecastKey = shouldInclude('forecasts') ? KEYS.forecasts(forecastWeekStart, forecastEndDate) : null;
+  const issueKey = shouldInclude('issues') ? KEYS.issues(issueSearch, issueType, issueStatus) : null;
+  const profileKey = shouldInclude('profiles') ? KEYS.profiles() : null;
 
   const { data: stores = [], isLoading: storesLoading, isValidating: storesValidating, mutate: mutateStores } =
     useSWR<Store[]>(storeKey, fetcher, SWR_CONFIG);
@@ -73,7 +79,7 @@ export function useCRM(filters?: {
     useSWR<any[]>(issueKey, fetcher, SWR_CONFIG);
 
   const { data: profiles = [], isLoading: profilesLoading, isValidating: profilesValidating, mutate: mutateProfiles } =
-    useSWR<any[]>(KEYS.profiles(), fetcher, SWR_CONFIG);
+    useSWR<any[]>(profileKey, fetcher, SWR_CONFIG);
 
   const isLoading = storesLoading || visitsLoading || plansLoading || forecastsLoading || issuesLoading || profilesLoading;
   const isValidating = storesValidating || visitsValidating || plansValidating || forecastsValidating || issuesValidating || profilesValidating;
@@ -242,6 +248,7 @@ export function useVisits(filters?: any) {
     visitSales: filters?.sales,
     visitStartDate: filters?.startDate,
     visitEndDate: filters?.endDate,
+    include: ['stores', 'visits']
   });
   return { visits, isLoading, fetchVisits, setVisits, createVisit, updateVisit, deleteVisit };
 }
@@ -250,6 +257,7 @@ export function usePlans(filters?: any) {
   const { plans, isLoading, fetchPlans, createPlan, updatePlan, deletePlan } = useCRM({
     planStartDate: filters?.startDate,
     planEndDate: filters?.endDate,
+    include: ['stores', 'plans']
   });
   return { plans, isLoading, fetchPlans, createPlan, updatePlan, deletePlan };
 }
@@ -258,6 +266,7 @@ export function useForecasts(filters?: any) {
   const { forecasts, isLoading, fetchForecasts, createForecast, updateForecast, deleteForecast } = useCRM({
     forecastWeekStart: filters?.weekStart,
     forecastEndDate: filters?.endDate,
+    include: ['forecasts']
   });
   return { forecasts, isLoading, fetchForecasts, createForecast, updateForecast, deleteForecast };
 }
@@ -267,11 +276,12 @@ export function useIssues(filters?: any) {
     issueSearch: filters?.search,
     issueType: filters?.type,
     issueStatus: filters?.status,
+    include: ['stores', 'issues']
   });
   return { issues, isLoading, fetchIssues, createIssue, updateIssue, deleteIssue };
 }
 
 export function useProfiles() {
-  const { profiles, isLoading, fetchProfiles } = useCRM();
+  const { profiles, isLoading, fetchProfiles } = useCRM({ include: ['profiles'] });
   return { profiles, isLoading, fetchProfiles };
 }

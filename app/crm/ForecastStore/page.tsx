@@ -20,7 +20,6 @@ export default function ForecastStorePage() {
     const monthStartStr = monthStart.toISOString();
     const monthEndStr = monthEnd.toISOString();
 
-    const { stores, isLoading: storesLoading } = useStores();
     // Fetch the entire month by setting weekStart to monthStart and endDate to monthEnd
     const { forecasts, fetchForecasts, createForecast, updateForecast, deleteForecast, isLoading: forecastsLoading } = useForecasts({
         weekStart: monthStartStr,
@@ -28,7 +27,7 @@ export default function ForecastStorePage() {
     });
     const { isAdmin, isLoaded } = useCRMSession();
 
-    const loading = storesLoading || forecastsLoading || !isLoaded;
+    const loading = forecastsLoading || !isLoaded;
 
     if (loading) {
         return (
@@ -43,7 +42,6 @@ export default function ForecastStorePage() {
 
     return (
         <ForecastFormStore
-            stores={stores}
             forecasts={forecasts}
             date={date}
             setDate={setDate}

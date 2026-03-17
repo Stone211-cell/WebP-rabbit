@@ -426,9 +426,9 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
         }
 
         setIsSubmitting(true)
+        const ops: any[] = []
         try {
             const productName = selectedMeatPart?.name || partSearch
-            const ops: any[] = []
 
             // Collect creates and updates
             selectedStores.forEach((s: any) => {
@@ -477,7 +477,12 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
             resetForm()
             if (onRefresh) onRefresh()
         } catch (error: any) {
-            console.error("Submit error:", error)
+            console.error("Submit error details:", {
+                message: error?.message,
+                response: error?.response?.data,
+                status: error?.response?.status,
+                opsCount: ops.length
+            })
             toast.error(error?.response?.data?.error || error?.message || "เกิดข้อผิดพลาดในการบันทึก")
         } finally {
             setIsSubmitting(false)

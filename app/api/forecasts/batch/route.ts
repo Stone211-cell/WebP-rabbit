@@ -16,37 +16,38 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Invalid payload: operations must be an array' }, { status: 400 });
         }
 
-        const results = await prisma.$transaction(async (tx) => {
-            const opResults = [];
-            for (const op of operations) {
+        const validOperations = operations.filter((op: any) => 
+            op.type === 'create' || 
+            (op.type === 'update' && op.id) || 
+            (op.type === 'delete' && op.id)
+        );
+
+        const opResults = await prisma.$transaction(
+            validOperations.map((op: any) => {
                 if (op.type === 'create') {
-                    const res = await tx.forecast.create({
+                    return prisma.forecast.create({
                         data: {
                             ...op.data,
                             weekStart: new Date(op.data.weekStart)
                         }
                     });
-                    opResults.push({ type: 'create', status: 'success', id: res.id });
                 } else if (op.type === 'update' && op.id) {
-                    const res = await tx.forecast.update({
+                    return prisma.forecast.update({
                         where: { id: op.id },
                         data: {
                             ...op.data,
                             weekStart: op.data.weekStart ? new Date(op.data.weekStart) : undefined
                         }
                     });
-                    opResults.push({ type: 'update', status: 'success', id: res.id });
-                } else if (op.type === 'delete' && op.id) {
-                    await tx.forecast.delete({
+                } else { // op.type === 'delete' && op.id
+                    return prisma.forecast.delete({
                         where: { id: op.id }
                     });
-                    opResults.push({ type: 'delete', status: 'success', id: op.id });
                 }
-            }
-            return opResults;
-        });
+            })
+        );
 
-        return NextResponse.json({ success: true, results });
+        return NextResponse.json({ success: true, results: opResults });
     } catch (error) {
         console.error("Batch operation error:", error);
         return renderError(error);
