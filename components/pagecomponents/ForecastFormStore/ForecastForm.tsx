@@ -281,7 +281,10 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                 toast.success("เพิ่มข้อมูลเรียบร้อย")
             }
 
+            // Close dialog immediately to feel fast
             resetForm()
+            
+            // Refresh data in background
             if (onRefresh) onRefresh()
         } catch (error: any) {
             toast.error(error?.response?.data?.error || error?.message || "เกิดข้อผิดพลาด")
@@ -305,7 +308,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
 
     // --- Calculations ---
     const summary = useMemo<{
-        week: { target: number, forecast: number, forcedSales: number, actual: number, diff: number },
+        week: { target: number, forecast: number, forcedSales: number, actual: number, diff: number, forcedSalesDiff: number },
         month: { target: number, forecast: number, forcedSales: number, actual: number, diff: number },
         products: { name: string, target: number, actual: number, forecast: number, forcedSales: number }[]
     }>(() => {
@@ -348,7 +351,14 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
         });
 
         return {
-            week: { target: weekTarget, forecast: weekForecast, forcedSales: weekForcedSales, actual: weekActual, diff: weekActual - weekForecast },
+            week: { 
+                target: weekTarget, 
+                forecast: weekForecast, 
+                forcedSales: weekForcedSales, 
+                actual: weekActual, 
+                diff: weekActual - weekForecast,
+                forcedSalesDiff: weekActual - weekForcedSales
+            },
             month: {
                 target: monthTarget,
                 actual: monthActual,
@@ -458,26 +468,39 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
             </div>
 
             {/* --- WEEKLY SUMMARY --- */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-[#3A7CF6] p-7 rounded-[2.5rem] text-white shadow-xl shadow-blue-500/20 flex flex-col items-center justify-center text-center">
-                    <div className="text-xs font-black uppercase tracking-[0.2em] text-blue-100/60 mb-2">คาดการณ์สัปดาห์นี้</div>
-                    <div className="text-4xl font-black drop-shadow-sm">{summary.week.forecast.toLocaleString()}</div>
-                    <div className="text-[10px] font-black text-blue-200/50 mt-2 uppercase">Kilograms</div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                <div className="bg-[#3A7CF6] p-4 sm:p-7 rounded-[1.5rem] sm:rounded-[2.5rem] text-white shadow-xl shadow-blue-500/20 flex flex-col items-center justify-center text-center">
+                    <div className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-blue-100/60 mb-1 sm:mb-2">คาดการณ์สัปดาห์นี้</div>
+                    <div className="text-2xl sm:text-3xl md:text-4xl font-black drop-shadow-sm tabular-nums">{summary.week.forecast.toLocaleString()}</div>
+                    <div className="text-[8px] sm:text-[10px] font-black text-blue-200/50 mt-1 sm:mt-2 uppercase">Kilograms</div>
                 </div>
 
-                <div className="bg-emerald-500 p-7 rounded-[2.5rem] text-white shadow-xl shadow-emerald-500/20 flex flex-col items-center justify-center text-center">
-                    <div className="text-xs font-black uppercase tracking-[0.2em] text-emerald-100/60 mb-2">ยอดซื้อจริง</div>
-                    <div className="text-4xl font-black drop-shadow-sm">{summary.week.actual.toLocaleString()}</div>
-                    <div className="text-[10px] font-black text-emerald-100/50 mt-2 uppercase">Kilograms</div>
+                <div className="bg-emerald-500 p-4 sm:p-7 rounded-[1.5rem] sm:rounded-[2.5rem] text-white shadow-xl shadow-emerald-500/20 flex flex-col items-center justify-center text-center">
+                    <div className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-emerald-100/60 mb-1 sm:mb-2">ยอดซื้อจริง</div>
+                    <div className="text-2xl sm:text-3xl md:text-4xl font-black drop-shadow-sm tabular-nums">{summary.week.actual.toLocaleString()}</div>
+                    <div className="text-[8px] sm:text-[10px] font-black text-emerald-100/50 mt-1 sm:mt-2 uppercase">Kilograms</div>
                 </div>
 
-                <div className={cn("p-7 rounded-[2.5rem] text-white shadow-xl flex flex-col items-center justify-center text-center transition-all duration-500", 
-                    summary.week.diff >= 0 ? "bg-indigo-500 shadow-indigo-500/20" : "bg-rose-500 shadow-rose-500/20")}>
-                    <div className="text-xs font-black uppercase tracking-[0.2em] text-white/50 mb-2">ส่วนต่างสุทธิ</div>
-                    <div className="text-4xl font-black flex items-center gap-2 drop-shadow-sm">
-                        {summary.week.diff >= 0 ? "▲" : "▼"} {Math.abs(summary.week.diff).toLocaleString()}
+                <div className="bg-rose-500 p-4 sm:p-7 rounded-[1.5rem] sm:rounded-[2.5rem] text-white shadow-xl shadow-rose-500/20 flex flex-col items-center justify-center text-center">
+                    <div className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-rose-100/60 mb-1 sm:mb-2 text-center">ขาดเป้า</div>
+                    <div className="text-2xl sm:text-3xl md:text-4xl font-black drop-shadow-sm tabular-nums">
+                        {Math.max(0, summary.week.forcedSales - summary.week.actual).toLocaleString()} 
+                        <span className="text-[10px] ml-1 opacity-70">กก.</span>
                     </div>
-                    <div className="text-[10px] font-black text-white/40 mt-2 uppercase tracking-widest">Weekly Evaluation</div>
+                    <div className="text-[8px] sm:text-[10px] font-black text-rose-100/50 mt-1 sm:mt-2 uppercase">
+                        {summary.week.forcedSales > 0 ? (Math.max(0, (summary.week.forcedSales - summary.week.actual) / summary.week.forcedSales) * 100).toFixed(0) : 0}%
+                    </div>
+                </div>
+
+                <div className="bg-blue-600 p-4 sm:p-7 rounded-[1.5rem] sm:rounded-[2.5rem] text-white shadow-xl shadow-blue-600/20 flex flex-col items-center justify-center text-center">
+                    <div className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-blue-100/60 mb-1 sm:mb-2 text-center leading-tight">เกินเป้า</div>
+                    <div className="text-2xl sm:text-3xl md:text-4xl font-black drop-shadow-sm tabular-nums">
+                        {Math.max(0, summary.week.actual - summary.week.forcedSales).toLocaleString()}
+                        <span className="text-[10px] ml-1 opacity-70">กก.</span>
+                    </div>
+                    <div className="text-[8px] sm:text-[10px] font-black text-blue-100/50 mt-1 sm:mt-2 uppercase">
+                        {summary.week.forcedSales > 0 ? (Math.max(0, (summary.week.actual - summary.week.forcedSales) / summary.week.forcedSales) * 100).toFixed(0) : 0}%
+                    </div>
                 </div>
             </div>
 
@@ -495,12 +518,13 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                 <div key={i} className="flex justify-between items-center p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                                     <div className="font-bold text-slate-900 dark:text-white ml-2">{p.name}</div>
                                     <div className="text-right text-xs space-y-1 mr-2">
-                                        <div className="flex gap-4 opacity-70">
+                                        <div className="flex gap-4 opacity-70 flex-wrap justify-end">
+                                            <span>บังคับขาย {(Number(p.forcedSales) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                                             <span>คาดการณ์ {(Number(p.forecast) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                                             <span>ซื้อจริง {(Number(p.actual) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                                         </div>
-                                        <div className={cn("font-bold text-sm", (p.actual - p.forecast) >= 0 ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400")}>
-                                            ส่วนต่าง {(p.actual - p.forecast) > 0 ? "+" : ""}{(Number((p.actual - p.forecast).toFixed(2))).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                        <div className={cn("font-bold text-sm", (p.actual - p.forcedSales) >= 0 ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400")}>
+                                            ส่วนต่าง {(p.actual - p.forcedSales) > 0 ? "+" : ""}{(Number((p.actual - p.forcedSales).toFixed(2))).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                         </div>
                                     </div>
                                 </div>
@@ -672,30 +696,36 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                                 <div className="space-y-4">
                                                     <div className="space-y-1.5">
                                                         <div className="flex justify-between items-end px-1">
-                                                            <span className="text-[10px] font-black text-blue-500/80 uppercase tracking-widest">ความแม่นยำ</span>
-                                                            <span className="text-xs font-black text-blue-600 dark:text-blue-400">
-                                                                {f.forecast && f.forecast > 0 ? ((tActual / f.forecast) * 100).toFixed(0) : 0}%
+                                                            <div className="flex flex-col">
+                                                                <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none">ขาดเป้า (กก.)</span>
+                                                                <span className="text-[14px] font-black text-rose-600">{Math.max(0, (f.forcedSales || 0) - (f.actual || 0)).toFixed(1)}</span>
+                                                            </div>
+                                                            <span className="text-sm font-black text-rose-500">
+                                                                {f.forcedSales && f.forcedSales > 0 ? (Math.max(0, (f.forcedSales - f.actual) / f.forcedSales) * 100).toFixed(0) : 0}%
                                                             </span>
                                                         </div>
                                                         <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[1px]">
                                                             <div
-                                                                className="h-full bg-blue-500 rounded-full transition-all duration-1000"
-                                                                style={{ width: `${Math.min(f.forecast && f.forecast > 0 ? (tActual / f.forecast) * 100 : 0, 100)}%` }}
+                                                                className="h-full bg-rose-500 rounded-full transition-all duration-1000"
+                                                                style={{ width: `${Math.min(f.forcedSales && f.forcedSales > 0 ? (Math.max(0, f.forcedSales - f.actual) / f.forcedSales) * 100 : 0, 100)}%` }}
                                                             />
                                                         </div>
                                                     </div>
 
                                                     <div className="space-y-1.5">
                                                         <div className="flex justify-between items-end px-1">
-                                                            <span className="text-[10px] font-black text-emerald-500/80 uppercase tracking-widest">ความสำเร็จ</span>
-                                                            <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
-                                                                {f.forcedSales && f.forcedSales > 0 ? ((tActual / f.forcedSales) * 100).toFixed(0) : 0}%
+                                                            <div className="flex flex-col">
+                                                                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest leading-none">เกินเป้า (กก.)</span>
+                                                                <span className="text-[14px] font-black text-blue-600">{Math.max(0, (f.actual || 0) - (f.forcedSales || 0)).toFixed(1)}</span>
+                                                            </div>
+                                                            <span className="text-sm font-black text-blue-500">
+                                                                {f.forcedSales && f.forcedSales > 0 ? (Math.max(0, (f.actual - f.forcedSales) / f.forcedSales) * 100).toFixed(0) : 0}%
                                                             </span>
                                                         </div>
                                                         <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[1px]">
                                                             <div
-                                                                className="h-full bg-emerald-500 rounded-full transition-all duration-1000"
-                                                                style={{ width: `${Math.min(f.forcedSales && f.forcedSales > 0 ? (tActual / f.forcedSales) * 100 : 0, 100)}%` }}
+                                                                className="h-full bg-blue-500 rounded-full transition-all duration-1000"
+                                                                style={{ width: `${Math.min(f.forcedSales && f.forcedSales > 0 ? (Math.max(0, f.actual - f.forcedSales) / f.forcedSales) * 100 : 0, 100)}%` }}
                                                             />
                                                         </div>
                                                     </div>
@@ -730,33 +760,32 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                         </DialogTitle>
                     </DialogHeader>
 
-                    <div className="p-6 space-y-5 overflow-y-auto flex-1">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs text-slate-400">เลือกร้าน *</Label>
-                                <div className="relative">
-                                    <StoreSearchBox
-                                        storeSearch={storeSearch}
-                                        setStoreSearch={setStoreSearch}
-                                        suggestions={suggestions}
-                                        showSuggestions={showSuggestions}
-                                        selectedStore={selectedStore}
-                                        selectStore={selectStore}
-                                        clearStore={clearStore}
-                                        handleManualSearch={handleManualSearch}
-                                        isSearching={isSearching}
-                                        placeholder="ค้นหารหัส หรือ ชื่อร้าน..."
-                                    />
-                                </div>
+                    <div className="p-6 space-y-6 overflow-y-auto flex-1">
+                        {/* Section 1: Store & Product Selection (Row 1) */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 bg-slate-50/50 dark:bg-slate-900/30 rounded-[2rem] border border-slate-100 dark:border-slate-800/50">
+                            <div className="space-y-1.5 min-w-0">
+                                <Label className="text-[14px] font-black uppercase tracking-wider text-slate-400 ml-1">เลือกร้าน *</Label>
+                                <StoreSearchBox
+                                    storeSearch={storeSearch}
+                                    setStoreSearch={setStoreSearch}
+                                    suggestions={suggestions}
+                                    showSuggestions={showSuggestions}
+                                    selectedStore={selectedStore}
+                                    selectStore={selectStore}
+                                    clearStore={clearStore}
+                                    handleManualSearch={handleManualSearch}
+                                    isSearching={isSearching}
+                                    placeholder="ค้นหาร้าน..."
+                                />
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-xs text-slate-400">เลือกกลุ่ม/ประเภท</Label>
+                                <Label className="text-[14px] font-black uppercase tracking-wider text-slate-400 ml-1">กลุ่ม/ประเภท</Label>
                                 <Select value={partCategoryFilter} onValueChange={setPartCategoryFilter} disabled={!!selectedMeatPart}>
-                                    <SelectTrigger className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl h-[42px] focus:ring-2 focus:ring-blue-500/20">
+                                    <SelectTrigger className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl h-11 font-black">
                                         <SelectValue placeholder="-- ทั้งหมด --" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white">
+                                    <SelectContent>
                                         <SelectItem value="all">-- ทั้งหมด --</SelectItem>
                                         {MEAT_CATEGORIES.map(c => (
                                             <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
@@ -766,130 +795,132 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-xs text-slate-400">สินค้า *</Label>
-                                <div className="flex gap-2">
-                                    <div className="relative flex-1">
-                                        <Input
-                                            placeholder="พิมพ์เพื่อค้นหา..."
-                                            value={partSearch}
-                                            onFocus={() => setShowPartSuggestions(true)}
-                                            onChange={(e) => { setPartSearch(e.target.value); setShowPartSuggestions(true) }}
-                                            className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl h-[42px] focus:ring-2 focus:ring-blue-500/20"
-                                            disabled={!!selectedMeatPart}
-                                        />
-                                        {showPartSuggestions && filteredParts.length > 0 && (
-                                            <div className="absolute top-full left-0 w-full mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 max-h-56 overflow-y-auto p-1 divide-y divide-slate-100 dark:divide-slate-700/50">
-                                                {filteredParts.map(p => (
-                                                    <div key={p.id} className="flex items-center group/item hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer first:rounded-t-lg last:rounded-b-lg transition-colors">
-                                                        <button
-                                                            onClick={() => { selectMeatPart(p); setShowPartSuggestions(false) }}
-                                                            className="flex-1 flex items-center gap-2 p-2.5 text-xs text-left text-slate-700 dark:text-slate-200"
-                                                        >
-                                                            <span className="h-5 w-5 flex items-center justify-center bg-slate-100 dark:bg-slate-700 rounded text-[10px] group-hover/item:bg-blue-500 group-hover/item:text-white transition-colors">🥩</span>
-                                                            <span className="flex-1 font-bold">{p.name}</span>
-                                                            <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded-full">{p.category}</span>
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => handleDeletePart(p.id, e)}
-                                                            className="opacity-0 group-hover/item:opacity-100 p-1.5 mr-1 rounded-md text-rose-400 hover:bg-rose-500/20 transition-all hover:text-rose-500"
-                                                            title="ลบ"
-                                                        >
-                                                            <Trash2 size={12} />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                    {!selectedMeatPart && (
-                                        <Button size="icon" onClick={handleAddPart} className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-300 h-[42px] w-[42px] shrink-0 rounded-xl transition-all shadow-sm border border-slate-200 dark:border-slate-700" title="เพิ่มชิ้นส่วนใหม่">
-                                            <Plus size={16} />
-                                        </Button>
+                                <Label className="text-[14px] font-black uppercase tracking-wider text-slate-400 ml-1">สินค้า *</Label>
+                                <div className="flex gap-2 relative">
+                                    <Input
+                                        placeholder="ค้นหาสินค้า..."
+                                        value={partSearch}
+                                        onFocus={() => setShowPartSuggestions(true)}
+                                        onChange={(e) => { setPartSearch(e.target.value); setShowPartSuggestions(true) }}
+                                        className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl h-11 font-black"
+                                        disabled={!!selectedMeatPart}
+                                    />
+                                    {showPartSuggestions && filteredParts.length > 0 && (
+                                        <div className="absolute top-full left-0 w-full mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 max-h-56 overflow-y-auto p-1 divide-y divide-slate-100 dark:divide-slate-700/50">
+                                            {filteredParts.map(p => (
+                                                <div key={p.id} className="flex items-center group/item hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer first:rounded-t-lg last:rounded-b-lg">
+                                                    <button
+                                                        onClick={() => { selectMeatPart(p); setShowPartSuggestions(false) }}
+                                                        className="flex-1 flex items-center gap-2 p-2.5 text-xs text-left"
+                                                    >
+                                                        <span className="font-bold">{p.name}</span>
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {selectedMeatPart && (
+                                        <div className="absolute top-11 left-0 z-10 text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100 shadow-sm mt-1">
+                                            {selectedMeatPart.name} <button onClick={() => clearMeatPart()} className="ml-1">✕</button>
+                                        </div>
                                     )}
                                 </div>
-                                {selectedMeatPart && (
-                                    <div className="text-xs text-blue-600 dark:text-blue-400 font-bold mt-2 bg-blue-50 dark:bg-blue-500/10 px-2.5 py-1 rounded-full inline-flex items-center border border-blue-100 dark:border-blue-900/30">
-                                        <span className="mr-1.5 opacity-70">✓</span> {selectedMeatPart.name} <span className="mx-1.5 opacity-30">|</span> <span className="opacity-70 text-[9px] uppercase tracking-wider">{selectedMeatPart.category}</span>
-                                        <button onClick={() => clearMeatPart()} className="ml-2 h-4 w-4 flex items-center justify-center rounded-full text-blue-300 dark:text-blue-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 hover:text-rose-500 transition-colors">✕</button>
-                                    </div>
-                                )}
-                                {!selectedMeatPart && filteredParts.length === 0 && partSearch.length > 0 && partCategoryFilter === 'all' && (
-                                    <div className="mt-2 p-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800/50 space-y-2">
-                                        <Label className="text-[10px] font-bold text-amber-600 dark:text-amber-500">ระบุประเภทชิ้นส่วนใหม่ก่อนเพิ่ม:</Label>
-                                        <Select value={newPartCategory} onValueChange={setNewPartCategory}>
-                                            <SelectTrigger className="h-8 bg-white dark:bg-slate-800 border-amber-200 dark:border-amber-800/50 text-slate-900 dark:text-white text-xs">
-                                                <SelectValue placeholder="-- ไม่ได้เลือกรายการ --" />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white">
-                                                {MEAT_CATEGORIES.map(c => (
-                                                    <SelectItem key={c.id} value={c.id} className="text-xs">{c.label}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                )}
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-xs text-slate-400">ชนิดสินค้า</Label>
-                                <Select
-                                    value={formData.productType}
-                                    onValueChange={(val) => setFormData(prev => ({ ...prev, productType: val }))}
-                                >
-                                    <SelectTrigger className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl h-[42px] focus:ring-2 focus:ring-blue-500/20">
-                                        <SelectValue placeholder="เลือกชนิดสินค้า..." />
+                                <Label className="text-[14px] font-black uppercase tracking-wider text-slate-400 ml-1">ชนิดสินค้า</Label>
+                                <Select value={formData.productType} onValueChange={(val) => setFormData(prev => ({ ...prev, productType: val }))}>
+                                    <SelectTrigger className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl h-11 font-black">
+                                        <SelectValue placeholder="ชนิด..." />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white">
-                                        {PRODUCT_TYPES.map(c => (
-                                            <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
-                                        ))}
+                                    <SelectContent>
+                                        {PRODUCT_TYPES.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
 
-                        {/* Removed Target Fields as requested */}
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-blue-50/30 dark:bg-blue-900/10 rounded-2xl border border-blue-100/50 dark:border-blue-900/20">
-                            <div className="space-y-1.5">
-                                <Label className="text-sm font-bold text-slate-600 dark:text-slate-300">คาดการณ์ (กก./สัปดาห์)</Label>
+                        {/* Section 2: Totals Summary (Row 2) */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-5 bg-slate-50 dark:bg-slate-950/20 rounded-[2.5rem] border border-slate-100 dark:border-slate-800/50 shadow-inner">
+                            <div className="space-y-2">
+                                <Label className="text-[18px] font-black uppercase tracking-wider text-blue-500 flex justify-center">เป้าหมายตามโปรแกรม</Label>
                                 <Input
                                     type="number"
-                                    placeholder="0.00"
+                                    value={editingItem?.targetWeek || 0}
+                                    readOnly
+                                    className="h-16 w-full bg-white/40 dark:bg-slate-900/40 border-slate-200 cursor-not-allowed font-black text-center text-blue-600 rounded-[1.5rem] text-3xl"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[18px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 flex justify-center">คาดการณ์ (กก.)</Label>
+                                <Input
+                                    type="number"
                                     value={formData.forecast}
                                     onChange={(e) => setFormData({ ...formData, forecast: e.target.value })}
-                                    className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl h-11 text-base font-black text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500/20 shadow-sm"
+                                    className="h-16 w-full bg-white dark:bg-slate-900 border-slate-200 font-black text-center text-slate-900 dark:text-white rounded-[1.5rem] text-3xl focus:ring-4 focus:ring-blue-500/10"
                                 />
                             </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-sm font-bold text-slate-600 dark:text-slate-300">บังคับขาย (กก./สัปดาห์)</Label>
+                            <div className="space-y-2">
+                                <Label className="text-[18px] font-black uppercase tracking-wider text-rose-500 flex justify-center">บังคับขาย (กก.)</Label>
                                 <Input
                                     type="number"
-                                    placeholder="0.00"
                                     value={formData.forcedSales}
                                     onChange={(e) => setFormData({ ...formData, forcedSales: e.target.value })}
-                                    className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl h-11 text-base font-black text-rose-600 dark:text-rose-400 focus:ring-2 focus:ring-rose-500/20 shadow-sm"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-sm font-bold text-slate-600 dark:text-slate-300">ยอดซื้อจริง (กก.)</Label>
-                                <Input
-                                    type="number"
-                                    placeholder="0.00"
-                                    value={formData.actual}
-                                    onChange={(e) => setFormData({ ...formData, actual: e.target.value })}
-                                    className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl h-11 text-base font-black text-emerald-600 dark:text-emerald-400 focus:ring-2 focus:ring-emerald-500/20 shadow-sm"
+                                    className="h-16 w-full bg-white dark:bg-slate-900 border-rose-200 font-black text-center text-rose-600 dark:text-rose-500 rounded-[1.5rem] text-3xl focus:ring-4 focus:ring-rose-500/10"
                                 />
                             </div>
                         </div>
 
+                        {/* Section 3: Actuals & Diffs (Row 3) */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="flex items-center justify-between p-6 bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/50 rounded-[2rem]">
+                                <div className="flex flex-col">
+                                    <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">ซื้อจริง กก</span>
+                                    <span className="text-[14px] font-bold text-emerald-500/70">ยอดซื้อรายสาขา</span>
+                                </div>
+                                <Input
+                                    type="number"
+                                    value={formData.actual}
+                                    onChange={(e) => setFormData({ ...formData, actual: e.target.value })}
+                                    className="h-16 w-32 bg-white dark:bg-slate-900 border-emerald-200 font-black text-center text-emerald-600 rounded-2xl text-3xl"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 p-6 bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/50 rounded-[2rem]">
+                                <div className="flex flex-col justify-center border-r border-slate-200 dark:border-slate-800 pr-4">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-lg font-black text-rose-500 uppercase">ขาดเป้า</span>
+                                        <span className="text-sm font-black text-rose-400">
+                                            {safeFloat(formData.forcedSales) > 0 ? (Math.max(0, (safeFloat(formData.forcedSales) - safeFloat(formData.actual)) / safeFloat(formData.forcedSales)) * 100).toFixed(0) : 0}%
+                                        </span>
+                                    </div>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-2xl font-black text-rose-600">{Math.max(0, safeFloat(formData.forcedSales) - safeFloat(formData.actual)).toFixed(1)}</span>
+                                        <span className="text-xs font-bold text-rose-400">กก.</span>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col justify-center pl-4">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-lg font-black text-blue-500 uppercase">เกินเป้า</span>
+                                        <span className="text-sm font-black text-blue-400">
+                                            {safeFloat(formData.forcedSales) > 0 ? (Math.max(0, (safeFloat(formData.actual) - safeFloat(formData.forcedSales)) / safeFloat(formData.forcedSales)) * 100).toFixed(0) : 0}%
+                                        </span>
+                                    </div>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-2xl font-black text-blue-600">{Math.max(0, safeFloat(formData.actual) - safeFloat(formData.forcedSales)).toFixed(1)}</span>
+                                        <span className="text-xs font-bold text-blue-400">กก.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="space-y-1.5">
-                            <Label className="text-xs text-slate-400">หมายเหตุ</Label>
+                            <Label className="text-[18px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5 ml-1">หมายเหตุ / บันทึกเพิ่มเติม</Label>
                             <Textarea
-                                placeholder="บันทึกเพิ่มเติม..."
+                                placeholder="บันทึก..."
                                 value={formData.notes}
                                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl resize-none h-24 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/20"
+                                className="min-h-[80px] bg-white dark:bg-slate-900 border-slate-200 rounded-[1.5rem] resize-none"
                             />
                         </div>
                     </div>

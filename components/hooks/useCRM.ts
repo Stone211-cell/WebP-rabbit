@@ -161,24 +161,53 @@ export function useCRM(filters?: {
   // ─── FORECASTS mutations ───────────────────────────────────────────────────
   const createForecast = async (forecast: Omit<Forecast, 'id' | 'createdAt' | 'updatedAt'>, options?: { revalidate?: boolean }) => {
     const res = await axios.post<Forecast>('/api/forecasts', forecast);
-    if (options?.revalidate !== false) await revalidateResource('forecasts');
+    // Optimistic-ish: Add the real result to cache immediately
+    if (options?.revalidate !== false) {
+        mutateForecasts((prev: any) => [...(prev || []), res.data], { revalidate: true });
+    }
     return res.data;
   };
 
   const updateForecast = async (id: string, forecast: Partial<Forecast>, options?: { revalidate?: boolean }) => {
+    // 1. Optimistic Update
+    if (options?.revalidate !== false) {
+        mutateForecasts((prev: any) => 
+            (prev || []).map((f: any) => f.id === id ? { ...f, ...forecast } : f), 
+            { revalidate: false }
+        );
+    }
+    
     const res = await axios.patch<Forecast>(`/api/forecasts/${id}`, forecast);
-    if (options?.revalidate !== false) await revalidateResource('forecasts');
+    
+    // 2. Final sync
+    if (options?.revalidate !== false) {
+        mutateForecasts(); // Background revalidation
+        revalidateResource('forecasts'); // Sync other components
+    }
     return res.data;
   };
 
   const deleteForecast = async (id: string, options?: { revalidate?: boolean }) => {
+    // 1. Optimistic Delete
+    if (options?.revalidate !== false) {
+        mutateForecasts((prev: any) => (prev || []).filter((f: any) => f.id !== id), { revalidate: false });
+    }
+    
     await axios.delete(`/api/forecasts/${id}`);
-    if (options?.revalidate !== false) await revalidateResource('forecasts');
+    
+    // 2. Final sync
+    if (options?.revalidate !== false) {
+        mutateForecasts();
+        revalidateResource('forecasts');
+    }
   };
 
   const batchForecasts = async (operations: any[], options?: { revalidate?: boolean }) => {
     const res = await axios.post('/api/forecasts/batch', { operations });
-    if (options?.revalidate !== false) await revalidateResource('forecasts');
+    if (options?.revalidate !== false) {
+        mutateForecasts();
+        revalidateResource('forecasts');
+    }
     return res.data;
   };
 

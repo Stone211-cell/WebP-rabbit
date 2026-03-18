@@ -148,8 +148,8 @@ function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onCha
                     />
                 </div>
 
-                <div className="flex flex-col gap-1.5  w-full lg:w-20">
-                    <Label className="text-[12px] sm:text-[12px] font-black text-blue-600 dark:text-blue-400 px-1 lg:text-center flex flex-row gap-1 uppercase tracking-wider block">คาดการณ์ (กก.)</Label>
+                <div className="flex flex-col gap-1.5  w-full lg:w-32">
+                    <Label className="text-[12px] sm:text-[12px] font-black text-blue-600 dark:text-blue-400 mx-1 lg:text-center flex flex-row gap-1 uppercase tracking-wider text-inline">คาดการณ์ (กก.)</Label>
                     <Input
                         type="number"
                         placeholder="0.0"
@@ -159,7 +159,7 @@ function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onCha
                     />
                 </div>
 
-                <div className="flex flex-col gap-1.5 w-full lg:w-20">
+                <div className="hidden">
                     <Label className="text-[12px] sm:text-[12px] font-black text-rose-600 dark:text-rose-400 px-1 lg:text-center uppercase tracking-wider">บังคับขาย</Label>
                     <Input
                         type="number"
@@ -279,6 +279,12 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
     const autoTotalForcedSales = useMemo(() => {
         let sum = 0;
         selectedStores.forEach(s => sum += safeFloat(s.forcedSales));
+        return sum;
+    }, [selectedStores])
+
+    const autoTotalActual = useMemo(() => {
+        let sum = 0;
+        selectedStores.forEach(s => sum += safeFloat(s.actual));
         return sum;
     }, [selectedStores])
 
@@ -733,8 +739,8 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
 
                                                 {/* Row 2: Forced Sales and Target */}
                                                 <div className="text-center flex flex-col justify-center min-w-0 border-t border-white/10 pt-2 sm:pt-4 mt-1 sm:mt-2">
-                                                    <div className="text-[8px] sm:text-xs font-black uppercase tracking-widest text-white/70 mb-0.5 sm:mb-1">บังคับขาย (กก.)</div>
-                                                    <div className="text-base sm:text-3xl font-black text-rose-300 truncate tabular-nums">{group.totalForcedSales.toFixed(1)}</div>
+                                                    <div className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white mb-0.5 sm:mb-1">บังคับขาย (กก.)</div>
+                                                    <div className="text-base sm:text-3xl font-black text-rose-600 truncate tabular-nums">{group.totalForcedSales.toFixed(1)}</div>
                                                 </div>
                                                 <div className="text-center flex flex-col justify-center min-w-0 pl-2 sm:pl-4 border-t border-white/10 pt-2 sm:pt-4 mt-1 sm:mt-2">
                                                     <div className="text-[8px] sm:text-xs font-black uppercase tracking-widest text-white/70 mb-0.5 sm:mb-1">เป้าหมาย (กก.)</div>
@@ -763,14 +769,14 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                                     const tActual = safeFloat(item.actual);
                                                     return (
                                                         <div key={item.id} className="relative overflow-hidden group/store">
-                                                            <div className="flex flex-col p-2.5 sm:p-6 rounded-[1.2rem] sm:rounded-[2rem] bg-slate-50/50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/80 shadow-sm hover:shadow-lg hover:border-blue-500/20 transition-all duration-300">
+                                                            <div className="flex flex-col p-2.5 sm:p-6 justify-center align-center rounded-[1.2rem] sm:rounded-[2rem] bg-slate-50/50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/80 shadow-sm hover:shadow-lg hover:border-blue-500/20 transition-all duration-300">
                                                                 <div className="w-full space-y-2 relative">
                                                                     <div className="flex items-baseline justify-between gap-2 mb-1.5 sm:mb-3">
                                                                         <div className="font-black text-[11px] sm:text-xl text-slate-800 dark:text-slate-100 leading-tight truncate">{item.store?.name}</div>
                                                                         <div className="font-black text-slate-400 dark:text-slate-600 font-mono text-[7px] sm:text-[10px] uppercase shrink-0 bg-white dark:bg-slate-900 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg border border-slate-100 dark:border-slate-800">{item.store?.code}</div>
                                                                     </div>
 
-                                                                    <div className="grid grid-cols-4 gap-0.5 md:gap-2 lg:gap-4 bg-white dark:bg-slate-900 p-1.5 sm:p-5 rounded-lg sm:rounded-2xl border border-slate-50 dark:border-slate-800 divide-x divide-slate-100 dark:divide-slate-800">
+                                                                    <div className="grid grid-cols-3  gap-0.5 md:gap-2 lg:gap-4 bg-white dark:bg-slate-900 p-1.5 sm:p-5 rounded-lg sm:rounded-2xl border border-slate-50 dark:border-slate-800 divide-x divide-slate-100 dark:divide-slate-800">
                                                                         <div className="flex flex-col items-center justify-center">
                                                                             <span className="text-[7px] sm:text-[10px] lg:text-[13px] font-black text-slate-500 uppercase tracking-tighter mb-0.5 sm:mb-1 select-none whitespace-nowrap">เป้า</span>
                                                                             <span className="text-slate-900 dark:text-white text-[10px] sm:text-xl lg:text-2xl font-black tabular-nums">{item.targetWeek?.toFixed(1) || "0.0"}</span>
@@ -780,9 +786,9 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                                                             <span className="block xl:hidden text-[7px] sm:text-[10px] md:text-[12px] lg:text-[13px] text-center font-black text-blue-500 uppercase tracking-tighter mb-0.5 sm:mb-1 select-none">คก.</span>
                                                                             <span className="text-blue-600 dark:text-blue-400 text-[10px] sm:text-xl lg:text-2xl font-black tabular-nums">{item.forecast?.toFixed(1) || "0.0"}</span>
                                                                         </div>
-                                                                        <div className="flex flex-col items-center justify-center pl-0.5 sm:pl-1">
-                                                                            <span className="text-[7px] sm:text-[10px] lg:text-[13px] font-black text-rose-500 uppercase tracking-tighter mb-0.5 sm:mb-1 select-none whitespace-nowrap truncate">บังคับขาย</span>
-                                                                            <span className="text-rose-600 dark:text-rose-400 text-[10px] sm:text-xl lg:text-2xl font-black tabular-nums">{item.forcedSales?.toFixed(1) || "0.0"}</span>
+                                                                        <div className="hidden flex flex-col items-center justify-center pl-0.5 sm:pl-1">
+                                                                            <span className=" text-[7px] sm:text-[10px] lg:text-[13px] font-black text-rose-500 uppercase tracking-tighter mb-0.5 sm:mb-1 select-none whitespace-nowrap truncate">บังคับขาย</span>
+                                                                            <span className=" text-rose-600 dark:text-rose-400 text-[10px] sm:text-xl lg:text-2xl font-black tabular-nums">{item.forcedSales?.toFixed(1) || "0.0"}</span>
                                                                         </div>
                                                                         <div className="flex flex-col items-center justify-center pl-0.5 sm:pl-1 border-l border-slate-100 dark:border-slate-800">
                                                                             <span className="text-[7px] sm:text-[10px] lg:text-[13px] font-black text-emerald-500 uppercase tracking-tighter mb-0.5 sm:mb-1 select-none whitespace-nowrap">จริง</span>
@@ -791,34 +797,38 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                                                     </div>
                                                                 </div>
 
-                                                                <div className="mt-2 sm:mt-5 space-y-2 sm:space-y-5">
-                                                                    {/* Accuracy % based on Actual/Forecast per user request */}
-                                                                    <div>
-                                                                        <div className="flex justify-between items-end mb-0.5 sm:mb-1 px-1">
-                                                                            <span className="text-[8px] sm:text-base lg:text-[18px] font-black text-blue-500 uppercase tracking-widest truncate">เปรียบเทียบคาดการณ์</span>
-                                                                            <span className="text-[8px] sm:text-base lg:text-[18px] font-black text-blue-600 dark:text-blue-400 shrink-0 ml-1 sm:ml-2">
-                                                                                {item.forecast && item.forecast > 0 ? ((tActual / item.forecast) * 100).toFixed(0) : 0}%
-                                                                            </span>
+                                                                <div className="mt-2 sm:mt-5 space-y-2 sm:space-y-4">
+                                                                    {/* Under Target (Miss) */}
+                                                                    {item.forcedSales > tActual && (
+                                                                        <div>
+                                                                            <div className="flex justify-between items-end mb-0.5 sm:mb-1 px-1">
+                                                                                <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-rose-500 uppercase tracking-widest truncate">ขาดเป้า {Math.max(0, (item.forcedSales || 0) - tActual).toFixed(1)} กก.</span>
+                                                                                <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-rose-600 dark:text-rose-400 shrink-0 ml-1 sm:ml-2">
+                                                                                    {item.forcedSales && item.forcedSales > 0 ? ((tActual / item.forcedSales) * 100).toFixed(0) : 0}%
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="h-0.5 sm:h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[0.5px] sm:p-[1px]">
+                                                                                <div
+                                                                                    className="h-full bg-rose-500 rounded-full transition-all duration-1000"
+                                                                                    style={{ width: `${Math.min(item.forcedSales && item.forcedSales > 0 ? (tActual / item.forcedSales) * 100 : 0, 100)}%` }}
+                                                                                />
+                                                                            </div>
                                                                         </div>
-                                                                        <div className="h-0.5 sm:h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[0.5px] sm:p-[1px]">
-                                                                            <div
-                                                                                className="h-full bg-blue-500 rounded-full transition-all duration-1000"
-                                                                                style={{ width: `${Math.min(item.forecast && item.forecast > 0 ? (tActual / item.forecast) * 100 : 0, 100)}%` }}
-                                                                            />
-                                                                        </div>
-                                                                    </div>
+                                                                    )}
 
-                                                                    {/* Success % */}
+                                                                    {/* Over Target (Exceed) */}
                                                                     <div>
                                                                         <div className="flex justify-between items-end mb-0.5 sm:mb-1 px-1">
-                                                                            <span className="text-[8px] sm:text-base lg:text-[18px] font-black text-emerald-500 uppercase tracking-widest truncate">สภาวะยอดซื้อจริง</span>
-                                                                            <span className="text-[8px] sm:text-base lg:text-[18px] font-black text-emerald-600 dark:text-emerald-400 shrink-0 ml-1 sm:ml-2">
+                                                                            <span className="hiddentext-[10px] sm:text-base lg:text-[18px] font-black text-blue-500 uppercase tracking-widest truncate">
+                                                                                {tActual > item.forcedSales ? `เกินเป้า ${(tActual - item.forcedSales).toFixed(1)} กก.` : "เป้าหมายการขายรวม"}
+                                                                            </span>
+                                                                            <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-blue-600 dark:text-blue-400 shrink-0 ml-1 sm:ml-2">
                                                                                 {item.forcedSales && item.forcedSales > 0 ? ((tActual / item.forcedSales) * 100).toFixed(0) : 0}%
                                                                             </span>
                                                                         </div>
                                                                         <div className="h-0.5 sm:h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[0.5px] sm:p-[1px]">
                                                                             <div
-                                                                                className="h-full bg-emerald-500 rounded-full transition-all duration-1000"
+                                                                                className="h-full bg-blue-500 rounded-full transition-all duration-1000"
                                                                                 style={{ width: `${Math.min(item.forcedSales && item.forcedSales > 0 ? (tActual / item.forcedSales) * 100 : 0, 100)}%` }}
                                                                             />
                                                                         </div>
@@ -854,12 +864,12 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
 
                     <div className="p-6 space-y-6 overflow-y-auto flex-1">
 
-                        {/* Section 1: Product Selection */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50/50 dark:bg-slate-900/30 rounded-[2rem] border border-slate-100 dark:border-slate-800/50">
+                        {/* Section 1: Product & Type Selection (Row 1) */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-slate-50/50 dark:bg-slate-900/30 rounded-[2rem] border border-slate-100 dark:border-slate-800/50">
                             <div className="space-y-2">
-                                <Label className="text-[18px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">เลือกกลุ่ม/ประเภท</Label>
+                                <Label className="text-[18px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">กลุ่ม/ประเภท</Label>
                                 <Select value={partCategoryFilter} onValueChange={setPartCategoryFilter} disabled={!!selectedMeatPart}>
-                                    <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700/50 font-medium rounded-xl shadow-sm">
+                                    <SelectTrigger className="h-11 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700/50 font-black rounded-2xl shadow-sm">
                                         <SelectValue placeholder="-- ทั้งหมด --" />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-xl border-slate-200 dark:border-slate-800 shadow-2xl">
@@ -871,7 +881,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                 </Select>
                             </div>
 
-                            <div className="md:col-span-2 space-y-2">
+                            <div className="space-y-2">
                                 <Label className="text-[18px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">ชิ้นส่วน/สินค้า *</Label>
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
@@ -880,7 +890,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                             value={partSearch}
                                             onFocus={() => setShowPartSuggestions(true)}
                                             onChange={(e) => { setPartSearch(e.target.value); setShowPartSuggestions(true) }}
-                                            className="h-10 border-slate-200 dark:border-slate-700/50 focus-visible:ring-blue-500 rounded-xl shadow-sm bg-white dark:bg-slate-900"
+                                            className="h-11 border-slate-200 dark:border-slate-700/50 focus-visible:ring-blue-500 rounded-2xl shadow-sm bg-white dark:bg-slate-900 font-black"
                                             disabled={!!editingGroup || !!selectedMeatPart}
                                         />
                                         {showPartSuggestions && filteredParts.length > 0 && (
@@ -910,43 +920,23 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                         )}
                                     </div>
                                     {isAdmin && !selectedMeatPart && (
-                                        <Button size="icon" onClick={handleAddPart} className="bg-slate-200/50 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 h-10 w-10 shrink-0 rounded-xl transition-all shadow-sm" title="เพิ่มชิ้นส่วนใหม่">
+                                        <Button size="icon" onClick={handleAddPart} className="bg-slate-200/50 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 h-11 w-11 shrink-0 rounded-2xl transition-all shadow-sm" title="เพิ่มชิ้นส่วนใหม่">
                                             <Plus size={16} />
                                         </Button>
                                     )}
                                 </div>
                                 {selectedMeatPart && (
-                                    <div className="text-xs text-blue-600 dark:text-blue-400 font-black mt-2 bg-blue-50 dark:bg-blue-500/10 px-3 py-1.5 rounded-full inline-flex items-center border border-blue-100 dark:border-blue-900/30 shadow-sm animate-in zoom-in-95 duration-200">
-                                        <span className="mr-1.5 opacity-70">✓</span> {selectedMeatPart.name} <span className="mx-1.5 opacity-30">|</span> <span className="opacity-70 text-[10px] uppercase font-bold tracking-wider">{selectedMeatPart.category}</span>
+                                    <div className="absolute top-[85px] left-4 z-10 text-xs text-blue-600 dark:text-blue-400 font-black bg-blue-50 dark:bg-blue-500/10 px-3 py-1.5 rounded-full inline-flex items-center border border-blue-100 dark:border-blue-900/30 shadow-sm animate-in zoom-in-95 duration-200">
+                                        <span className="mr-1.5 opacity-70">✓</span> {selectedMeatPart.name}
                                         {!editingGroup && <button onClick={() => clearMeatPart()} className="ml-2 h-5 w-5 flex items-center justify-center rounded-full text-blue-300 dark:text-blue-700 hover:bg-rose-100 hover:text-rose-500 transition-colors">✕</button>}
                                     </div>
                                 )}
-                                {isAdmin && !selectedMeatPart && filteredParts.length === 0 && partSearch.length > 0 && partCategoryFilter === 'all' && (
-                                    <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-200 dark:border-amber-800/50 space-y-2">
-                                        <Label className="text-[10px] font-bold text-amber-600 dark:text-amber-400">ระบุประเภทชิ้นส่วนใหม่ก่อนเพิ่ม:</Label>
-                                        <Select value={newPartCategory} onValueChange={setNewPartCategory}>
-                                            <SelectTrigger className="h-9 bg-white dark:bg-slate-900 border-amber-200 dark:border-amber-800">
-                                                <SelectValue placeholder="-- ไม่ได้เลือกรายการ --" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {MEAT_CATEGORIES.map(c => (
-                                                    <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                )}
                             </div>
-                        </div>
 
-                        {/* Section 2: Details and Summary */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 p-4 sm:p-5 bg-slate-50 dark:bg-slate-950/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50 shadow-inner">
-                            <div className="space-y-2 min-w-0">
-                                <Label className="text-[18px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">
-                                    <ShoppingBag size={12} /> ชนิดสินค้า
-                                </Label>
+                            <div className="space-y-2">
+                                <Label className="text-[18px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">ชนิดสินค้า</Label>
                                 <Select value={selectedProductType} onValueChange={setSelectedProductType}>
-                                    <SelectTrigger className="h-11 w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700/50 font-bold rounded-2xl shadow-sm focus:ring-blue-500/20">
+                                    <SelectTrigger className="h-11 w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700/50 font-black rounded-2xl shadow-sm focus:ring-blue-500/20">
                                         <SelectValue placeholder="-- เลือกประเภท --" />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-2xl border-slate-200 dark:border-slate-800 shadow-2xl">
@@ -956,58 +946,48 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                     </SelectContent>
                                 </Select>
                             </div>
+                        </div>
 
+                        {/* Section 2: Totals Summary (Row 2) */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-5 bg-slate-50 dark:bg-slate-950/20 rounded-[2.5rem] border border-slate-100 dark:border-slate-800/50 shadow-inner">
                             <div className="space-y-2 min-w-0">
-                                <Label className="text-[18px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">
-                                    <Target size={12} /> เป้าหมายรวม (กก.)
-                                </Label>
-                                <div className="relative group">
+                                <Label className="text-[18px] md:text-2xl font-black uppercase tracking-wider text-blue-500 flex items-center justify-center gap-1.5">เป้าหมายรวม</Label>
+                                <div className="relative">
                                     <Input
                                         readOnly
-                                        className="h-11 w-full bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 cursor-not-allowed font-black text-slate-600 dark:text-slate-400 rounded-2xl text-lg pl-10"
+                                        className="h-16 w-full bg-white/40 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 cursor-not-allowed font-black text-center text-blue-600 dark:text-blue-500 rounded-[1.5rem] text-3xl"
                                         value={autoTotalTarget || '0'}
                                     />
-                                    <Target className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-600" size={18} />
                                 </div>
                             </div>
 
                             <div className="space-y-2 min-w-0">
-                                <Label className="text-[18px] font-black uppercase flex flex-row tracking-wider text-blue-500/80 flex items-center gap-1.5 ml-1">
-                                    <TrendingUp size={12} /> คาดการณ์รวม (กก.)
-                                </Label>
+                                <Label className="text-[18px] md:text-2xl font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center justify-center gap-1.5">คาดการณ์รวม</Label>
                                 <div className="relative">
                                     <Input
                                         readOnly
-                                        className="h-11 w-full bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700/50 cursor-not-allowed font-black text-blue-600 dark:text-blue-400 rounded-2xl text-lg pl-10"
+                                        className="h-16 w-full bg-white/40 dark:bg-slate-900/40 border-slate-200 dark:border-slate-700/50 cursor-not-allowed font-black text-center text-slate-900 dark:text-white rounded-[1.5rem] text-3xl"
                                         value={autoTotalForecast || '0'}
                                     />
-                                    <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-400 dark:text-blue-600" size={18} />
                                 </div>
                             </div>
 
                             <div className="space-y-2 min-w-0">
-                                <Label className="text-[18px] font-black uppercase tracking-wider text-rose-500/80 flex items-center gap-1.5 ml-1">
-                                    <CheckCircle2 size={12} /> บังคับขายรวม (กก.)
-                                </Label>
-                                <div className="relative">
+                                <Label className="text-[18px] md:text-2xl font-black uppercase tracking-wider text-rose-500 flex items-center justify-center gap-1.5">บังคับขาย</Label>
+                                <div className="relative group">
                                     <Input
-                                        className="h-11 w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-rose-900/30 font-black text-rose-600 dark:text-rose-400 rounded-2xl text-lg pl-10 focus:ring-rose-500/20"
+                                        className="h-16 w-full bg-white dark:bg-slate-900 border-rose-200 dark:border-rose-900/30 font-black text-center text-rose-600 dark:text-rose-500 rounded-[1.5rem] text-3xl focus:ring-4 focus:ring-rose-500/10 shadow-sm group-hover:shadow-md transition-all"
                                         value={jointForcedSales}
                                         placeholder="0.0"
                                         onChange={(e) => {
                                             const newVal = e.target.value.replace(/[^0-9.]/g, '');
                                             if (newVal === jointForcedSales && e.target.value !== newVal) return;
-
                                             setJointForcedSales(newVal);
-
                                             if (selectedStores.length > 0) {
                                                 setSelectedStores(prev => {
                                                     const newArr = [...prev];
-                                                    // Set whole joint value in the FIRST store, others to 0
                                                     newArr[0] = { ...newArr[0], forcedSales: newVal };
-                                                    for (let i = 1; i < newArr.length; i++) {
-                                                        newArr[i] = { ...newArr[i], forcedSales: '0' };
-                                                    }
+                                                    for (let i = 1; i < newArr.length; i++) newArr[i] = { ...newArr[i], forcedSales: '0' };
                                                     return newArr;
                                                 });
                                             } else if (newVal && newVal !== '0') {
@@ -1015,12 +995,48 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                             }
                                         }}
                                     />
-                                    <CheckCircle2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-rose-400 dark:text-rose-600" size={18} />
                                 </div>
                             </div>
                         </div>
 
-                        {/* Section 3: Stores & Notes */}
+                        {/* Section 3: Actuals & Diffs (Row 3 - New) */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="flex items-center justify-between p-6 bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/50 rounded-[2rem]">
+                                <div className="flex flex-col">
+                                    <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">ซื้อจริงรวม กก</span>
+                                    <span className="text-[14px] font-bold text-emerald-500/70">คำนวณเป็น % เทียบ บังคับขาย</span>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{autoTotalActual.toFixed(1)}</div>
+                                    <div className="text-xl font-bold text-emerald-500/80">{autoTotalForcedSales > 0 ? ((autoTotalActual / autoTotalForcedSales) * 100).toFixed(0) : 0}%</div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 p-6 bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/50 rounded-[2rem]">
+                                <div className="flex flex-col justify-center border-r border-slate-200 dark:border-slate-800 pr-4">
+                                    <span className="text-lg font-black text-rose-500 uppercase">ขาดเป้า</span>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-2xl font-black text-rose-600">{Math.max(0, autoTotalForcedSales - autoTotalActual).toFixed(1)}</span>
+                                        <span className="text-xs font-bold text-rose-400 truncate">กก.</span>
+                                    </div>
+                                    <div className="text-sm font-bold text-rose-400">
+                                        {autoTotalForcedSales > 0 ? (Math.max(0, (autoTotalForcedSales - autoTotalActual) / autoTotalForcedSales) * 100).toFixed(0) : 0}%
+                                    </div>
+                                </div>
+                                <div className="flex flex-col justify-center pl-4">
+                                    <span className="text-lg font-black text-blue-500 uppercase">เกินเป้า</span>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-2xl font-black text-blue-600">{Math.max(0, autoTotalActual - autoTotalForcedSales).toFixed(1)}</span>
+                                        <span className="text-xs font-bold text-blue-400 truncate">กก.</span>
+                                    </div>
+                                    <div className="text-sm font-bold text-blue-400">
+                                        {autoTotalForcedSales > 0 ? (Math.max(0, (autoTotalActual - autoTotalForcedSales) / autoTotalForcedSales) * 100).toFixed(0) : 0}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section 4: Stores & Notes */}
                         <div className="space-y-6">
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center px-1">
@@ -1093,6 +1109,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                 )}
                             </div>
                         </div>
+
                         {/* Notes */}
                         <div className="space-y-3 p-5 bg-slate-50 dark:bg-slate-950/20 rounded-[2rem] border border-slate-100 dark:border-slate-800/50">
                             <Label className="text-[18px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5 ml-1">หมายเหตุ / บันทึกเพิ่มเติม</Label>
