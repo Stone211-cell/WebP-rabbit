@@ -103,20 +103,13 @@ function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onCha
         selectStore,
         clearStore,
         handleManualSearch,
-    } = useStoreSearch(storeItem.store?.code || '')
+    } = useStoreSearch(storeItem.store?.code || '', storeItem.store)
 
     useEffect(() => {
         if (selectedStore && selectedStore.id !== storeItem.store?.id) {
             onChangeStore(index, selectedStore)
         }
     }, [selectedStore, index, onChangeStore, storeItem.store?.id])
-
-    useEffect(() => {
-        if (storeItem.store && !selectedStore) {
-            selectStore(storeItem.store)
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
 
     return (
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-4 relative p-4 bg-slate-50/50 dark:bg-slate-900/40 rounded-[1.5rem] border border-slate-100 dark:border-slate-800/50 shadow-sm">
@@ -727,7 +720,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                                 {/* Row 1: Actual and Forecast */}
                                                 <div className="text-center flex flex-col justify-center min-w-0">
                                                     <div className="text-[8px] sm:text-xs font-black uppercase tracking-widest text-white/70 mb-0.5 sm:mb-1">จริง (กก.)</div>
-                                                    <div className="text-lg sm:text-4xl lg:text-5xl font-black truncate drop-shadow-sm tabular-nums">{group.totalActual.toFixed(1)}</div>
+                                                    <div className="text-xl l lg:text-3xl font-black truncate drop-shadow-sm tabular-nums">{group.totalActual.toFixed(1)}</div>
                                                 </div>
                                                 <div className="text-center flex flex-col justify-center min-w-0 pl-2 sm:pl-4 border-white/10">
                                                     <div className="text-[8px] sm:text-xs font-black uppercase tracking-widest text-white/70 mb-0.5 sm:mb-1">คาดการณ์ (กก.)</div>
@@ -740,7 +733,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                                 {/* Row 2: Forced Sales and Target */}
                                                 <div className="text-center flex flex-col justify-center min-w-0 border-t border-white/10 pt-2 sm:pt-4 mt-1 sm:mt-2">
                                                     <div className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white mb-0.5 sm:mb-1">บังคับขาย (กก.)</div>
-                                                    <div className="text-lg sm:text-4xl lg:text-5xl  font-black text-rose-600 truncate tabular-nums">{group.totalForcedSales.toFixed(1)}</div>
+                                                    <div className="text-xl  lg:text-3xl  font-black text-rose-600 truncate tabular-nums">{group.totalForcedSales.toFixed(1)}</div>
                                                 </div>
                                                 <div className="text-center flex flex-col justify-center min-w-0 pl-2 sm:pl-4 border-t border-white/10 pt-2 sm:pt-4 mt-1 sm:mt-2">
                                                     <div className="text-[8px] sm:text-xs font-black uppercase tracking-widest text-white/70 mb-0.5 sm:mb-1">เป้าหมาย (กก.)</div>

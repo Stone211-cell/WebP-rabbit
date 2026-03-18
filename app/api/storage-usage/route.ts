@@ -5,7 +5,10 @@ import { checkIsAdmin } from '@/lib/auth'
 // GET - Query database size from PostgreSQL (Supabase)
 export async function GET() {
     if (!await checkIsAdmin()) {
-        return NextResponse.json({ error: 'Unauthorized: Admin only' }, { status: 403 });
+        return NextResponse.json(
+            { error: 'Unauthorized: Admin only', used: 0, max: 500 * 1024 * 1024, percentage: 0, usedMB: 0, maxMB: 500 },
+            { status: 200 }
+        );
     }
     try {
         // Query the actual database size from PostgreSQL

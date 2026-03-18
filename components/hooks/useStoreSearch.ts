@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import { axiosInstance } from '@/lib/axios';
 import { useDebounce } from './useDebounce';
 
-export function useStoreSearch(initialStoreRef = '') {
+export function useStoreSearch(initialStoreRef = '', initialSelectedStore = null) {
     const [storeSearch, setStoreSearch] = useState(initialStoreRef);
     const [isSearching, setIsSearching] = useState(false);
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
-    const [selectedStore, setSelectedStore] = useState<any>(null);
+    const [selectedStore, setSelectedStore] = useState<any>(initialSelectedStore);
 
     // Use shared useDebounce hook instead of manual setTimeout
     const debouncedSearch = useDebounce(storeSearch, 500);

@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { useCRMSession } from '@/components/hooks/useCRMSession';
 import './crm.css';
 
 export default function CRMLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
+  const { isAdmin, isLoaded } = useCRMSession();
   
   const [storageInfo, setStorageInfo] = useState<any>({ usedMB: 0, maxMB: 500, percentage: 0 });
   const [isMounted, setIsMounted] = useState(false);
@@ -18,6 +20,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!isAdmin) return;
     const loadStorage = async () => {
       try {
         const res = await fetch('/api/storage-usage');
@@ -28,7 +31,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
       }
     };
     loadStorage();
-  }, []);
+  }, [isAdmin]);
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -114,25 +117,27 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
           </div>
           
           <div className="sidebar-footer dark:bg-[#0f172a] dark:border-gray-700">
-            <div className="storage-status dark:bg-[#0f172a] dark:text-white dark:border-gray-700" id="storageStatus">
-              <div className="storage-label">💾 พื้นที่จัดเก็บ</div>
-              <div className="storage-bar">
-                <div
-                  className="storage-fill"
-                  id="storageFill"
-                  style={{
-                    width: `${Math.min(storageInfo.percentage || 0, 100)}%`,
-                    backgroundColor: (storageInfo.percentage || 0) > 80 ? '#ef4444' : (storageInfo.percentage || 0) > 50 ? '#f59e0b' : '#22c55e',
-                    transition: 'width 0.5s ease, background-color 0.5s ease'
-                  }}
-                ></div>
+            {isAdmin && (
+              <div className="storage-status dark:bg-[#0f172a] dark:text-white dark:border-gray-700" id="storageStatus">
+                <div className="storage-label">💾 พื้นที่จัดเก็บ</div>
+                <div className="storage-bar">
+                  <div
+                    className="storage-fill"
+                    id="storageFill"
+                    style={{
+                      width: `${Math.min(storageInfo.percentage || 0, 100)}%`,
+                      backgroundColor: (storageInfo.percentage || 0) > 80 ? '#ef4444' : (storageInfo.percentage || 0) > 50 ? '#f59e0b' : '#22c55e',
+                      transition: 'width 0.5s ease, background-color 0.5s ease'
+                    }}
+                  ></div>
+                </div>
+                <div className="storage-text" id="storageText">
+                  {storageInfo.usedMB > 0
+                    ? `${storageInfo.usedMB} MB / ${storageInfo.maxMB} MB (${storageInfo.percentage}%)`
+                    : 'กำลังโหลด...'}
+                </div>
               </div>
-              <div className="storage-text" id="storageText">
-                {storageInfo.usedMB > 0
-                  ? `${storageInfo.usedMB} MB / ${storageInfo.maxMB} MB (${storageInfo.percentage}%)`
-                  : 'กำลังโหลด...'}
-              </div>
-            </div>
+            )}
             {/* Theme Toggle */}
             <button className="dark-toggle dark:bg-[#0f172a]" onClick={toggleTheme}>
               {isMounted ? (
