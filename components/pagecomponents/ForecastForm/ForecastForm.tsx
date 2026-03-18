@@ -740,7 +740,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                                 {/* Row 2: Forced Sales and Target */}
                                                 <div className="text-center flex flex-col justify-center min-w-0 border-t border-white/10 pt-2 sm:pt-4 mt-1 sm:mt-2">
                                                     <div className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white mb-0.5 sm:mb-1">บังคับขาย (กก.)</div>
-                                                    <div className="text-base sm:text-3xl font-black text-rose-600 truncate tabular-nums">{group.totalForcedSales.toFixed(1)}</div>
+                                                    <div className="text-lg sm:text-4xl lg:text-5xl  font-black text-rose-600 truncate tabular-nums">{group.totalForcedSales.toFixed(1)}</div>
                                                 </div>
                                                 <div className="text-center flex flex-col justify-center min-w-0 pl-2 sm:pl-4 border-t border-white/10 pt-2 sm:pt-4 mt-1 sm:mt-2">
                                                     <div className="text-[8px] sm:text-xs font-black uppercase tracking-widest text-white/70 mb-0.5 sm:mb-1">เป้าหมาย (กก.)</div>
