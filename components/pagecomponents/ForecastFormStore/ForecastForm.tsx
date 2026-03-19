@@ -470,35 +470,35 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
             {/* --- WEEKLY SUMMARY --- */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 <div className="bg-[#3A7CF6] p-4 sm:p-7 rounded-[1.5rem] sm:rounded-[2.5rem] text-white shadow-xl shadow-blue-500/20 flex flex-col items-center justify-center text-center">
-                    <div className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-blue-100/60 mb-1 sm:mb-2">คาดการณ์สัปดาห์นี้</div>
+                    <div className="text-[10px] sm:text-xs text-white font-black uppercase tracking-[0.2em] text-blue-100/60 mb-1 sm:mb-2">คาดการณ์สัปดาห์นี้</div>
                     <div className="text-2xl sm:text-3xl md:text-4xl font-black drop-shadow-sm tabular-nums">{summary.week.forecast.toLocaleString()}</div>
-                    <div className="text-[8px] sm:text-[10px] font-black text-blue-200/50 mt-1 sm:mt-2 uppercase">Kilograms</div>
+                    <div className="text-[8px] text-white sm:text-[10px] font-black  mt-1 sm:mt-2 uppercase">Kilograms</div>
                 </div>
 
                 <div className="bg-emerald-500 p-4 sm:p-7 rounded-[1.5rem] sm:rounded-[2.5rem] text-white shadow-xl shadow-emerald-500/20 flex flex-col items-center justify-center text-center">
-                    <div className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-emerald-100/60 mb-1 sm:mb-2">ยอดซื้อจริง</div>
+                    <div className="text-[10px] sm:text-xs text-white font-black uppercase tracking-[0.2em] text-emerald-100/60 mb-1 sm:mb-2">ยอดซื้อจริง</div>
                     <div className="text-2xl sm:text-3xl md:text-4xl font-black drop-shadow-sm tabular-nums">{summary.week.actual.toLocaleString()}</div>
-                    <div className="text-[8px] sm:text-[10px] font-black text-emerald-100/50 mt-1 sm:mt-2 uppercase">Kilograms</div>
+                    <div className="text-[8px] text-white sm:text-[10px] font-black  mt-1 sm:mt-2 uppercase">Kilograms</div>
                 </div>
 
                 <div className="bg-rose-500 p-4 sm:p-7 rounded-[1.5rem] sm:rounded-[2.5rem] text-white shadow-xl shadow-rose-500/20 flex flex-col items-center justify-center text-center">
-                    <div className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-rose-100/60 mb-1 sm:mb-2 text-center">ขาดเป้า</div>
-                    <div className="text-2xl sm:text-3xl md:text-4xl font-black drop-shadow-sm tabular-nums">
+                    <div className="text-[10px] sm:text-xs font-black text-white uppercase tracking-[0.2em] text-rose-100/60 mb-1 sm:mb-2 text-center">ขาดเป้า</div>
+                    <div className="text-2xl text-white sm:text-3xl md:text-4xl font-black drop-shadow-sm tabular-nums">
                         {Math.max(0, summary.week.target - summary.week.actual).toLocaleString()}
-                        <span className="text-[10px] ml-1 opacity-70">กก.</span>
+                        <span className="text-[10px] ml-1">กก.</span>
                     </div>
-                    <div className="text-[8px] sm:text-[10px] font-black text-rose-100/50 mt-1 sm:mt-2 uppercase">
+                    <div className="text-[8px] text-white sm:text-[10px] font-black  mt-1 sm:mt-2 uppercase">
                         {summary.week.target > 0 ? (Math.max(0, (summary.week.target - summary.week.actual) / summary.week.target) * 100).toFixed(0) : 0}%
                     </div>
                 </div>
 
                 <div className="bg-blue-600 p-4 sm:p-7 rounded-[1.5rem] sm:rounded-[2.5rem] text-white shadow-xl shadow-blue-600/20 flex flex-col items-center justify-center text-center">
-                    <div className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-blue-100/60 mb-1 sm:mb-2 text-center leading-tight">เกินเป้า</div>
-                    <div className="text-2xl sm:text-3xl md:text-4xl font-black drop-shadow-sm tabular-nums">
+                    <div className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-white mb-1 sm:mb-2 text-center leading-tight">เกินเป้า</div>
+                    <div className="text-2xl text-white sm:text-3xl md:text-4xl font-black drop-shadow-sm tabular-nums">
                         {Math.max(0, summary.week.actual - summary.week.target).toLocaleString()}
-                        <span className="text-[10px] ml-1 opacity-70">กก.</span>
+                        <span className="text-[10px] ml-1">กก.</span>
                     </div>
-                    <div className="text-[8px] sm:text-[10px] font-black text-blue-100/50 mt-1 sm:mt-2 uppercase">
+                    <div className="text-[8px]  text-white sm:text-[10px] font-black  mt-1 sm:mt-2 uppercase">
                         {summary.week.target > 0 ? (Math.max(0, (summary.week.actual - summary.week.target) / summary.week.target) * 100).toFixed(0) : 0}%
                     </div>
                 </div>
@@ -506,31 +506,65 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
 
             {/* --- PRODUCT SUMMARY --- */}
             {summary.products.length > 0 && (
-                <Card className="bg-blue-600 dark:bg-slate-900 text-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-800 rounded-[2rem] overflow-hidden shadow-md">
+                <Card className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-800 rounded-[2rem] overflow-hidden shadow-md">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-base flex  items-center gap-2 text-slate-900 dark:text-white">
                             <ShoppingBag size={18} className="text-orange-500 dark:text-orange-400" />
-                            <span className="text-white">  สรุปตามสินค้า  </span>
+                            <span className="text-black">  สรุปตามสินค้า  </span>
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-0">
-                        <div className=" divide-slate-100 dark:divide-slate-800">
-                            {summary.products.map((p: any, i: number) => (
-                                <div key={i} className="flex justify-between items-center p-4 hover:bg-blue-800 dark:hover:bg-white/5 transition-colors">
-                                    <div className="font-bold text-white dark:text-white ml-2">{p.name}</div>
-                                    <div className="text-right text-xs space-y-1 mr-2">
-                                        <div className="flex gap-4 flex-wrap text-white justify-end">
-                                            <span>บังคับขาย {(Number(p.forcedSales) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-                                            <span>คาดการณ์ {(Number(p.forecast) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-                                            <span>เป้าหมาย {(Number(p.target) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-                                            <span>ซื้อจริง {(Number(p.actual) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                    <CardContent className="p-6 sm:p-8">
+                        <div className="space-y-6">
+                            {summary.products.map((p: any, i: number) => {
+                                const diff = p.actual - p.target;
+                                return (
+                                    <div key={i} className="flex flex-col xl:flex-row xl:items-center justify-between p-6 rounded-[2.5rem] bg-slate-50/50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800/50 hover:shadow-xl transition-all duration-500 group/product-row gap-6">
+                                        <div className="flex items-center gap-4 shrink-0">
+                                            <div className="h-14 w-14 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center text-orange-500 shadow-sm border border-slate-100 dark:border-slate-800 group-hover/product-row:scale-110 transition-transform duration-500">
+                                                <ShoppingBag size={28} />
+                                            </div>
+                                            <div>
+                                                <div className="font-black text-slate-900 dark:text-white text-2xl tracking-tight leading-tight">{p.name}</div>
+                                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Product Analytics</div>
+                                            </div>
                                         </div>
-                                        <div className={cn("font-bold text-sm", (p.actual - p.target) >= 0 ? "text-emerald-500 dark:text-emerald-400" : "text-rose-400 dark:text-rose-400")}>
-                                            ส่วนต่าง {(p.actual - p.target) > 0 ? "+" : ""}{(Number((p.actual - p.target).toFixed(2))).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 w-full xl:w-auto">
+                                            {/* 1. บังคับขาย */}
+                                            <div className="bg-rose-500 p-4 sm:p-6 rounded-[2rem] text-white shadow-lg shadow-rose-500/20 flex flex-col items-center justify-center text-center transition-transform hover:scale-[1.03] duration-300 min-w-[140px]">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-white mb-1.5 px-2">บังคับขาย</div>
+                                                <div className="text-xl sm:text-3xl font-black drop-shadow-sm tabular-nums">{(Number(p.forcedSales) || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}</div>
+                                            </div>
+
+                                            {/* 2. คาดการณ์ */}
+                                            <div className="bg-[#3A7CF6] p-4 sm:p-6 rounded-[2rem] text-white shadow-lg shadow-blue-500/20 flex flex-col items-center justify-center text-center transition-transform hover:scale-[1.03] duration-300 min-w-[140px]">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-white mb-1.5 px-2 line-clamp-1">คาดการณ์</div>
+                                                <div className="text-xl sm:text-3xl font-black drop-shadow-sm tabular-nums">{(Number(p.forecast) || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}</div>
+                                            </div>
+
+                                            {/* 3. เป้าหมาย */}
+                                            <div className="bg-amber-500 p-4 sm:p-6 rounded-[2rem] text-white shadow-lg shadow-amber-500/20 flex flex-col items-center justify-center text-center transition-transform hover:scale-[1.03] duration-300 min-w-[140px]">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-white mb-1.5 px-2">เป้าหมาย</div>
+                                                <div className="text-xl sm:text-3xl font-black drop-shadow-sm tabular-nums">{(Number(p.target) || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}</div>
+                                            </div>
+
+                                            {/* 4. ซื้อจริง */}
+                                            <div className="bg-emerald-500 p-4 sm:p-6 rounded-[2rem] text-white shadow-lg shadow-emerald-500/20 flex flex-col items-center justify-center text-center transition-transform hover:scale-[1.03] duration-300 min-w-[140px]">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-white mb-1.5 px-2">ซื้อจริง</div>
+                                                <div className="text-xl sm:text-3xl font-black drop-shadow-sm tabular-nums">{(Number(p.actual) || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}</div>
+                                            </div>
+
+                                            {/* 5. ส่วนต่าง */}
+                                            <div className="bg-rose-500 p-4 sm:p-6 rounded-[2rem] text-white shadow-lg shadow-rose-500/20 flex flex-col items-center justify-center text-center transition-transform hover:scale-[1.03] duration-300 min-w-[140px]">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-white mb-1.5 px-2">ส่วนต่าง</div>
+                                                <div className={cn("text-xl sm:text-3xl font-black drop-shadow-sm tabular-nums", diff >= 0 ? "text-emerald-300" : "text-white")}>
+                                                    {diff > 0 ? "+" : ""}{(Number(diff.toFixed(2))).toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </CardContent>
                 </Card>
