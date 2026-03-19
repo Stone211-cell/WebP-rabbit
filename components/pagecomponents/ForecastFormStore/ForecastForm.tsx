@@ -506,25 +506,26 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
 
             {/* --- PRODUCT SUMMARY --- */}
             {summary.products.length > 0 && (
-                <Card className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-800 rounded-[2rem] overflow-hidden shadow-sm">
+                <Card className="bg-blue-600 dark:bg-slate-900 text-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-800 rounded-[2rem] overflow-hidden shadow-md">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex items-center gap-2 text-slate-900 dark:text-white">
-                            <ShoppingBag size={18} className="text-orange-500 dark:text-orange-400" /> สรุปตามสินค้า
+                        <CardTitle className="text-base flex  items-center gap-2 text-slate-900 dark:text-white">
+                            <ShoppingBag size={18} className="text-orange-500 dark:text-orange-400" />
+                            <span className="text-white">  สรุปตามสินค้า  </span>
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                        <div className=" divide-slate-100 dark:divide-slate-800">
                             {summary.products.map((p: any, i: number) => (
-                                <div key={i} className="flex justify-between items-center p-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                                    <div className="font-bold text-slate-900 dark:text-white ml-2">{p.name}</div>
+                                <div key={i} className="flex justify-between items-center p-4 hover:bg-blue-800 dark:hover:bg-white/5 transition-colors">
+                                    <div className="font-bold text-white dark:text-white ml-2">{p.name}</div>
                                     <div className="text-right text-xs space-y-1 mr-2">
-                                        <div className="flex gap-4 opacity-70 flex-wrap justify-end">
+                                        <div className="flex gap-4 flex-wrap text-white justify-end">
                                             <span>บังคับขาย {(Number(p.forcedSales) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                                             <span>คาดการณ์ {(Number(p.forecast) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                                             <span>เป้าหมาย {(Number(p.target) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                                             <span>ซื้อจริง {(Number(p.actual) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                                         </div>
-                                        <div className={cn("font-bold text-sm", (p.actual - p.target) >= 0 ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400")}>
+                                        <div className={cn("font-bold text-sm", (p.actual - p.target) >= 0 ? "text-emerald-500 dark:text-emerald-400" : "text-rose-400 dark:text-rose-400")}>
                                             ส่วนต่าง {(p.actual - p.target) > 0 ? "+" : ""}{(Number((p.actual - p.target).toFixed(2))).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                         </div>
                                     </div>
@@ -640,8 +641,8 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
 
                                         <div className="flex flex-row items-center justify-center gap-12 sm:gap-20">
                                             <div className="flex flex-col items-center justify-center flex-1 min-w-0">
-                                                <span className="text-[16px] font-black text-emerald-500 uppercase tracking-widest mb-1.5 whitespace-nowrap">เกินเป้า</span>
-                                                <div className="text-3xl font-black text-emerald-500 truncate">{groupExceed.toFixed(1)}</div>
+                                                <span className="text-[16px] font-black text-green-500 uppercase tracking-widest mb-1.5 whitespace-nowrap">เกินเป้า</span>
+                                                <div className="text-3xl font-black text-green-500 truncate">{groupExceed.toFixed(1)}</div>
                                             </div>
                                             <div className="w-px h-10 bg-slate-200 dark:bg-slate-800/50 shrink-0"></div>
                                             <div className="flex flex-col items-center justify-center flex-1 min-w-0">
@@ -712,16 +713,16 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                                         ) : (
                                                             <div>
                                                                 <div className="flex justify-between items-end mb-1.5 px-1">
-                                                                    <span className="text-[12px] font-black text-blue-500 uppercase tracking-widest truncate">
-                                                                        {f.targetWeek && f.actual > f.targetWeek ? `เกินเป้า ${(f.actual - f.targetWeek).toFixed(1)} กก.` : "ถึงเป้าหมาย"}
+                                                                    <span className="text-[12px] font-black text-green-500 uppercase tracking-widest truncate">
+                                                                        {f.targetWeek && f.actual > f.targetWeek ? `เกินเป้า ${(f.actual - f.targetWeek).toFixed(1)} กก. (+${((f.actual - f.targetWeek) / f.targetWeek * 100).toFixed(0)}%)` : "ถึงเป้าหมาย"}
                                                                     </span>
-                                                                    <span className="text-[12px] font-black text-blue-600 dark:text-blue-400">
+                                                                    <span className="text-[12px] font-black text-green-600 dark:text-green-400">
                                                                         {f.targetWeek && f.targetWeek > 0 ? ((f.actual / f.targetWeek) * 100).toFixed(0) : 100}%
                                                                     </span>
                                                                 </div>
                                                                 <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[1px]">
                                                                     <div
-                                                                        className="h-full bg-blue-500 rounded-full transition-all duration-1000"
+                                                                        className="h-full bg-green-500 rounded-full transition-all duration-1000"
                                                                         style={{ width: `${Math.min(f.targetWeek && f.targetWeek > 0 ? (f.actual / f.targetWeek) * 100 : 100, 100)}%` }}
                                                                     />
                                                                 </div>

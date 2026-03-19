@@ -846,10 +846,10 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                                                     {tActual >= item.targetWeek && (
                                                                         <div>
                                                                             <div className="flex justify-between items-end mb-0.5 sm:mb-1 px-1">
-                                                                                <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-blue-500 uppercase tracking-widest truncate">
-                                                                                    {tActual > item.targetWeek ? `เกินเป้า ${(tActual - item.targetWeek).toFixed(1)} กก.` : "ถึงเป้าหมาย"}
+                                                                                <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-green-500 uppercase tracking-widest truncate">
+                                                                                    {tActual > item.targetWeek ? `เกินเป้า ${(tActual - item.targetWeek).toFixed(1)} กก. (+${item.targetWeek > 0 ? ((tActual - item.targetWeek) / item.targetWeek * 100).toFixed(0) : 0}%)` : "ถึงเป้าหมาย"}
                                                                                 </span>
-                                                                                <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-blue-600 dark:text-blue-400 shrink-0 ml-1 sm:ml-2">
+                                                                                <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-green-600 dark:text-green-400 shrink-0 ml-1 sm:ml-2">
                                                                                     <div className="flex flex-col items-end">
                                                                                         <span>{item.targetWeek > 0 ? ((tActual / item.targetWeek) * 100).toFixed(0) : 100}%</span>
                                                                                     </div>
@@ -857,7 +857,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                                                             </div>
                                                                             <div className="h-0.5 sm:h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[0.5px] sm:p-[1px]">
                                                                                 <div
-                                                                                    className="h-full bg-blue-500 rounded-full transition-all duration-1000"
+                                                                                    className="h-full bg-green-500 rounded-full transition-all duration-1000"
                                                                                     style={{ width: `${Math.min(item.targetWeek > 0 ? (tActual / item.targetWeek) * 100 : 100, 100)}%` }}
                                                                                 />
                                                                             </div>
