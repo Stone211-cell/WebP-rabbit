@@ -283,7 +283,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
 
             // Close dialog immediately to feel fast
             resetForm()
-            
+
             // Refresh data in background
             if (onRefresh) onRefresh()
         } catch (error: any) {
@@ -351,12 +351,12 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
         });
 
         return {
-            week: { 
-                target: weekTarget, 
-                forecast: weekForecast, 
-                forcedSales: weekForcedSales, 
-                actual: weekActual, 
-                diff: weekActual - weekForecast,
+            week: {
+                target: weekTarget,
+                forecast: weekForecast,
+                forcedSales: weekForcedSales,
+                actual: weekActual,
+                diff: weekActual - weekTarget,
                 forcedSalesDiff: weekActual - weekForcedSales
             },
             month: {
@@ -364,7 +364,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                 actual: monthActual,
                 forecast: monthForecast,
                 forcedSales: monthForcedSales,
-                diff: monthActual - monthForecast
+                diff: monthActual - monthTarget
             },
             products: Array.from(productsMap.values())
         };
@@ -446,7 +446,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                         <div className="text-4xl sm:text-5xl font-black tracking-tight drop-shadow-sm">{summary.month.forecast.toLocaleString()}</div>
                         <div className="text-[10px] font-black text-indigo-200/50 mt-2 uppercase tracking-widest">Kg / Month</div>
                     </div>
-                    
+
                     <div className="bg-white/10 backdrop-blur-md rounded-[2rem] p-7 border border-white/10 text-center flex flex-col justify-center">
                         <div className="text-xs font-black uppercase tracking-[0.2em] text-emerald-100/60 mb-2">ซื้อรวมได้</div>
                         <div className="text-4xl sm:text-5xl font-black tracking-tight text-white drop-shadow-sm">{summary.month.actual.toLocaleString()}</div>
@@ -484,22 +484,22 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                 <div className="bg-rose-500 p-4 sm:p-7 rounded-[1.5rem] sm:rounded-[2.5rem] text-white shadow-xl shadow-rose-500/20 flex flex-col items-center justify-center text-center">
                     <div className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-rose-100/60 mb-1 sm:mb-2 text-center">ขาดเป้า</div>
                     <div className="text-2xl sm:text-3xl md:text-4xl font-black drop-shadow-sm tabular-nums">
-                        {Math.max(0, summary.week.forcedSales - summary.week.actual).toLocaleString()} 
+                        {Math.max(0, summary.week.target - summary.week.actual).toLocaleString()}
                         <span className="text-[10px] ml-1 opacity-70">กก.</span>
                     </div>
                     <div className="text-[8px] sm:text-[10px] font-black text-rose-100/50 mt-1 sm:mt-2 uppercase">
-                        {summary.week.forcedSales > 0 ? (Math.max(0, (summary.week.forcedSales - summary.week.actual) / summary.week.forcedSales) * 100).toFixed(0) : 0}%
+                        {summary.week.target > 0 ? (Math.max(0, (summary.week.target - summary.week.actual) / summary.week.target) * 100).toFixed(0) : 0}%
                     </div>
                 </div>
 
                 <div className="bg-blue-600 p-4 sm:p-7 rounded-[1.5rem] sm:rounded-[2.5rem] text-white shadow-xl shadow-blue-600/20 flex flex-col items-center justify-center text-center">
                     <div className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-blue-100/60 mb-1 sm:mb-2 text-center leading-tight">เกินเป้า</div>
                     <div className="text-2xl sm:text-3xl md:text-4xl font-black drop-shadow-sm tabular-nums">
-                        {Math.max(0, summary.week.actual - summary.week.forcedSales).toLocaleString()}
+                        {Math.max(0, summary.week.actual - summary.week.target).toLocaleString()}
                         <span className="text-[10px] ml-1 opacity-70">กก.</span>
                     </div>
                     <div className="text-[8px] sm:text-[10px] font-black text-blue-100/50 mt-1 sm:mt-2 uppercase">
-                        {summary.week.forcedSales > 0 ? (Math.max(0, (summary.week.actual - summary.week.forcedSales) / summary.week.forcedSales) * 100).toFixed(0) : 0}%
+                        {summary.week.target > 0 ? (Math.max(0, (summary.week.actual - summary.week.target) / summary.week.target) * 100).toFixed(0) : 0}%
                     </div>
                 </div>
             </div>
@@ -521,10 +521,11 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                         <div className="flex gap-4 opacity-70 flex-wrap justify-end">
                                             <span>บังคับขาย {(Number(p.forcedSales) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                                             <span>คาดการณ์ {(Number(p.forecast) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                                            <span>เป้าหมาย {(Number(p.target) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                                             <span>ซื้อจริง {(Number(p.actual) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                                         </div>
-                                        <div className={cn("font-bold text-sm", (p.actual - p.forcedSales) >= 0 ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400")}>
-                                            ส่วนต่าง {(p.actual - p.forcedSales) > 0 ? "+" : ""}{(Number((p.actual - p.forcedSales).toFixed(2))).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                        <div className={cn("font-bold text-sm", (p.actual - p.target) >= 0 ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400")}>
+                                            ส่วนต่าง {(p.actual - p.target) > 0 ? "+" : ""}{(Number((p.actual - p.target).toFixed(2))).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                         </div>
                                     </div>
                                 </div>
@@ -578,170 +579,184 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
 
                 {groupedForecasts.length > 0 ? (
                     <div className="grid grid-cols-2 gap-6 lg:gap-10">
-                        {groupedForecasts.map((group: any) => (
-                            <div key={group.store?.id || Math.random()} className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 sm:p-8 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-500 group/store-container">
-                                {/* Store Group Header */}
-                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 px-1">
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-14 w-14 bg-[#3A7CF6] rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-blue-500/20">
-                                            {group.store?.name?.charAt(0) || "?"}
+                        {groupedForecasts.map((group: any) => {
+                            const groupForecast = group.items.reduce((acc: number, item: any) => acc + (item.forecast || 0), 0);
+                            const groupActual = group.items.reduce((acc: number, item: any) => acc + (item.actual || 0), 0);
+                            const groupForced = group.items.reduce((acc: number, item: any) => acc + (item.forcedSales || 0), 0);
+                            const groupTarget = group.items.reduce((acc: number, item: any) => acc + (item.targetWeek || 0), 0);
+                            const groupExceed = groupActual > groupTarget ? groupActual - groupTarget : 0;
+                            const groupMiss = groupActual < groupTarget ? groupTarget - groupActual : 0;
+
+                            return (
+                                <div key={group.store?.id || Math.random()} className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 sm:p-8 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-500 group/store-container">
+                                    {/* Store Group Header */}
+                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 px-1">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-14 w-14 bg-[#3A7CF6] rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-blue-500/20">
+                                                {group.store?.name?.charAt(0) || "?"}
+                                            </div>
+                                            <div>
+                                                <h4 className="text-3xl font-black text-slate-900 dark:text-white leading-tight mb-1">{group.store?.name}</h4>
+                                                <div className="flex items-center gap-3">
+                                                    <Badge variant="outline" className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono text-[11px] font-black uppercase tracking-wider">
+                                                        {group.store?.code}
+                                                    </Badge>
+                                                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{group.items.length} สินค้าในรายการ</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h4 className="text-3xl font-black text-slate-900 dark:text-white leading-tight mb-1">{group.store?.name}</h4>
-                                            <div className="flex items-center gap-3">
-                                                <Badge variant="outline" className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono text-[11px] font-black uppercase tracking-wider">
-                                                    {group.store?.code}
-                                                </Badge>
-                                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{group.items.length} สินค้าในรายการ</span>
+                                        {isAdmin && (
+                                            <Button
+                                                onClick={() => handleAddProduct(group.store)}
+                                                size="sm"
+                                                className="bg-slate-50 dark:bg-slate-800 hover:bg-blue-500 hover:text-white text-blue-600 dark:text-blue-400 font-black rounded-xl px-6 h-11 transition-all border border-slate-100 dark:border-slate-700 shadow-sm"
+                                            >
+                                                <Plus size={18} className="mr-1.5" /> เพิ่มสินค้า
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    <div className="bg-slate-50/50 dark:bg-slate-950/30 p-6 rounded-[2rem] border border-slate-50 dark:border-slate-800 mb-8">
+                                        <div className="grid grid-cols-2 gap-y-6 sm:gap-y-8 divide-x divide-slate-200 dark:divide-slate-800/50">
+                                            <div className="flex flex-col items-center justify-center text-center px-2">
+                                                <span className="text-[14px] font-black text-slate-400 uppercase tracking-widest mb-1.5">จริงรวม</span>
+                                                <span className="text-3xl font-black text-slate-900 dark:text-white">{groupActual.toFixed(1)}</span>
+                                            </div>
+                                            <div className="flex flex-col items-center justify-center text-center pl-4 border-l border-slate-200 dark:border-slate-800/50 px-2">
+                                                <span className="text-[14px] font-black text-blue-500 uppercase tracking-widest mb-1.5">คาดการณ์รวม</span>
+                                                <span className="text-3xl font-black text-blue-600 dark:text-blue-400">{groupForecast.toFixed(1)}</span>
+                                            </div>
+                                            <div className="flex flex-col items-center justify-center text-center pt-4 border-t border-slate-200 dark:border-slate-800/50 px-2">
+                                                <span className="text-[14px] font-black text-rose-500 uppercase tracking-widest mb-1.5">บังคับขายรวม</span>
+                                                <span className="text-3xl font-black text-rose-600">{groupForced.toFixed(1)}</span>
+                                            </div>
+                                            <div className="flex flex-col items-center justify-center text-center pl-4 pt-4 border-t border-l border-slate-200 dark:border-slate-800/50 px-2">
+                                                <span className="text-[14px] font-black text-slate-400 uppercase tracking-widest mb-1.5">เป้าหมายรวม</span>
+                                                <span className="text-3xl font-black text-slate-400/50">{(group.items.reduce((acc: number, item: any) => acc + (item.targetWeek || 0), 0)).toFixed(1)}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="h-px bg-slate-200 dark:bg-slate-800/50 w-full my-6"></div>
+
+                                        <div className="flex flex-row items-center justify-center gap-12 sm:gap-20">
+                                            <div className="flex flex-col items-center justify-center flex-1 min-w-0">
+                                                <span className="text-[16px] font-black text-emerald-500 uppercase tracking-widest mb-1.5 whitespace-nowrap">เกินเป้า</span>
+                                                <div className="text-3xl font-black text-emerald-500 truncate">{groupExceed.toFixed(1)}</div>
+                                            </div>
+                                            <div className="w-px h-10 bg-slate-200 dark:bg-slate-800/50 shrink-0"></div>
+                                            <div className="flex flex-col items-center justify-center flex-1 min-w-0">
+                                                <span className="text-[16px] font-black text-rose-500 uppercase tracking-widest mb-1.5 whitespace-nowrap">ขาดเป้า</span>
+                                                <div className="text-3xl font-black text-rose-500 truncate">{groupMiss.toFixed(1)}</div>
                                             </div>
                                         </div>
                                     </div>
-                                    {isAdmin && (
-                                        <Button
-                                            onClick={() => handleAddProduct(group.store)}
-                                            size="sm"
-                                            className="bg-slate-50 dark:bg-slate-800 hover:bg-blue-500 hover:text-white text-blue-600 dark:text-blue-400 font-black rounded-xl px-6 h-11 transition-all border border-slate-100 dark:border-slate-700 shadow-sm"
-                                        >
-                                            <Plus size={18} className="mr-1.5" /> เพิ่มสินค้า
-                                        </Button>
-                                    )}
-                                </div>
 
-                                {(() => {
-                                    const groupForecast = group.items.reduce((acc: number, item: any) => acc + (item.forecast || 0), 0);
-                                    const groupActual = group.items.reduce((acc: number, item: any) => acc + (item.actual || 0), 0);
-                                    const groupForced = group.items.reduce((acc: number, item: any) => acc + (item.forcedSales || 0), 0);
-                                    const groupExceed = groupActual > groupForced ? groupActual - groupForced : 0;
-                                    const groupMiss = groupActual < groupForced ? groupForced - groupActual : 0;
-
-                                    return (
-                                        <div className="bg-slate-50/50 dark:bg-slate-950/30 p-6 rounded-[2rem] border border-slate-50 dark:border-slate-800 mb-8">
-                                            <div className="grid grid-cols-2 gap-y-6 sm:gap-y-8 divide-x divide-slate-200 dark:divide-slate-800/50">
-                                                <div className="flex flex-col items-center justify-center text-center px-2">
-                                                    <span className="text-[14px] font-black text-slate-400 uppercase tracking-widest mb-1.5">จริงรวม</span>
-                                                    <span className="text-3xl font-black text-slate-900 dark:text-white">{groupActual.toFixed(1)}</span>
-                                                </div>
-                                                <div className="flex flex-col items-center justify-center text-center pl-4 border-l border-slate-200 dark:border-slate-800/50 px-2">
-                                                    <span className="text-[14px] font-black text-blue-500 uppercase tracking-widest mb-1.5">คาดการณ์รวม</span>
-                                                    <span className="text-3xl font-black text-blue-600 dark:text-blue-400">{groupForecast.toFixed(1)}</span>
-                                                </div>
-                                                <div className="flex flex-col items-center justify-center text-center pt-4 border-t border-slate-200 dark:border-slate-800/50 px-2">
-                                                    <span className="text-[14px] font-black text-rose-500 uppercase tracking-widest mb-1.5">บังคับขายรวม</span>
-                                                    <span className="text-3xl font-black text-rose-600">{groupForced.toFixed(1)}</span>
-                                                </div>
-                                                <div className="flex flex-col items-center justify-center text-center pl-4 pt-4 border-t border-l border-slate-200 dark:border-slate-800/50 px-2">
-                                                    <span className="text-[14px] font-black text-slate-400 uppercase tracking-widest mb-1.5">เป้าหมายรวม</span>
-                                                    <span className="text-3xl font-black text-slate-400/50">{(group.items.reduce((acc: number, item: any) => acc + (item.targetWeek || 0), 0)).toFixed(1)}</span>
-                                                </div>
-                                            </div>
-
-                                            <div className="h-px bg-slate-200 dark:bg-slate-800/50 w-full my-6"></div>
-
-                                            <div className="flex flex-row items-center justify-center gap-12 sm:gap-20">
-                                                <div className="flex flex-col items-center justify-center flex-1 min-w-0">
-                                                    <span className="text-[16px] font-black text-emerald-500 uppercase tracking-widest mb-1.5 whitespace-nowrap">เกินเป้า</span>
-                                                    <div className="text-3xl font-black text-emerald-500 truncate">{groupExceed.toFixed(1)}</div>
-                                                </div>
-                                                <div className="w-px h-10 bg-slate-200 dark:bg-slate-800/50 shrink-0"></div>
-                                                <div className="flex flex-col items-center justify-center flex-1 min-w-0">
-                                                    <span className="text-[16px] font-black text-rose-500 uppercase tracking-widest mb-1.5 whitespace-nowrap">ขาดเป้า</span>
-                                                    <div className="text-3xl font-black text-rose-500 truncate">{groupMiss.toFixed(1)}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })()}
-
-                                {/* Items Grid */}
-                                <div className="grid grid-cols-1 gap-5">
-                                    {group.items.map((f: any) => {
-                                        const diff = (f.actual || 0) - (f.forecast || 0);
-                                        const tActual = safeFloat(f.actual);
-                                        return (
-                                            <div key={f.id} className="relative flex flex-col p-6 rounded-[2rem] bg-slate-50/50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/80 shadow-sm hover:shadow-xl hover:border-blue-500/20 transition-all duration-300 group/item-row">
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div>
-                                                        <h4 className="text-xl font-black text-slate-800 dark:text-slate-100 leading-tight mb-1">{f.product}</h4>
-                                                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{f.productType}</div>
+                                    {/* Items Grid */}
+                                    <div className="grid grid-cols-1 gap-5">
+                                        {group.items.map((f: any) => {
+                                            const diff = (f.actual || 0) - (f.forecast || 0);
+                                            const tActual = safeFloat(f.actual);
+                                            return (
+                                                <div key={f.id} className="relative flex flex-col p-6 rounded-[2rem] bg-slate-50/50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/80 shadow-sm hover:shadow-xl hover:border-blue-500/20 transition-all duration-300 group/item-row">
+                                                    <div className="flex justify-between items-start mb-4">
+                                                        <div>
+                                                            <h4 className="text-xl font-black text-slate-800 dark:text-slate-100 leading-tight mb-1">{f.product}</h4>
+                                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{f.productType}</div>
+                                                        </div>
+                                                        {isAdmin && (
+                                                            <div className="flex gap-2">
+                                                                <Button size="icon" variant="ghost" className="h-9 w-9 bg-white dark:bg-slate-900 rounded-xl text-blue-500 border border-slate-100 dark:border-slate-800" onClick={() => handleEdit(f)}>
+                                                                    <Edit2 size={16} />
+                                                                </Button>
+                                                                <Button size="icon" variant="ghost" className="h-9 w-9 bg-white dark:bg-slate-900 rounded-xl text-rose-500 border border-slate-100 dark:border-slate-800 hover:bg-rose-50 dark:hover:bg-rose-500/10" onClick={() => handleDelete(f.id)}>
+                                                                    <Trash2 size={16} />
+                                                                </Button>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    {isAdmin && (
-                                                        <div className="flex gap-2">
-                                                            <Button size="icon" variant="ghost" className="h-9 w-9 bg-white dark:bg-slate-900 rounded-xl text-blue-500 border border-slate-100 dark:border-slate-800" onClick={() => handleEdit(f)}>
-                                                                <Edit2 size={16} />
-                                                            </Button>
-                                                            <Button size="icon" variant="ghost" className="h-9 w-9 bg-white dark:bg-slate-900 rounded-xl text-rose-500 border border-slate-100 dark:border-slate-800 hover:bg-rose-50 dark:hover:bg-rose-500/10" onClick={() => handleDelete(f.id)}>
-                                                                <Trash2 size={16} />
-                                                            </Button>
+
+                                                    <div className="grid grid-cols-3 gap-1 bg-white dark:bg-slate-900 p-2 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 mb-5 text-center">
+                                                        <div>
+                                                            <span className="block text-[10px] sm:text-[12px] font-black text-slate-400 uppercase tracking-tighter mb-1">เป้า (Week)</span>
+                                                            <span className="text-sm sm:text-xl font-black text-slate-800 dark:text-white tabular-nums">{f.targetWeek?.toFixed(1) || "0.0"}</span>
+                                                        </div>
+                                                        <div className="border-x border-slate-100 dark:border-slate-800">
+                                                            <span className="block text-[10px] sm:text-[12px] font-black text-slate-400 uppercase tracking-tighter mb-1">ซื้อจริง</span>
+                                                            <span className="text-sm sm:text-xl font-black text-emerald-500 tabular-nums">{f.actual?.toFixed(1) || "0.0"}</span>
+                                                        </div>
+                                                        <div>
+                                                            <span className="block text-[10px] sm:text-[12px] font-black text-slate-400 uppercase tracking-tighter mb-1">ส่วนต่าง</span>
+                                                            <span className={cn("text-sm sm:text-xl font-black tabular-nums", (f.actual - f.targetWeek) >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                                                {(f.actual - f.targetWeek) > 0 ? "+" : ""}{(f.actual - f.targetWeek).toFixed(1)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-4">
+                                                        {/* Target vs Actual Status Bar */}
+                                                        {f.targetWeek && f.actual < f.targetWeek ? (
+                                                            <div>
+                                                                <div className="flex justify-between items-end mb-1.5 px-1">
+                                                                    <span className="text-[12px] font-black text-rose-500 uppercase tracking-widest truncate">ขาดเป้า {(f.targetWeek - f.actual).toFixed(1)} กก.</span>
+                                                                    <span className="text-[12px] font-black text-rose-600 dark:text-rose-400">
+                                                                        {((f.actual / f.targetWeek) * 100).toFixed(0)}%
+                                                                    </span>
+                                                                </div>
+                                                                <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[1px]">
+                                                                    <div
+                                                                        className="h-full bg-rose-500 rounded-full transition-all duration-1000"
+                                                                        style={{ width: `${Math.min((f.actual / f.targetWeek) * 100, 100)}%` }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div>
+                                                                <div className="flex justify-between items-end mb-1.5 px-1">
+                                                                    <span className="text-[12px] font-black text-blue-500 uppercase tracking-widest truncate">
+                                                                        {f.targetWeek && f.actual > f.targetWeek ? `เกินเป้า ${(f.actual - f.targetWeek).toFixed(1)} กก.` : "ถึงเป้าหมาย"}
+                                                                    </span>
+                                                                    <span className="text-[12px] font-black text-blue-600 dark:text-blue-400">
+                                                                        {f.targetWeek && f.targetWeek > 0 ? ((f.actual / f.targetWeek) * 100).toFixed(0) : 100}%
+                                                                    </span>
+                                                                </div>
+                                                                <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[1px]">
+                                                                    <div
+                                                                        className="h-full bg-blue-500 rounded-full transition-all duration-1000"
+                                                                        style={{ width: `${Math.min(f.targetWeek && f.targetWeek > 0 ? (f.actual / f.targetWeek) * 100 : 100, 100)}%` }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Forecast Contribution Bar */}
+                                                        <div>
+                                                            <div className="flex justify-between items-end mb-1.5 px-1">
+                                                                <span className="text-[12px] font-black text-blue-500 uppercase tracking-widest truncate">คาดการณ์รวม {groupForecast.toFixed(1)}</span>
+                                                                <span className="text-[12px] font-black text-blue-600 dark:text-blue-400">
+                                                                    {groupForecast > 0 ? ((f.forecast / groupForecast) * 100).toFixed(0) : 0}%
+                                                                </span>
+                                                            </div>
+                                                            <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[1px]">
+                                                                <div
+                                                                    className="h-full bg-blue-500 rounded-full transition-all duration-1000"
+                                                                    style={{ width: `${Math.min(groupForecast > 0 ? (f.forecast / groupForecast) * 100 : 0, 100)}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {f.notes && (
+                                                        <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800/50">
+                                                            <div className="text-[10px] font-medium text-slate-400 italic">“ {f.notes} ”</div>
                                                         </div>
                                                     )}
                                                 </div>
-
-                                                <div className="grid grid-cols-3 gap-1 bg-white dark:bg-slate-900 p-2 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-100 dark:border-slate-800 mb-5 text-center">
-                                                    <div>
-                                                        <span className="block text-[10px] sm:text-[12px] font-black text-slate-400 uppercase tracking-tighter mb-1">คาดการณ์</span>
-                                                        <span className="text-sm sm:text-xl font-black text-blue-500 tabular-nums">{f.forecast?.toFixed(1) || "0.0"}</span>
-                                                    </div>
-                                                    <div className="border-x border-slate-100 dark:border-slate-800">
-                                                        <span className="block text-[10px] sm:text-[12px] font-black text-slate-400 uppercase tracking-tighter mb-1">ซื้อจริง</span>
-                                                        <span className="text-sm sm:text-xl font-black text-emerald-500 tabular-nums">{f.actual?.toFixed(1) || "0.0"}</span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="block text-[10px] sm:text-[12px] font-black text-slate-400 uppercase tracking-tighter mb-1">ส่วนต่าง</span>
-                                                        <span className={cn("text-sm sm:text-xl font-black tabular-nums", diff >= 0 ? "text-emerald-500" : "text-rose-500")}>
-                                                            {diff > 0 ? "+" : ""}{diff.toFixed(1)}
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-4">
-                                                    <div className="space-y-1.5">
-                                                        <div className="flex justify-between items-end px-1">
-                                                            <div className="flex flex-col">
-                                                                <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none">ขาดเป้า (กก.)</span>
-                                                                <span className="text-[14px] font-black text-rose-600">{Math.max(0, (f.forcedSales || 0) - (f.actual || 0)).toFixed(1)}</span>
-                                                            </div>
-                                                            <span className="text-sm font-black text-rose-500">
-                                                                {f.forcedSales && f.forcedSales > 0 ? (Math.max(0, (f.forcedSales - f.actual) / f.forcedSales) * 100).toFixed(0) : 0}%
-                                                            </span>
-                                                        </div>
-                                                        <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[1px]">
-                                                            <div
-                                                                className="h-full bg-rose-500 rounded-full transition-all duration-1000"
-                                                                style={{ width: `${Math.min(f.forcedSales && f.forcedSales > 0 ? (Math.max(0, f.forcedSales - f.actual) / f.forcedSales) * 100 : 0, 100)}%` }}
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="space-y-1.5">
-                                                        <div className="flex justify-between items-end px-1">
-                                                            <div className="flex flex-col">
-                                                                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest leading-none">เกินเป้า (กก.)</span>
-                                                                <span className="text-[14px] font-black text-blue-600">{Math.max(0, (f.actual || 0) - (f.forcedSales || 0)).toFixed(1)}</span>
-                                                            </div>
-                                                            <span className="text-sm font-black text-blue-500">
-                                                                {f.forcedSales && f.forcedSales > 0 ? (Math.max(0, (f.actual - f.forcedSales) / f.forcedSales) * 100).toFixed(0) : 0}%
-                                                            </span>
-                                                        </div>
-                                                        <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[1px]">
-                                                            <div
-                                                                className="h-full bg-blue-500 rounded-full transition-all duration-1000"
-                                                                style={{ width: `${Math.min(f.forcedSales && f.forcedSales > 0 ? (Math.max(0, f.actual - f.forcedSales) / f.forcedSales) * 100 : 0, 100)}%` }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {f.notes && (
-                                                    <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800/50">
-                                                        <div className="text-[10px] font-medium text-slate-400 italic">“ {f.notes} ”</div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 ) : (
                     <div className="text-center py-20 bg-slate-50 dark:bg-slate-800/20 rounded-[2rem] border-2 border-dashed border-slate-200 dark:border-slate-800">

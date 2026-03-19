@@ -92,7 +92,7 @@ interface SelectedTargetStore {
     actual?: number;
 }
 
-function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onChangeForecast, onChangeForcedSales, onChangeActual, onRemove }: any) {
+function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onChangeForecast, onChangeForcedSales, onChangeActual, onRemove, totalForecast }: any) {
     const {
         storeSearch,
         setStoreSearch,
@@ -142,7 +142,14 @@ function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onCha
                 </div>
 
                 <div className="flex flex-col gap-1.5  w-full lg:w-32">
-                    <Label className="text-[12px] sm:text-[12px] font-black text-blue-600 dark:text-blue-400 mx-1 lg:text-center flex flex-row gap-1 uppercase tracking-wider text-inline">คาดการณ์ (กก.)</Label>
+                    <div className="flex justify-between items-center px-1">
+                        <Label className="text-[12px] sm:text-[12px] font-black text-blue-600 dark:text-blue-400 lg:text-center uppercase tracking-wider text-inline">คาดการณ์ (กก.)</Label>
+                        {(safeFloat(storeItem.forecast) > 0 && totalForecast > 0) ? (
+                            <span className="text-[9px] font-black text-blue-500 bg-blue-500/10 px-1 rounded-full border border-blue-500/20">
+                                {((safeFloat(storeItem.forecast) / totalForecast) * 100).toFixed(0)}%
+                            </span>
+                        ) : null}
+                    </div>
                     <Input
                         type="number"
                         placeholder="0.0"
@@ -166,9 +173,9 @@ function TargetStoreRow({ storeItem, index, onChangeStore, onChangeTarget, onCha
                 <div className="flex flex-col gap-1.5 w-full lg:w-24">
                     <div className="flex justify-between items-center px-1">
                         <Label className="text-[12px] sm:text-[12px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">ซื้อจริง</Label>
-                        {(safeFloat(storeItem.forecast) > 0 && (storeItem.actual !== undefined && storeItem.actual !== null)) ? (
+                        {(safeFloat(storeItem.target) > 0 && (storeItem.actual !== undefined && storeItem.actual !== null)) ? (
                             <span className="text-[9px] font-black text-emerald-500 bg-emerald-500/10 px-1 rounded-full border border-emerald-500/20">
-                                {((safeFloat(storeItem.actual) / safeFloat(storeItem.forecast)) * 100).toFixed(0)}%
+                                {((safeFloat(storeItem.actual) / safeFloat(storeItem.target)) * 100).toFixed(0)}%
                             </span>
                         ) : null}
                     </div>
@@ -534,8 +541,8 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
         })
 
         Object.values(groups).forEach(g => {
-            globalExceed += g.totalActual > g.totalForcedSales ? g.totalActual - g.totalForcedSales : 0
-            globalMiss += g.totalActual < g.totalForcedSales ? g.totalForcedSales - g.totalActual : 0
+            globalExceed += g.totalActual > g.totalTarget ? g.totalActual - g.totalTarget : 0
+            globalMiss += g.totalActual < g.totalTarget ? g.totalTarget - g.totalActual : 0
         })
 
         const sortedGroups = Object.values(groups).sort((a: any, b: any) => a.product.localeCompare(b.product))
@@ -609,7 +616,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
 
                     <div className="flex-1 flex flex-col items-center justify-center md:border-r border-blue-400/50 pb-4 md:pb-0 border-b md:border-b-0 border-blue-400/30 min-w-0">
                         <div className="text-[14px] sm:text-base font-bold opacity-80 flex items-center gap-2 mb-1 text-rose-50 whitespace-nowrap">
-                            <Target size={28} className="shrink-0" /> <span className="truncate">เป้าบังคับขาย (สัปดาห์)</span>
+                            <Target size={28} className="shrink-0" /> <span className="truncate">เป้าหมายการขายรวม (บังคับขาย)</span>
                         </div>
                         <div className="text-3xl sm:text-4xl lg:text-5xl font-black tabular-nums tracking-tighter text-rose-100 truncate w-full text-center">
                             {summary.week.forcedSales.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
@@ -695,10 +702,10 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                 {groupedForecasts.length > 0 ? (
                     <div className="grid grid-cols-2 gap-2 sm:gap-6 lg:gap-8">
                         {groupedForecasts.map(group => {
-                            const forcedSalesValue = group.totalForcedSales || 0;
+                            const targetValue = group.totalTarget || 0;
                             const actualValue = group.totalActual || 0;
-                            const groupExceed = actualValue > forcedSalesValue ? actualValue - forcedSalesValue : 0;
-                            const groupMiss = actualValue < forcedSalesValue ? forcedSalesValue - actualValue : 0;
+                            const groupExceed = actualValue > targetValue ? actualValue - targetValue : 0;
+                            const groupMiss = actualValue < targetValue ? targetValue - actualValue : 0;
 
                             return (
                                 <Card key={group.product} className="relative overflow-hidden bg-white dark:bg-slate-900 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-800">
@@ -792,40 +799,89 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
 
                                                                 <div className="mt-2 sm:mt-5 space-y-2 sm:space-y-4">
                                                                     {/* Under Target (Miss) */}
-                                                                    {item.forcedSales > tActual && (
+                                                                    {item.targetWeek > tActual && (
                                                                         <div>
-                                                                            <div className="flex justify-between items-end mb-0.5 sm:mb-1 px-1">
-                                                                                <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-rose-500 uppercase tracking-widest truncate">ขาดเป้า {Math.max(0, (item.forcedSales || 0) - tActual).toFixed(1)} กก.</span>
+                                                                            <div className="flex justify-between items-end mb-1.5 sm:mb-1 px-1">
+                                                                                <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-rose-500 uppercase tracking-widest truncate">ขาดเป้า {(item.targetWeek - tActual).toFixed(1)} กก.</span>
                                                                                 <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-rose-600 dark:text-rose-400 shrink-0 ml-1 sm:ml-2">
-                                                                                    {item.forcedSales && item.forcedSales > 0 ? ((tActual / item.forcedSales) * 100).toFixed(0) : 0}%
+                                                                                    <div className="flex flex-col items-end">
+                                                                                        <span>{item.targetWeek > 0 ? ((tActual / item.targetWeek) * 100).toFixed(0) : 0}%</span>
+
+
+
+                                                                                    </div>
                                                                                 </span>
                                                                             </div>
                                                                             <div className="h-0.5 sm:h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[0.5px] sm:p-[1px]">
                                                                                 <div
                                                                                     className="h-full bg-rose-500 rounded-full transition-all duration-1000"
-                                                                                    style={{ width: `${Math.min(item.forcedSales && item.forcedSales > 0 ? (tActual / item.forcedSales) * 100 : 0, 100)}%` }}
+                                                                                    style={{ width: `${Math.min(item.targetWeek > 0 ? (tActual / item.targetWeek) * 100 : 0, 100)}%` }}
+                                                                                />
+                                                                            </div>
+
+                                                                            <div className="flex justify-between items-end mt-1.5 sm:mb-1 px-1">
+                                                                                <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-blue-500 uppercase tracking-widest truncate">คาดการณ์รวม</span>
+                                                                                <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-blue-600 dark:text-blue-400 shrink-0 ml-1 sm:ml-2">
+                                                                                    <div className="flex flex-col items-end">
+                                                                                        {group.totalForecast > 0 && (
+                                                                                            <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-blue-600 dark:text-blue-400 shrink-0 ml-1 sm:ml-2">
+                                                                                                {((safeFloat(item.forecast) / group.totalForecast) * 100).toFixed(0)}%
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="h-0.5 sm:h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[0.5px] sm:p-[1px]">
+                                                                                <div
+                                                                                    className="h-full bg-blue-500 rounded-full transition-all duration-1000"
+                                                                                    style={{ width: `${Math.min(group.totalForecast > 0 ? (safeFloat(item.forecast) / group.totalForecast) * 100 : 0, 100)}%` }}
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+
+
+                                                                    )}
+
+                                                                    {/* Over Target (Exceed) */}
+                                                                    {tActual >= item.targetWeek && (
+                                                                        <div>
+                                                                            <div className="flex justify-between items-end mb-0.5 sm:mb-1 px-1">
+                                                                                <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-blue-500 uppercase tracking-widest truncate">
+                                                                                    {tActual > item.targetWeek ? `เกินเป้า ${(tActual - item.targetWeek).toFixed(1)} กก.` : "ถึงเป้าหมาย"}
+                                                                                </span>
+                                                                                <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-blue-600 dark:text-blue-400 shrink-0 ml-1 sm:ml-2">
+                                                                                    <div className="flex flex-col items-end">
+                                                                                        <span>{item.targetWeek > 0 ? ((tActual / item.targetWeek) * 100).toFixed(0) : 100}%</span>
+                                                                                    </div>
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="h-0.5 sm:h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[0.5px] sm:p-[1px]">
+                                                                                <div
+                                                                                    className="h-full bg-blue-500 rounded-full transition-all duration-1000"
+                                                                                    style={{ width: `${Math.min(item.targetWeek > 0 ? (tActual / item.targetWeek) * 100 : 100, 100)}%` }}
+                                                                                />
+                                                                            </div>
+
+                                                                            <div className="flex justify-between items-end mt-1.5 sm:mb-1 px-1">
+                                                                                <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-blue-500 uppercase tracking-widest truncate">คาดการณ์รวม {group.totalForecast.toFixed(1)}</span>
+                                                                                <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-blue-600 dark:text-blue-400 shrink-0 ml-1 sm:ml-2">
+                                                                                    <div className="flex flex-col items-end">
+                                                                                        {group.totalForecast > 0 && (
+                                                                                            <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-blue-600 dark:text-blue-400 shrink-0 ml-1 sm:ml-2">
+                                                                                                {((safeFloat(item.forecast) / group.totalForecast) * 100).toFixed(0)}%
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="h-0.5 sm:h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[0.5px] sm:p-[1px]">
+                                                                                <div
+                                                                                    className="h-full bg-blue-500 rounded-full transition-all duration-1000"
+                                                                                    style={{ width: `${Math.min(group.totalForecast > 0 ? (safeFloat(item.forecast) / group.totalForecast) * 100 : 0, 100)}%` }}
                                                                                 />
                                                                             </div>
                                                                         </div>
                                                                     )}
-
-                                                                    {/* Over Target (Exceed) */}
-                                                                    <div>
-                                                                        <div className="flex justify-between items-end mb-0.5 sm:mb-1 px-1">
-                                                                            <span className="hiddentext-[10px] sm:text-base lg:text-[18px] font-black text-blue-500 uppercase tracking-widest truncate">
-                                                                                {tActual > item.forcedSales ? `เกินเป้า ${(tActual - item.forcedSales).toFixed(1)} กก.` : "เป้าหมายการขายรวม"}
-                                                                            </span>
-                                                                            <span className="text-[10px] sm:text-base lg:text-[18px] font-black text-blue-600 dark:text-blue-400 shrink-0 ml-1 sm:ml-2">
-                                                                                {item.forcedSales && item.forcedSales > 0 ? ((tActual / item.forcedSales) * 100).toFixed(0) : 0}%
-                                                                            </span>
-                                                                        </div>
-                                                                        <div className="h-0.5 sm:h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-[0.5px] sm:p-[1px]">
-                                                                            <div
-                                                                                className="h-full bg-blue-500 rounded-full transition-all duration-1000"
-                                                                                style={{ width: `${Math.min(item.forcedSales && item.forcedSales > 0 ? (tActual / item.forcedSales) * 100 : 0, 100)}%` }}
-                                                                            />
-                                                                        </div>
-                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -842,11 +898,12 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                     <div className="text-center py-20 bg-slate-50 dark:bg-slate-800/20 rounded-[2rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
                         <p className="text-slate-400">ยังไม่มีข้อมูลคาดการณ์ในสัปดาห์นี้</p>
                     </div>
-                )}
-            </div>
+                )
+                }
+            </div >
 
             {/* --- ADD/EDIT DIALOG --- */}
-            <Dialog open={showDialog} onOpenChange={(o) => { if (!o) resetForm(); else setShowDialog(o); }}>
+            < Dialog open={showDialog} onOpenChange={(o) => { if (!o) resetForm(); else setShowDialog(o); }}>
                 <DialogContent className="w-[95vw] md:max-w-6xl bg-white dark:bg-slate-950 border-none shadow-3xl rounded-[2.5rem] p-0 overflow-hidden flex flex-col max-h-[92vh]">
                     <DialogHeader className="p-5 border-b border-slate-100 dark:border-slate-800">
                         <DialogTitle className="text-lg font-black flex items-center gap-2 text-slate-800 dark:text-white">
@@ -1023,6 +1080,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                         <span className="text-xs font-bold text-blue-400 truncate">กก.</span>
                                     </div>
                                     <div className="text-sm font-bold text-blue-400">
+
                                         {autoTotalForcedSales > 0 ? (Math.max(0, (autoTotalActual - autoTotalForcedSales) / autoTotalForcedSales) * 100).toFixed(0) : 0}%
                                     </div>
                                 </div>
@@ -1058,6 +1116,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                                                 key={i}
                                                 index={i}
                                                 storeItem={s}
+                                                totalForecast={autoTotalForecast}
                                                 onChangeStore={(idx: number, newStore: any) => {
                                                     setSelectedStores(prev => {
                                                         const newArr = [...prev]
@@ -1119,7 +1178,7 @@ export default function ForecastForm({ stores = [], forecasts, date, setDate, we
                         <SaveButton onClick={handleSubmit} isSubmitting={isSubmitting} className="w-full sm:w-auto" />
                     </DialogFooter>
                 </DialogContent>
-            </Dialog>
-        </div>
+            </Dialog >
+        </div >
     )
 }
