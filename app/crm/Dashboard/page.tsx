@@ -847,7 +847,7 @@ export default function DashboardPage({ initialStores, initialVisits, summary, p
             }
 
             if (v.sellSuccessful === true) {
-                stats[type].closed++
+                stats[matchedType].closed++
             }
         })
 
